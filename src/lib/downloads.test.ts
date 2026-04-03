@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeroDownloadOptions } from './downloads';
+import { buildHeroDownloadOptions, parseDisplayDateForTesting } from './downloads';
 import type { NormalizedAsset } from './types';
 
 describe('buildHeroDownloadOptions', () => {
@@ -21,5 +21,12 @@ describe('buildHeroDownloadOptions', () => {
   it('falls back to the platform default architecture when detection is unknown', () => {
     const result = buildHeroDownloadOptions(assets, 'macos', 'unknown');
     expect(result.primary?.name).toBe('TX-5DR-nightly-macos-arm64.dmg');
+  });
+});
+
+describe('parseDisplayDateForTesting', () => {
+  it('parses UTC timestamp strings into valid dates', () => {
+    const date = parseDisplayDateForTesting('2026-04-03 10:01:09 UTC');
+    expect(date?.toISOString()).toBe('2026-04-03T10:01:09.000Z');
   });
 });

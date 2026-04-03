@@ -2,6 +2,33 @@ import type { TFunction } from 'i18next';
 import type { Locale } from './preferences';
 import type { DetectedSystem, NormalizedAsset } from './types';
 
+function parseDisplayDate(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const direct = new Date(trimmed);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct;
+  }
+
+  const utcLike = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)(?:\s*UTC)?$/i,
+  );
+  if (!utcLike) {
+    return null;
+  }
+
+  const normalized = `${utcLike[1]}T${utcLike[2]}Z`;
+  const fallback = new Date(normalized);
+  if (Number.isNaN(fallback.getTime())) {
+    return null;
+  }
+
+  return fallback;
+}
+
 function getPackagePriorityForPlatform(platform: DetectedSystem['platform'], packageType: string): number {
   const normalized = packageType.toLowerCase();
   const order = platform === 'windows'
@@ -126,18 +153,22 @@ export function getArchLabel(arch: string, t: TFunction): string {
 
 export function formatTime(value: string | null, locale: Locale): string {
   if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+  const date = parseDisplayDate(value);
+  if (!date) {
     return value;
   }
-  return new Intl.DateTimeFormat(locale, {
+
+  const formatter = new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     timeZoneName: 'short',
-  }).format(date);
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+
+  return formatter.format(date);
 }
 
 export function formatBytes(value: number | undefined): string {
@@ -210,4 +241,8 @@ export function getAssetCardTitle(asset: NormalizedAsset, fallbackTitle: string,
   }
 
   return parts.join(' · ');
+}
+
+export function parseDisplayDateForTesting(value: string): Date | null {
+  return parseDisplayDate(value);
 }
