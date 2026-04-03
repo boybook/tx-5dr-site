@@ -4,22 +4,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --page-background: #f8fafc;
+  --page-art-height: clamp(1280px, 155vh, 1760px);
   color-scheme: light;
   font-family: "Manrope", ui-sans-serif, sans-serif;
-  background:
-    radial-gradient(circle at top, rgba(244, 63, 94, 0.2), transparent 36%),
-    radial-gradient(circle at 18% 18%, rgba(251, 113, 133, 0.16), transparent 26%),
-    radial-gradient(circle at 82% 12%, rgba(251, 146, 60, 0.12), transparent 24%),
-    linear-gradient(180deg, #fff7f7 0%, #fff1f2 52%, #f8fafc 100%);
+  background-color: var(--page-background);
   color: #2c1315;
 }
 
 :root.dark {
+  --page-background: #111827;
   color-scheme: dark;
-  background:
-    radial-gradient(circle at top, rgba(244, 63, 94, 0.18), transparent 30%),
-    radial-gradient(circle at 82% 12%, rgba(190, 24, 93, 0.16), transparent 24%),
-    linear-gradient(180deg, #19090d 0%, #14080d 52%, #111827 100%);
   color: #fff1f2;
 }
 
@@ -31,12 +26,36 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  position: relative;
+  background-color: var(--page-background);
+}
+
+body::after {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--page-art-height);
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at top, rgba(244, 63, 94, 0.2), transparent 36%),
+    radial-gradient(circle at 18% 18%, rgba(251, 113, 133, 0.16), transparent 26%),
+    radial-gradient(circle at 82% 12%, rgba(251, 146, 60, 0.12), transparent 24%),
+    linear-gradient(180deg, #fff7f7 0%, #fff1f2 52%, #f8fafc 100%);
+  content: "";
+}
+
+.dark body::after {
+  background:
+    radial-gradient(circle at top, rgba(244, 63, 94, 0.18), transparent 30%),
+    radial-gradient(circle at 82% 12%, rgba(190, 24, 93, 0.16), transparent 24%),
+    linear-gradient(180deg, #19090d 0%, #14080d 52%, #111827 100%);
 }
 
 body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
   background-image:
     linear-gradient(rgba(60, 17, 28, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(60, 17, 28, 0.04) 1px, transparent 1px);
@@ -53,6 +72,8 @@ body::before {
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 2;
 }
 
 ::selection {

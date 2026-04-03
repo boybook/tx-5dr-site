@@ -75,6 +75,15 @@ const emptyCatalog = (): ReleaseCatalog => ({
   preferredSource: 'github',
 });
 
+function hasCatalogData(catalog: ReleaseCatalog): boolean {
+  return Boolean(
+    catalog.app.nightly
+    || catalog.app.release
+    || catalog.server.nightly
+    || catalog.server.release,
+  );
+}
+
 function normalizeCountryCode(input: string | null | undefined): string | null {
   if (!input) return null;
   const trimmed = input.trim().toUpperCase();
@@ -407,7 +416,7 @@ function pickManifest(
 export async function fetchReleaseCatalog(policy: SourcePolicy): Promise<ReleaseCatalog> {
   const cacheKey = `tx5dr-site:catalog:${policy}`;
   const cached = loadCachedJson<ReleaseCatalog>(cacheKey, CATALOG_CACHE_MS);
-  if (cached) {
+  if (cached && hasCatalogData(cached)) {
     return cached;
   }
 
@@ -429,7 +438,9 @@ export async function fetchReleaseCatalog(policy: SourcePolicy): Promise<Release
     preferredSource,
   };
 
-  saveCachedJson(cacheKey, catalog);
+  if (hasCatalogData(catalog)) {
+    saveCachedJson(cacheKey, catalog);
+  }
   return catalog;
 }
 
@@ -513,4 +524,8 @@ export function getRecommendedAsset(
 
 export function parseGithubBodyForTesting(body: string): ParsedBody {
   return parseGithubBody(body);
+}
+
+export function hasCatalogDataForTesting(catalog: ReleaseCatalog): boolean {
+  return hasCatalogData(catalog);
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildNightlyVersion, getRecommendedAsset, parseGithubBodyForTesting } from './metadata';
-import type { NormalizedManifest } from './types';
+import {
+  buildNightlyVersion,
+  getRecommendedAsset,
+  hasCatalogDataForTesting,
+  parseGithubBodyForTesting,
+} from './metadata';
+import type { NormalizedManifest, ReleaseCatalog } from './types';
 
 describe('buildNightlyVersion', () => {
   it('builds nightly version from base version, build time, and commit', () => {
@@ -50,5 +55,42 @@ describe('getRecommendedAsset', () => {
 
     const recommended = getRecommendedAsset(multiArchManifest, { platform: 'macos', arch: 'unknown', label: 'macOS' });
     expect(recommended).toBeNull();
+  });
+});
+
+describe('hasCatalogDataForTesting', () => {
+  it('returns false for an empty catalog', () => {
+    const catalog: ReleaseCatalog = {
+      app: { nightly: null, release: null },
+      server: { nightly: null, release: null },
+      countryCode: null,
+      preferredSource: 'github',
+    };
+
+    expect(hasCatalogDataForTesting(catalog)).toBe(false);
+  });
+
+  it('returns true when any manifest is present', () => {
+    const catalog: ReleaseCatalog = {
+      app: {
+        nightly: {
+          product: 'app',
+          channel: 'nightly',
+          tag: 'nightly-app',
+          version: '1.0.0-nightly.202604031001+98be3ed',
+          commit: '98be3ed',
+          publishedAt: '2026-04-03 10:01:09 UTC',
+          releaseNotes: null,
+          source: 'oss',
+          assets: [],
+        },
+        release: null,
+      },
+      server: { nightly: null, release: null },
+      countryCode: 'CN',
+      preferredSource: 'oss',
+    };
+
+    expect(hasCatalogDataForTesting(catalog)).toBe(true);
   });
 });
