@@ -39,6 +39,35 @@ function pickAssetForArch(
   })[0] ?? null;
 }
 
+function sortHeroMenuAssets(
+  assets: NormalizedAsset[],
+  platform: DetectedSystem['platform'],
+  primary: NormalizedAsset,
+): NormalizedAsset[] {
+  const primaryArch = primary.arch.toLowerCase();
+
+  return [...assets].sort((left, right) => {
+    const leftArchScore = left.arch.toLowerCase() === primaryArch ? 0 : 1;
+    const rightArchScore = right.arch.toLowerCase() === primaryArch ? 0 : 1;
+    if (leftArchScore !== rightArchScore) {
+      return leftArchScore - rightArchScore;
+    }
+
+    const leftPriority = getPackagePriorityForPlatform(platform, left.packageType);
+    const rightPriority = getPackagePriorityForPlatform(platform, right.packageType);
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority;
+    }
+
+    const archCompare = left.arch.localeCompare(right.arch);
+    if (archCompare !== 0) {
+      return archCompare;
+    }
+
+    return left.name.localeCompare(right.name);
+  });
+}
+
 export function getPackageLabel(packageType: string, t: TFunction): string {
   const normalized = packageType.toLowerCase();
   switch (normalized) {
@@ -149,20 +178,21 @@ export function buildHeroDownloadOptions(
     return { primary: null, alternates: [] };
   }
 
-  const alternates = archOrder
-    .filter((candidateArch) => candidateArch !== primary.arch.toLowerCase())
-    .map((candidateArch) => pickAssetForArch(assets, platform, candidateArch))
-    .filter((asset): asset is NormalizedAsset => Boolean(asset));
+  const alternates = sortHeroMenuAssets(
+    assets.filter((asset) => asset.name !== primary.name),
+    platform,
+    primary,
+  );
 
   return { primary, alternates };
 }
 
 export function getHeroAssetLabel(asset: NormalizedAsset, platformLabel: string, t: TFunction): string {
   const parts = [t('hero.primaryCta', { platform: platformLabel })];
+  parts.push(getArchLabel(asset.arch, t));
   if (asset.packageType.toLowerCase() !== 'unknown') {
     parts.push(getPackageLabel(asset.packageType, t));
   }
-  parts.push(getArchLabel(asset.arch, t));
   return parts.join(' · ');
 }
 

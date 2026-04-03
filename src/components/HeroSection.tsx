@@ -4,6 +4,7 @@ import {
   getArchLabel,
   getHeroAssetLabel,
   getPackageLabel,
+  getPlatformLabel,
 } from '../lib/downloads';
 import type { Locale } from '../lib/preferences';
 import type { DetectedSystem, NormalizedAsset, NormalizedManifest } from '../lib/types';
@@ -78,7 +79,9 @@ export function HeroSection({
                     rel="noreferrer"
                     className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-white/8 dark:hover:text-white"
                   >
-                    <span className="font-medium">{getArchLabel(asset.arch, t)}</span>
+                    <span className="font-medium">
+                      {getPlatformLabel(asset.platform, t)} · {getArchLabel(asset.arch, t)}
+                    </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
                       {getPackageLabel(asset.packageType, t)}
                     </span>

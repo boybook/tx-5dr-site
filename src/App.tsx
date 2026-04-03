@@ -33,6 +33,7 @@ function App() {
   const windowsDesktopAssets = desktopAssets.filter((asset) => asset.platform === 'windows');
   const macosDesktopAssets = desktopAssets.filter((asset) => asset.platform === 'macos');
   const linuxDesktopAssets = desktopAssets.filter((asset) => asset.platform === 'linux');
+  const showCnDownloadTag = [effectiveDesktopManifest, effectiveServerManifest].some((manifest) => manifest?.source === 'oss');
   const heroDownloadOptions = useMemo(
     () => buildHeroDownloadOptions(platformScopedDesktopAssets, system.platform, system.arch),
     [platformScopedDesktopAssets, system.arch, system.platform],
@@ -154,7 +155,7 @@ function App() {
 
           <InstallCommandSection command={NIGHTLY_SERVER_INSTALL_COMMAND} t={t} />
 
-          <DownloadsSection cards={downloadCards} t={t} />
+          <DownloadsSection cards={downloadCards} showCnTag={showCnDownloadTag} t={t} />
         </main>
 
         <Footer appReleaseUrl={NIGHTLY_APP_RELEASE_URL} repoUrl={REPO_URL} t={t} />
