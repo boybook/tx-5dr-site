@@ -1,0 +1,81 @@
+# 心智模型
+
+本页说明插件接口之间的职责关系。相关类型定义位于 `packages/plugin-api/src/definition.ts`、`context.ts`、`hooks.ts` 和 `runtime.ts`。
+
+## 四个核心接口
+
+- `PluginDefinition`：声明插件名称、版本、类型、设置、面板和生命周期入口
+- `PluginContext`：提供配置、存储、日志、操作员控制和电台控制接口
+- `PluginHooks`：定义过滤、打分、广播监听和配置变更入口
+- `StrategyRuntime`：定义策略插件的自动化运行时接口
+
+## PluginDefinition
+
+`PluginDefinition` 是插件入口文件的默认导出结构。该接口负责声明静态信息和生命周期方法，典型字段包括：
+
+- `name`、`version`
+- `type`
+- `settings`、`quickActions`、`panels`
+- `onLoad`、`onUnload`
+- `hooks`
+- `createStrategyRuntime`
+
+## PluginContext
+
+`PluginContext` 由宿主在运行时注入。当前公共字段包括：
+
+- `config`
+- `store.global` / `store.operator`
+- `log`
+- `timers`
+- `operator`
+- `radio`
+- `logbook`
+- `band`
+- `ui`
+- `fetch`（声明 `network` 权限时可用）
+
+这些字段对应主项目中明确开放给插件的运行时表面。
+
+## PluginHooks
+
+`PluginHooks` 用于处理宿主发出的事件。当前主要分为两类：
+
+### Pipeline Hooks
+
+- `onFilterCandidates`
+- `onScoreCandidates`
+
+这两个入口会改变候选消息列表或排序结果。
+
+### Broadcast Hooks
+
+- `onSlotStart`
+- `onDecode`
+- `onQSOStart`
+- `onQSOComplete`
+- `onQSOFail`
+- `onTimer`
+- `onUserAction`
+- `onConfigChange`
+
+这类入口主要用于监听事件、记录状态、触发定时任务或更新面板。
+
+## StrategyRuntime
+
+`StrategyRuntime` 只用于 `strategy` 类型插件。当前接口负责以下对象：
+
+- `decide()`：根据解码结果推进自动化流程
+- `getTransmitText()`：生成当前发射文本
+- `requestCall()`：处理呼叫请求
+- `getSnapshot()`：输出运行时快照
+- `patchContext()`、`setState()`、`setSlotContent()`、`reset()`：更新策略运行时状态
+
+## 作用域划分
+
+插件设置和存储都区分 `global` 与 `operator` 两个范围：
+
+- `global`：所有操作员共享
+- `operator`：每个操作员独立
+
+该划分与主项目的多操作员模型保持一致。

@@ -12,10 +12,9 @@ TX-5DR 官网与文档中心，基于 VitePress 构建，面向 GitHub Pages 部
 ## 当前结构
 
 - `/`：官网首页，展示最新 nightly 元数据、推荐下载、安装命令和多平台下载卡片
-- `/guide/`：使用指南骨架
-- `/wiki/`：项目背景与设计说明骨架
-- `/reference/`：稳定参考信息骨架
-- `/api/`：API 文档入口占位
+- `/guide/`：面向普通 HAM 的安装、选型、部署与首次使用指南
+- `/wiki/`：项目定位、架构、分发策略、命令与安装包说明
+- `/plugin-api/`：面向插件开发者的文档入口与自动生成的 Reference
 - `/en/`：英文首页
 
 ## 功能
@@ -32,6 +31,7 @@ TX-5DR 官网与文档中心，基于 VitePress 构建，面向 GitHub Pages 部
 
 ```bash
 npm install
+npm run docs:sync-plugin-api   # 从 ../tx-5dr 同步插件 API Reference
 npm run dev
 ```
 
@@ -40,10 +40,13 @@ VitePress 默认会在本地启动文档站开发服务器。
 ## 校验
 
 ```bash
+npm run docs:prepare
 npm run lint
 npm run test
 npm run build
 ```
+
+如果主项目源码不在默认的 `../tx-5dr`，可以先设置 `TX5DR_SOURCE_DIR=/path/to/tx-5dr`。
 
 ## 发布到 GitHub Pages
 

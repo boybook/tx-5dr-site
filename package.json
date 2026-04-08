@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vitepress dev docs",
     "build": "vue-tsc --noEmit && vitepress build docs",
+    "docs:sync-plugin-api": "node scripts/generate-plugin-api-docs.mjs",
+    "docs:prepare": "npm run docs:sync-plugin-api",
     "lint": "eslint .",
     "preview": "vitepress preview docs",
     "test": "vitest run"

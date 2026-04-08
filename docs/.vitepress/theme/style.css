@@ -14,7 +14,6 @@
   --vp-c-brand-3: #be123c;
   color-scheme: light;
   font-family: "Manrope", ui-sans-serif, sans-serif;
-  background-color: var(--page-background);
   color: #2c1315;
 }
 
@@ -33,10 +32,22 @@ body {
   min-height: 100vh;
   margin: 0;
   position: relative;
+  background-color: var(--vp-c-bg);
+}
+
+body.tx-page-home {
   background-color: var(--page-background);
 }
 
 body::after {
+  content: none;
+}
+
+body::before {
+  content: none;
+}
+
+body.tx-page-home::after {
   position: absolute;
   inset: 0 0 auto;
   height: var(--page-art-height);
@@ -50,14 +61,14 @@ body::after {
   content: "";
 }
 
-.dark body::after {
+.dark body.tx-page-home::after {
   background:
     radial-gradient(circle at top, rgba(244, 63, 94, 0.18), transparent 30%),
     radial-gradient(circle at 82% 12%, rgba(190, 24, 93, 0.16), transparent 24%),
     linear-gradient(180deg, #19090d 0%, #14080d 52%, #111827 100%);
 }
 
-body::before {
+body.tx-page-home::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -70,7 +81,7 @@ body::before {
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent 75%);
 }
 
-.dark body::before {
+.dark body.tx-page-home::before {
   background-image:
     linear-gradient(rgba(255, 228, 230, 0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 228, 230, 0.06) 1px, transparent 1px);
@@ -88,29 +99,6 @@ body::before {
 
 .VPNavBarTitle .title {
   font-family: var(--vp-font-family-brand);
-}
-
-.VPContent,
-.VPDoc,
-.VPDoc.has-aside .content-container,
-.VPNavBar {
-  background: transparent;
-}
-
-.VPNavBar {
-  border-bottom-color: rgba(148, 163, 184, 0.16);
-  backdrop-filter: blur(16px);
-  background: rgba(248, 250, 252, 0.72);
-}
-
-html.dark .VPNavBar {
-  background: rgba(15, 23, 42, 0.72);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-.VPSidebar,
-.VPDocAside {
-  background: transparent;
 }
 
 .VPDoc .content-container,
@@ -214,6 +202,17 @@ html.dark .VPNavBar {
   text-decoration: none;
 }
 
+.tx-home .tx-home-toplink,
+.tx-home .tx-home-toplink:link,
+.tx-home .tx-home-toplink:visited {
+  color: var(--color-slate-600);
+  text-decoration: none;
+}
+
+.tx-home .tx-home-toplink:hover {
+  color: var(--color-rose-700);
+}
+
 .tx-home .tx-home-chip:hover {
   color: var(--color-rose-700);
 }
@@ -224,7 +223,17 @@ html.dark .VPNavBar {
   color: var(--color-slate-200);
 }
 
+.dark .tx-home .tx-home-toplink,
+.dark .tx-home .tx-home-toplink:link,
+.dark .tx-home .tx-home-toplink:visited {
+  color: var(--color-slate-300);
+}
+
 .dark .tx-home .tx-home-chip:hover {
+  color: var(--color-rose-300);
+}
+
+.dark .tx-home .tx-home-toplink:hover {
   color: var(--color-rose-300);
 }
 
