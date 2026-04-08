@@ -1,6 +1,7 @@
-import type { TFunction } from 'i18next';
 import type { Locale } from './preferences';
 import type { DetectedSystem, NormalizedAsset } from './types';
+
+type Translate = (key: string, vars?: Record<string, string>) => string;
 
 function parseDisplayDate(value: string): Date | null {
   const trimmed = value.trim();
@@ -95,7 +96,7 @@ function sortHeroMenuAssets(
   });
 }
 
-export function getPackageLabel(packageType: string, t: TFunction): string {
+export function getPackageLabel(packageType: string, t: Translate): string {
   const normalized = packageType.toLowerCase();
   switch (normalized) {
     case 'msi':
@@ -121,7 +122,7 @@ export function getPackageExtensionLabel(fileName: string): string {
   return trimmed.slice(lastDotIndex);
 }
 
-export function getPlatformLabel(platform: DetectedSystem['platform'], t: TFunction): string {
+export function getPlatformLabel(platform: DetectedSystem['platform'], t: Translate): string {
   switch (platform) {
     case 'windows':
       return t('system.windows');
@@ -138,7 +139,7 @@ export function getPlatformLabel(platform: DetectedSystem['platform'], t: TFunct
   }
 }
 
-export function getArchLabel(arch: string, t: TFunction): string {
+export function getArchLabel(arch: string, t: Translate): string {
   switch (arch.toLowerCase()) {
     case 'x64':
     case 'amd64':
@@ -183,7 +184,7 @@ export function formatBytes(value: number | undefined): string {
   return `${next.toFixed(next >= 100 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
-export function getSourceLabel(source: 'oss' | 'github' | 'auto', t: TFunction): string {
+export function getSourceLabel(source: 'oss' | 'github' | 'auto', t: Translate): string {
   if (source === 'oss') return t('source.oss');
   if (source === 'github') return t('source.github');
   return t('source.auto');
@@ -218,7 +219,7 @@ export function buildHeroDownloadOptions(
   return { primary, alternates };
 }
 
-export function getHeroAssetLabel(asset: NormalizedAsset, platformLabel: string, t: TFunction): string {
+export function getHeroAssetLabel(asset: NormalizedAsset, platformLabel: string, t: Translate): string {
   const parts = [t('hero.primaryCta', { platform: platformLabel })];
   parts.push(getArchLabel(asset.arch, t));
   if (asset.packageType.toLowerCase() !== 'unknown') {
@@ -227,7 +228,7 @@ export function getHeroAssetLabel(asset: NormalizedAsset, platformLabel: string,
   return parts.join(' · ');
 }
 
-export function getAssetCardTitle(asset: NormalizedAsset, fallbackTitle: string, t: TFunction): string {
+export function getAssetCardTitle(asset: NormalizedAsset, fallbackTitle: string, t: Translate): string {
   const parts: string[] = [];
 
   if (asset.platform !== 'unknown') {

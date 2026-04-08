@@ -1,0 +1,463 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --page-background: #f8fafc;
+  --page-art-height: clamp(1280px, 155vh, 1760px);
+  --vp-font-family-base: "Manrope", ui-sans-serif, sans-serif;
+  --vp-font-family-mono: "SFMono-Regular", ui-monospace, monospace;
+  --vp-font-family-brand: "Space Grotesk", ui-sans-serif, sans-serif;
+  --vp-c-brand-1: #e11d48;
+  --vp-c-brand-2: #f43f5e;
+  --vp-c-brand-3: #be123c;
+  color-scheme: light;
+  font-family: "Manrope", ui-sans-serif, sans-serif;
+  background-color: var(--page-background);
+  color: #2c1315;
+}
+
+:root.dark {
+  --page-background: #111827;
+  color-scheme: dark;
+  color: #fff1f2;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  position: relative;
+  background-color: var(--page-background);
+}
+
+body::after {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--page-art-height);
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at top, rgba(244, 63, 94, 0.2), transparent 36%),
+    radial-gradient(circle at 18% 18%, rgba(251, 113, 133, 0.16), transparent 26%),
+    radial-gradient(circle at 82% 12%, rgba(251, 146, 60, 0.12), transparent 24%),
+    linear-gradient(180deg, #fff7f7 0%, #fff1f2 52%, #f8fafc 100%);
+  content: "";
+}
+
+.dark body::after {
+  background:
+    radial-gradient(circle at top, rgba(244, 63, 94, 0.18), transparent 30%),
+    radial-gradient(circle at 82% 12%, rgba(190, 24, 93, 0.16), transparent 24%),
+    linear-gradient(180deg, #19090d 0%, #14080d 52%, #111827 100%);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(rgba(60, 17, 28, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60, 17, 28, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+  content: "";
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent 75%);
+}
+
+.dark body::before {
+  background-image:
+    linear-gradient(rgba(255, 228, 230, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 228, 230, 0.06) 1px, transparent 1px);
+}
+
+#app {
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+
+::selection {
+  background: rgba(244, 63, 94, 0.24);
+}
+
+.VPNavBarTitle .title {
+  font-family: var(--vp-font-family-brand);
+}
+
+.VPContent,
+.VPDoc,
+.VPDoc.has-aside .content-container,
+.VPNavBar {
+  background: transparent;
+}
+
+.VPNavBar {
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+  backdrop-filter: blur(16px);
+  background: rgba(248, 250, 252, 0.72);
+}
+
+html.dark .VPNavBar {
+  background: rgba(15, 23, 42, 0.72);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.VPSidebar,
+.VPDocAside {
+  background: transparent;
+}
+
+.VPDoc .content-container,
+.VPSidebarItem .items {
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.VPDoc .container {
+  padding-top: 24px;
+}
+
+.VPDoc .vp-doc h1,
+.VPDoc .vp-doc h2,
+.VPDoc .vp-doc h3 {
+  font-family: var(--vp-font-family-brand);
+  letter-spacing: -0.02em;
+}
+
+.tx-home .tx-home-brand,
+.tx-home .tx-home-brand:link,
+.tx-home .tx-home-brand:visited {
+  font-family: "Space Grotesk", ui-sans-serif, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--color-rose-700);
+  text-decoration: none;
+}
+
+.dark .tx-home .tx-home-brand,
+.dark .tx-home .tx-home-brand:link,
+.dark .tx-home .tx-home-brand:visited {
+  color: var(--color-rose-300);
+}
+
+.tx-home .tx-hero-title {
+  margin-top: 2rem;
+  font-family: "Space Grotesk", ui-sans-serif, sans-serif;
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-align: center;
+  color: var(--color-slate-950);
+}
+
+@media (min-width: 40rem) {
+  .tx-home .tx-hero-title {
+    font-size: 4.5rem;
+    line-height: 1;
+  }
+}
+
+.dark .tx-home .tx-hero-title {
+  color: var(--color-white);
+}
+
+.tx-home .tx-hero-subtitle {
+  display: block;
+  width: 100%;
+  max-width: 42rem;
+  margin-top: 1.25rem;
+  margin-inline: auto;
+  font-size: 1rem;
+  line-height: 2rem;
+  text-align: center;
+  color: var(--color-slate-600);
+}
+
+@media (min-width: 40rem) {
+  .tx-home .tx-hero-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}
+
+.dark .tx-home .tx-hero-subtitle {
+  color: var(--color-slate-300);
+}
+
+.tx-home .tx-hero-primary-link,
+.tx-home .tx-hero-primary-link:link,
+.tx-home .tx-hero-primary-link:visited,
+.tx-home .tx-hero-primary-link:hover {
+  color: var(--color-white);
+  text-decoration: none;
+}
+
+.dark .tx-home .tx-hero-primary-link,
+.dark .tx-home .tx-hero-primary-link:link,
+.dark .tx-home .tx-hero-primary-link:visited,
+.dark .tx-home .tx-hero-primary-link:hover {
+  color: var(--color-slate-950);
+}
+
+.tx-home .tx-home-chip,
+.tx-home .tx-home-chip:link,
+.tx-home .tx-home-chip:visited {
+  color: var(--color-slate-700);
+  text-decoration: none;
+}
+
+.tx-home .tx-home-chip:hover {
+  color: var(--color-rose-700);
+}
+
+.dark .tx-home .tx-home-chip,
+.dark .tx-home .tx-home-chip:link,
+.dark .tx-home .tx-home-chip:visited {
+  color: var(--color-slate-200);
+}
+
+.dark .tx-home .tx-home-chip:hover {
+  color: var(--color-rose-300);
+}
+
+.tx-home .tx-home-icon-button {
+  color: var(--color-slate-700);
+}
+
+.tx-home .tx-home-icon-button:hover {
+  color: var(--color-rose-700);
+}
+
+.dark .tx-home .tx-home-icon-button {
+  color: var(--color-slate-200);
+}
+
+.dark .tx-home .tx-home-icon-button:hover {
+  color: var(--color-rose-300);
+}
+
+.tx-home .tx-section-title {
+  font-family: "Space Grotesk", ui-sans-serif, sans-serif;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  color: var(--color-slate-950);
+}
+
+.dark .tx-home .tx-section-title {
+  color: var(--color-white);
+}
+
+.tx-home .tx-section-subtitle,
+.tx-home .tx-card-subline,
+.tx-home .tx-download-meta {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--color-slate-600);
+}
+
+.dark .tx-home .tx-section-subtitle,
+.dark .tx-home .tx-card-subline,
+.dark .tx-home .tx-download-meta {
+  color: var(--color-slate-300);
+}
+
+.tx-home .tx-card-body,
+.tx-home .tx-release-notes {
+  font-size: 0.875rem;
+  line-height: 1.75rem;
+  color: var(--color-slate-600);
+}
+
+.dark .tx-home .tx-card-body,
+.dark .tx-home .tx-release-notes {
+  color: var(--color-slate-300);
+}
+
+.tx-home .tx-card-title {
+  font-family: "Space Grotesk", ui-sans-serif, sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  color: var(--color-slate-950);
+}
+
+.dark .tx-home .tx-card-title {
+  color: var(--color-white);
+}
+
+.tx-home .tx-card-meta,
+.tx-home .tx-card-date,
+.tx-home .tx-cn-badge,
+.tx-home .tx-install-kicker,
+.tx-home .tx-download-recommend {
+  color: var(--color-rose-700);
+}
+
+.dark .tx-home .tx-card-meta,
+.dark .tx-home .tx-card-date,
+.dark .tx-home .tx-cn-badge,
+.dark .tx-home .tx-download-recommend {
+  color: var(--color-rose-300);
+}
+
+.tx-home .tx-hero-secondary-link,
+.tx-home .tx-hero-secondary-link:link,
+.tx-home .tx-hero-secondary-link:visited,
+.tx-home .tx-hero-menu-link,
+.tx-home .tx-hero-menu-link:link,
+.tx-home .tx-hero-menu-link:visited,
+.tx-home .tx-download-link,
+.tx-home .tx-download-link:link,
+.tx-home .tx-download-link:visited,
+.tx-home .tx-footer-link,
+.tx-home .tx-footer-link:link,
+.tx-home .tx-footer-link:visited {
+  text-decoration: none;
+}
+
+.tx-home .tx-hero-secondary-link,
+.tx-home .tx-hero-secondary-link:link,
+.tx-home .tx-hero-secondary-link:visited,
+.tx-home .tx-hero-menu-link,
+.tx-home .tx-hero-menu-link:link,
+.tx-home .tx-hero-menu-link:visited,
+.tx-home .tx-footer-link,
+.tx-home .tx-footer-link:link,
+.tx-home .tx-footer-link:visited {
+  color: var(--color-slate-700);
+}
+
+.tx-home .tx-hero-secondary-link:hover,
+.tx-home .tx-footer-link:hover {
+  color: var(--color-rose-700);
+}
+
+.tx-home .tx-hero-menu-link:hover {
+  color: var(--color-slate-950);
+}
+
+.dark .tx-home .tx-hero-secondary-link,
+.dark .tx-home .tx-hero-secondary-link:link,
+.dark .tx-home .tx-hero-secondary-link:visited,
+.dark .tx-home .tx-hero-menu-link,
+.dark .tx-home .tx-hero-menu-link:link,
+.dark .tx-home .tx-hero-menu-link:visited {
+  color: var(--color-slate-200);
+}
+
+.dark .tx-home .tx-footer-link,
+.dark .tx-home .tx-footer-link:link,
+.dark .tx-home .tx-footer-link:visited {
+  color: var(--color-slate-400);
+}
+
+.dark .tx-home .tx-hero-secondary-link:hover,
+.dark .tx-home .tx-footer-link:hover {
+  color: var(--color-rose-300);
+}
+
+.dark .tx-home .tx-hero-menu-link:hover {
+  color: var(--color-white);
+}
+
+.tx-home .tx-download-link,
+.tx-home .tx-download-link:hover {
+  color: inherit;
+}
+
+.tx-home .tx-download-link-title {
+  color: var(--color-slate-900);
+}
+
+.dark .tx-home .tx-download-link-title {
+  color: var(--color-white);
+}
+
+.tx-home .tx-download-package {
+  color: var(--color-slate-600);
+}
+
+.dark .tx-home .tx-download-package {
+  color: var(--color-slate-300);
+}
+
+.tx-home .tx-download-filename {
+  color: var(--color-slate-500);
+}
+
+.tx-home .tx-download-link:hover .tx-download-filename {
+  color: var(--color-slate-700);
+}
+
+.dark .tx-home .tx-download-filename {
+  color: var(--color-slate-400);
+}
+
+.dark .tx-home .tx-download-link:hover .tx-download-filename {
+  color: var(--color-slate-200);
+}
+
+.tx-home .tx-card-empty {
+  color: var(--color-slate-500);
+}
+
+.dark .tx-home .tx-card-empty {
+  color: var(--color-slate-400);
+}
+
+.tx-home .tx-release-summary {
+  color: var(--color-slate-900);
+}
+
+.dark .tx-home .tx-release-summary {
+  color: var(--color-white);
+}
+
+.tx-home .tx-install-section {
+  color: var(--color-slate-100);
+}
+
+.tx-home .tx-install-kicker {
+  color: var(--color-rose-300);
+}
+
+.tx-home .tx-install-description {
+  font-size: 0.875rem;
+  line-height: 1.75rem;
+  color: var(--color-slate-300);
+}
+
+.tx-home .tx-install-shell {
+  color: var(--color-slate-100);
+}
+
+.tx-home .tx-install-code {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--color-rose-200);
+}
+
+.tx-home .tx-install-copy {
+  color: var(--color-slate-100);
+}
+
+.tx-home .tx-install-copy:hover {
+  color: var(--color-white);
+}
+
+.tx-home .tx-footer {
+  color: var(--color-slate-500);
+}
+
+.dark .tx-home .tx-footer {
+  color: var(--color-slate-400);
+}
