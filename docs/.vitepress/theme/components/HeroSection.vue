@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useData, withBase } from 'vitepress';
+import { withBase } from 'vitepress';
 import type { DetectedSystem, NormalizedAsset, NormalizedManifest } from '../../../../src/lib/types';
 
 const props = defineProps<{
@@ -21,12 +21,12 @@ const props = defineProps<{
   t: (key: string, vars?: Record<string, string>) => string;
 }>();
 
-const { isDark } = useData();
-
-const previewImageSrc = computed(() => {
+const previewImageSet = computed(() => {
   const localePrefix = props.locale === 'zh-CN' ? 'zh' : 'en';
-  const themeSuffix = isDark.value ? 'night' : 'day';
-  return withBase(`/tx5dr-pic/${localePrefix}-${themeSuffix}.png`);
+  return {
+    day: withBase(`/tx5dr-pic/${localePrefix}-day.png`),
+    night: withBase(`/tx5dr-pic/${localePrefix}-night.png`),
+  };
 });
 </script>
 
@@ -117,11 +117,18 @@ const previewImageSrc = computed(() => {
     <div class="tx-hero-preview relative left-1/2 mt-10 w-[calc(100vw-1.5rem)] max-w-[1120px] -translate-x-1/2 sm:w-[calc(100vw-2.5rem)] lg:w-[min(1120px,calc(100vw-4rem))]">
       <figure class="tx-hero-preview-frame">
         <img
-          :src="previewImageSrc"
+          :src="previewImageSet.day"
           :alt="t('hero.previewAlt')"
-          class="tx-hero-preview-image block w-full rounded-[1rem] sm:rounded-[1.4rem]"
+          class="tx-hero-preview-image tx-hero-preview-image-day block w-full rounded-[1rem] sm:rounded-[1.4rem]"
           decoding="async"
-          loading="lazy"
+          loading="eager"
+        >
+        <img
+          :src="previewImageSet.night"
+          :alt="t('hero.previewAlt')"
+          class="tx-hero-preview-image tx-hero-preview-image-night block w-full rounded-[1rem] sm:rounded-[1.4rem]"
+          decoding="async"
+          loading="eager"
         >
       </figure>
     </div>

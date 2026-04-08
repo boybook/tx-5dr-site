@@ -180,6 +180,25 @@ body.tx-page-home::before {
   color: var(--color-slate-300);
 }
 
+.tx-home .tx-hero-preview-frame {
+  position: relative;
+}
+
+.tx-home .tx-hero-preview-image-night {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dark .tx-home .tx-hero-preview-image-day {
+  opacity: 0;
+}
+
+.dark .tx-home .tx-hero-preview-image-night {
+  opacity: 1;
+}
+
 .tx-home .tx-hero-primary-link,
 .tx-home .tx-hero-primary-link:link,
 .tx-home .tx-hero-primary-link:visited,
