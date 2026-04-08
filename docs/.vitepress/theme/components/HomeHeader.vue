@@ -57,7 +57,7 @@ const docNavItems = computed(() => {
       >
         {{ languageLabel }}
       </a>
-      <AppearanceToggle />
+      <AppearanceToggle :locale="locale" />
     </div>
   </header>
 </template>

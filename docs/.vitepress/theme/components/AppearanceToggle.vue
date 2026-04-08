@@ -1,17 +1,79 @@
 <script setup lang="ts">
-import { inject, ref, watchPostEffect } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useData } from 'vitepress';
 
-const { isDark, theme } = useData();
-const toggleAppearance = inject<() => void>('toggle-appearance', () => {
-  isDark.value = !isDark.value;
-});
-const title = ref('');
+type AppearanceMode = 'auto' | 'light' | 'dark';
 
-watchPostEffect(() => {
-  title.value = isDark.value
-    ? theme.value.lightModeSwitchTitle || 'Switch to light mode'
-    : theme.value.darkModeSwitchTitle || 'Switch to dark mode';
+const props = defineProps<{
+  locale: 'zh-CN' | 'en';
+}>();
+
+const { isDark } = useData();
+
+const activeMode = ref<AppearanceMode>('auto');
+let mediaQuery: MediaQueryList | null = null;
+
+const title = computed(() => {
+  if (props.locale === 'zh-CN') {
+    if (activeMode.value === 'auto') {
+      return isDark.value ? '当前跟随系统（深色），点击切换为浅色' : '当前跟随系统（浅色），点击切换为深色';
+    }
+
+    return isDark.value ? '当前手动深色，点击切换为浅色' : '当前手动浅色，点击切换为深色';
+  }
+
+  if (activeMode.value === 'auto') {
+    return isDark.value ? 'Following system (dark now), click to switch to light' : 'Following system (light now), click to switch to dark';
+  }
+
+  return isDark.value ? 'Manual dark, click to switch to light' : 'Manual light, click to switch to dark';
+});
+
+function resolveIsDark(mode: AppearanceMode) {
+  if (mode === 'dark') {
+    return true;
+  }
+
+  if (mode === 'light') {
+    return false;
+  }
+
+  return mediaQuery?.matches ?? false;
+}
+
+function applyMode(mode: AppearanceMode) {
+  activeMode.value = mode;
+  const nextIsDark = resolveIsDark(mode);
+
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('dark', nextIsDark);
+  }
+
+  isDark.value = nextIsDark;
+}
+
+function handleSystemThemeChange() {
+  if (activeMode.value === 'auto') {
+    applyMode('auto');
+  }
+}
+
+function toggleAppearance() {
+  applyMode(resolveIsDark(activeMode.value) ? 'light' : 'dark');
+}
+
+onMounted(() => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  mediaQuery.addEventListener('change', handleSystemThemeChange);
+  applyMode(activeMode.value);
+});
+
+onBeforeUnmount(() => {
+  mediaQuery?.removeEventListener('change', handleSystemThemeChange);
 });
 </script>
 
@@ -21,7 +83,7 @@ watchPostEffect(() => {
     class="tx-home-icon-button inline-flex h-[38px] w-[38px] items-center justify-center rounded-full border border-slate-300/70 bg-white/70 text-slate-700 transition hover:border-rose-400 hover:text-rose-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
     :aria-label="title"
     :title="title"
-    @click="toggleAppearance()"
+    @click="toggleAppearance"
   >
     <svg v-if="isDark" viewBox="0 0 24 24" aria-hidden="true" class="size-[18px]" fill="currentColor">
       <path d="M21 14.2A8.9 8.9 0 1 1 9.8 3a.75.75 0 0 1 .76 1.04 7.1 7.1 0 0 0 9.4 9.4A.75.75 0 0 1 21 14.2Z" />
