@@ -33,7 +33,7 @@ jobs:
 
       - name: Build site
         env:
-          VITE_BASE_PATH: /tx-5dr-site/
+          VITE_BASE_PATH: /
         run: npm run build
 
       - name: Configure Pages
