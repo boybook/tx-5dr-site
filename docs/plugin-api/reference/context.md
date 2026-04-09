@@ -11,7 +11,7 @@
 ## PluginContext
 
 - Kind: `interface`
-- Source: [context.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/context.ts)
+- Source: [context.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/context.ts)
 
 Runtime services exposed to a plugin instance.
 

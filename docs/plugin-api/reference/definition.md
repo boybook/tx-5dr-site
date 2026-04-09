@@ -11,7 +11,7 @@
 ## PluginDefinition
 
 - Kind: `interface`
-- Source: [definition.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/definition.ts)
+- Source: [definition.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/definition.ts)
 
 Describes a TX-5DR plugin module.
 

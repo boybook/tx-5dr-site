@@ -47,10 +47,26 @@ const wikiSidebar = [
 
 const pluginApiSidebar = [
   {
-    text: '开始开发',
+    text: '总览',
     items: [
       { text: '插件 API 入口', link: '/plugin-api/' },
+      { text: '学习路径', link: '/plugin-api/learning-path' },
       { text: '快速开始', link: '/plugin-api/getting-started' },
+    ],
+  },
+  {
+    text: '教程',
+    items: [
+      { text: '第 1 章：Hello Utility', link: '/plugin-api/tutorial-hello-utility' },
+      { text: '第 2 章：过滤与评分', link: '/plugin-api/tutorial-filter-and-score' },
+      { text: '第 3 章：守候与自动起呼', link: '/plugin-api/tutorial-watcher-autocall' },
+      { text: '第 4 章：面板、按钮与定时器', link: '/plugin-api/tutorial-ui-actions-and-panels' },
+      { text: '第 5 章：StrategyRuntime', link: '/plugin-api/tutorial-strategy-runtime' },
+    ],
+  },
+  {
+    text: '补充资料',
+    items: [
       { text: '心智模型', link: '/plugin-api/concepts' },
       { text: '示例与约定', link: '/plugin-api/examples' },
     ],

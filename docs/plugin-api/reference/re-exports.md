@@ -8,7 +8,7 @@
 
 - `./definition.js`: `PluginDefinition`
 - `./context.js`: `PluginContext`
-- `./hooks.js`: `PluginHooks`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`
+- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`
 - `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`
 - `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`BandAccess`、`UIBridge`
 

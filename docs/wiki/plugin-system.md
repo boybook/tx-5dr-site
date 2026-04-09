@@ -32,7 +32,29 @@
 - 可多个同时启用
 - 常用于候选过滤、候选打分、广播监听、面板推送和定时任务
 
-内置 `snr-filter`、`worked-station-bias`、`qso-session-inspector` 和 `heartbeat-demo` 都属于该类。
+其中比较典型的两类规范入口是：
+
+- `onScoreCandidates(...)`：用于“偏好排序型”插件，例如已通联偏置，只调整候选分数，不直接控制呼叫
+- `onAutoCallCandidate(...)`：用于“守候型”插件，返回自动起呼提议，由 Host 统一仲裁
+
+内置 `snr-filter`、`worked-station-bias`、`qso-session-inspector`、`heartbeat-demo`、`watched-callsign-autocall` 和 `watched-novelty-autocall` 都属于该类。
+
+### 自动起呼提议（Autocall Proposal）
+
+对于“守候型”工具插件，当前推荐实现 `onAutoCallCandidate(slotInfo, messages, ctx)`，返回一个自动起呼提议，而不是在 `onSlotStart` / `onDecode` 中直接调用 `ctx.operator.call(...)`。
+
+其设计目标是让多个自动起呼插件可以稳定组合：
+
+- Host 会收集所有活跃 utility 插件的提议
+- 统一按 `priority`、命中消息顺序、插件名稳定排序进行仲裁
+- 仲裁完成后，最多只执行一次统一的 `requestCall(...)`
+
+内置参考：
+
+- `watched-callsign-autocall`：显式守候呼号，默认优先级更高
+- `watched-novelty-autocall`：守候新 DXCC / 新网格 / 新呼号，适合和其他插件组合
+
+这套 proposal 机制是当前推荐的新写法；旧插件仍可兼容直接 `call()`，但不再建议作为新插件的默认实现方式。
 
 ## 插件接口边界
 

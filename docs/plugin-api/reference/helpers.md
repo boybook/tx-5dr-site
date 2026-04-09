@@ -18,7 +18,7 @@
 ## KVStore
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Simple persistent key-value store exposed to plugins.
 
@@ -97,7 +97,7 @@ getAll(): Record<string, unknown>;
 ## PluginLogger
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Structured logger dedicated to a plugin instance.
 
@@ -161,7 +161,7 @@ error(message: string, error?: unknown): void;
 ## PluginTimers
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Host-managed named timers for plugin code.
 
@@ -220,7 +220,7 @@ clearAll(): void;
 ## OperatorControl
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Control surface for the active operator instance.
 
@@ -473,7 +473,7 @@ notifyStateChanged(state: string): void;
 ## RadioControl
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Read/write access to radio state that is safe for plugins.
 
@@ -543,7 +543,7 @@ setFrequency(freq: number): Promise<void>;
 ## LogbookAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Read-only helpers backed by the station logbook.
 
@@ -592,7 +592,7 @@ hasWorkedGrid(grid: string): Promise<boolean>;
 ## BandAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Read-only access to the current decode environment.
 
@@ -636,7 +636,7 @@ getLatestSlotPack(): SlotPack | null;
 ## UIBridge
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Minimal bridge for sending structured data to plugin panels in the frontend.
 

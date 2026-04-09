@@ -10,12 +10,13 @@
 - [StrategyDecision](#strategydecision)
 - [StrategyDecisionMeta](#strategydecisionmeta)
 - [LastMessageInfo](#lastmessageinfo)
+- [AutoCallProposal](#autocallproposal)
 - [PluginHooks](#pluginhooks)
 
 ## ScoredCandidate
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Candidate message plus an accumulated ranking score.
 
@@ -54,7 +55,7 @@ score: number;
 ## StrategyDecision
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Decision returned from {@link StrategyRuntime.decide}.
 
@@ -84,7 +85,7 @@ stop?: boolean;
 ## StrategyDecisionMeta
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Metadata describing why a strategy decision is being evaluated.
 
@@ -119,7 +120,7 @@ isReDecision?: boolean;
 ## LastMessageInfo
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Pairing of a received frame and its slot metadata.
 
@@ -156,10 +157,64 @@ Slot timing metadata for the frame.
 slotInfo: SlotInfo;
 
 ```
+## AutoCallProposal
+
+- Kind: `interface`
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+
+Declarative automatic-call request proposed by a utility plugin.
+
+Utility plugins should prefer returning this shape from
+{@link PluginHooks.onAutoCallCandidate} instead of directly invoking
+`ctx.operator.call(...)` inside broadcast hooks. This lets the host arbitrate
+between multiple simultaneous auto-call plugins in a deterministic way.
+
+```ts
+export interface AutoCallProposal {
+  /** Target callsign that should be called next. */
+  callsign: string;
+  /** Optional arbitration priority; higher values win. */
+  priority?: number;
+  /** Optional triggering frame context used to preserve slot alignment. */
+  lastMessage?: LastMessageInfo;
+}
+```
+
+## 成员
+
+### callsign
+
+Target callsign that should be called next.
+
+```ts
+
+callsign: string;
+
+```
+
+### priority
+
+Optional arbitration priority; higher values win.
+
+```ts
+
+priority?: number;
+
+```
+
+### lastMessage
+
+Optional triggering frame context used to preserve slot alignment.
+
+```ts
+
+lastMessage?: LastMessageInfo;
+
+```
 ## PluginHooks
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Hook collection implemented by a plugin.
 
@@ -173,6 +228,19 @@ decode pipeline, so expensive work should be throttled, cached or deferred.
 
 ```ts
 export interface PluginHooks {
+  /**
+   * Proposes an automatic call target while the operator is idle.
+   *
+   * The host collects proposals from all active utility plugins, resolves
+   * conflicts deterministically, and then triggers at most one host-managed
+   * `requestCall(...)` action for the winning proposal.
+   */
+  onAutoCallCandidate?(
+    slotInfo: SlotInfo,
+    messages: ParsedFT8Message[],
+    ctx: PluginContext,
+  ): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
+
   /**
    * Filters candidate target messages before the scoring phase.
    *
@@ -247,6 +315,24 @@ export interface PluginHooks {
 ```
 
 ## 成员
+
+### onAutoCallCandidate
+
+Proposes an automatic call target while the operator is idle.
+
+The host collects proposals from all active utility plugins, resolves
+conflicts deterministically, and then triggers at most one host-managed
+`requestCall(...)` action for the winning proposal.
+
+```ts
+
+onAutoCallCandidate?(
+    slotInfo: SlotInfo,
+    messages: ParsedFT8Message[],
+    ctx: PluginContext,
+  ): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
+
+```
 
 ### onFilterCandidates
 

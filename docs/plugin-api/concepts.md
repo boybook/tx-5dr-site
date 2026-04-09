@@ -39,7 +39,7 @@
 
 ## PluginHooks
 
-`PluginHooks` 用于处理宿主发出的事件。当前主要分为两类：
+`PluginHooks` 用于处理宿主发出的事件。当前主要分为三类：
 
 ### Pipeline Hooks
 
@@ -47,6 +47,20 @@
 - `onScoreCandidates`
 
 这两个入口会改变候选消息列表或排序结果。
+
+其中 `onScoreCandidates` 适合“偏好排序型”插件：插件通过调整 `candidate.score` 表达偏好，而不是直接调用呼叫控制。内置 `worked-station-bias` 就是标准示例。
+
+### Autocall Proposal Hook
+
+- `onAutoCallCandidate`
+
+这个入口适用于“守候型” utility 插件。它不直接执行呼叫，而是向 Host 返回一个 declarative proposal：
+
+- `callsign`：建议自动起呼的目标呼号
+- `priority`：提议优先级，值越大越优先
+- `lastMessage`：触发该提议的具体消息及其 slot 元数据
+
+Host 会统一收集并仲裁多个 proposal，再最多执行一次真正的 `requestCall(...)`。这使得多个自动起呼插件可以稳定组合，而不会因为广播 Hook 的执行时序产生竞态。
 
 ### Broadcast Hooks
 
@@ -60,6 +74,8 @@
 - `onConfigChange`
 
 这类入口主要用于监听事件、记录状态、触发定时任务或更新面板。
+
+对于新的自动起呼插件，推荐优先使用 `onAutoCallCandidate`；`onSlotStart` / `onDecode` 更适合做观察、统计、缓存和预处理，而不是直接抢占自动起呼。
 
 ## StrategyRuntime
 

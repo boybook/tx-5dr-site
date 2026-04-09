@@ -15,7 +15,7 @@
 ## StrategyRuntimeSlot
 
 - Kind: `type`
-- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/runtime.ts)
+- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/runtime.ts)
 
 Logical FT8 transmit slot identifiers used by the built-in automation model.
 
@@ -28,7 +28,7 @@ export type StrategyRuntimeSlot = 'TX1' | 'TX2' | 'TX3' | 'TX4' | 'TX5' | 'TX6';
 ## StrategyRuntimeContext
 
 - Kind: `interface`
-- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/runtime.ts)
+- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/runtime.ts)
 
 Mutable strategy context maintained by the host/runtime pair.
 
@@ -105,7 +105,7 @@ actualFrequency?: number;
 ## StrategyRuntimeSnapshot
 
 - Kind: `interface`
-- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/runtime.ts)
+- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/runtime.ts)
 
 Serializable snapshot of the strategy runtime.
 
@@ -169,7 +169,7 @@ availableSlots?: string[];
 ## StrategyRuntimeSlotContentUpdate
 
 - Kind: `interface`
-- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/runtime.ts)
+- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/runtime.ts)
 
 Describes a slot text mutation emitted by the strategy runtime.
 
@@ -206,7 +206,7 @@ content: string;
 ## StrategyRuntime
 
 - Kind: `interface`
-- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/feature/plugin-system/packages/plugin-api/src/runtime.ts)
+- Source: [runtime.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/runtime.ts)
 
 Active controller for a `strategy` plugin.
 

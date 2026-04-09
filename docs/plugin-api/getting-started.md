@@ -36,12 +36,97 @@ export default plugin;
 - `hooks.onDecode`：接入解码事件
 - `ctx.log`：调用宿主日志接口
 
+## 守候型插件最小示例
+
+如果你要做“命中目标后自动起呼”的插件，当前推荐从 `onAutoCallCandidate(...)` 开始，而不是直接在 `onSlotStart` / `onDecode` 中调用 `ctx.operator.call(...)`：
+
+```ts
+import type { PluginDefinition } from '@tx5dr/plugin-api';
+
+const plugin: PluginDefinition = {
+  name: 'my-watcher',
+  version: '1.0.0',
+  type: 'utility',
+  hooks: {
+    onAutoCallCandidate(slotInfo, messages) {
+      const matched = messages.find((message) => message.rawMessage.startsWith('CQ JA1'));
+      if (!matched) {
+        return null;
+      }
+
+      return {
+        callsign: 'JA1XXX',
+        priority: 80,
+        lastMessage: {
+          message: {
+            message: matched.rawMessage,
+            snr: matched.snr,
+            dt: matched.dt,
+            freq: matched.df,
+          },
+          slotInfo,
+        },
+      };
+    },
+  },
+};
+
+export default plugin;
+```
+
+这个写法的好处是：
+
+- 可与其他自动起呼插件稳定组合
+- 由 Host 统一仲裁优先级
+- 最终只会执行一次真正的自动起呼
+
+## 偏好排序型插件最小示例
+
+如果你要做“已通联偏置”“稀有台加分”这类插件，推荐使用 `onScoreCandidates(...)`：
+
+```ts
+import type { PluginDefinition } from '@tx5dr/plugin-api';
+
+const plugin: PluginDefinition = {
+  name: 'worked-bias-demo',
+  version: '1.0.0',
+  type: 'utility',
+  hooks: {
+    async onScoreCandidates(candidates, ctx) {
+      return Promise.all(candidates.map(async (candidate) => {
+        const callsign = 'senderCallsign' in candidate.message
+          ? candidate.message.senderCallsign
+          : '';
+        if (!callsign) {
+          return candidate;
+        }
+
+        const hasWorked = await ctx.logbook.hasWorked(callsign);
+        return {
+          ...candidate,
+          score: candidate.score + (hasWorked ? -10 : 20),
+        };
+      }));
+    },
+  },
+};
+
+export default plugin;
+```
+
+这个写法适合表达“更倾向谁”，而不是“强制选谁”：
+
+- 多个评分插件会自然叠加
+- 最终目标仍由 Host 和当前活跃策略决定
+- 如果规则属于硬过滤，应改用 `onFilterCandidates(...)`
+
 ## 开发顺序
 
 ### 第一步：确定插件类型
 
 - 需要筛选、打分、面板数据或事件监听时，通常使用 `utility`
 - 需要接管自动化运行时时，通常使用 `strategy`
+- 需要“守候命中后自动起呼”时，也通常使用 `utility`，再配合 `onAutoCallCandidate`
 
 ### 第二步：确认依赖接口
 
@@ -65,4 +150,4 @@ Reference 页面由以下命令生成：
 npm run docs:sync-plugin-api
 ```
 
-该命令会从主项目 `feature/plugin-system` 分支的 `packages/plugin-api/src` 读取接口定义并生成 Markdown。
+该命令会从主项目源码 checkout 的 `packages/plugin-api/src` 读取接口定义并生成 Markdown。
