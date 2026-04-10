@@ -2,7 +2,22 @@
 
 镜像：[`boybook/tx-5dr:latest`](https://hub.docker.com/r/boybook/tx-5dr)
 
-Docker 部署适合已有 `docker compose` 基础设施的环境。TX-5DR 的 Docker 方案包含三个容器：主应用、LiveKit 实时音频服务和一次性凭据初始化容器。
+Docker 部署适合已有 `docker compose` 基础设施的环境。
+
+## 两种运行模式
+
+TX-5DR 的语音传输支持两种模式，你可以根据自己的需求选择：
+
+| | 独立模式（默认） | LiveKit 模式 |
+|--|:---:|:---:|
+| **容器数量** | 1 个 (`tx5dr`) | 3 个 (`tx5dr` + `livekit` + `livekit-init`) |
+| **语音传输** | WebSocket 音频（ws-compat） | WebRTC（LiveKit） |
+| **典型延迟** | 50–100 ms | 20–50 ms |
+| **部署复杂度** | 一条命令启动 | 需要额外端口和 UDP 放通 |
+| **FT8 解码 / 电台控制** | 完全可用 | 完全可用 |
+| **语音监听 / 发射** | 完全可用 | 完全可用 |
+
+**简单来说**：如果你不确定选哪个，先用独立模式。所有功能完全可用，之后随时可以加装 LiveKit 获得更低延迟。
 
 ## 前置要求
 
@@ -19,9 +34,9 @@ ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null     # 串口设备
 ls -l /dev/serial/by-id/ 2>/dev/null            # 稳定设备名
 ```
 
-## 快速开始
+## 快速开始（独立模式）
 
-仓库根目录的 [`docker-compose.yml`](https://github.com/boybook/tx-5dr/blob/main/docker-compose.yml) 是基线配置。下载或编写好 Compose 文件后，按以下步骤启动：
+仓库根目录的 [`docker-compose.yml`](https://github.com/boybook/tx-5dr/blob/main/docker-compose.yml) 是基线配置。下载或编写好 Compose 文件后：
 
 ```bash
 # 1. 创建数据目录
@@ -30,36 +45,63 @@ mkdir -p data/{config,plugins,logs,cache,realtime}
 # 2. 拉取镜像
 docker compose pull
 
-# 3. 生成 LiveKit 凭据（仅首次需要，后续自动复用）
-docker compose run --rm livekit-init
+# 3. 启动
+docker compose up -d
 
-# 4. 启动 LiveKit
-docker compose up -d livekit
-docker compose logs -f livekit    # 确认正常后 Ctrl-C
-
-# 5. 启动主应用
-docker compose up -d tx5dr
-docker compose logs -f tx5dr      # 确认 nginx + tx5dr-server 均 RUNNING 后 Ctrl-C
-
-# 6. 获取管理员令牌
+# 4. 获取管理员令牌
 docker exec tx5dr cat /app/data/config/.admin-token
 ```
 
-浏览器访问 `http://<宿主机IP>:8076`，使用管理员令牌登录。
+浏览器访问 `http://<宿主机IP>:8076`，使用管理员令牌登录。此时 TX-5DR 已完全可用。
 
-::: tip 为什么要分阶段启动？
-首次部署时，`livekit-init` 失败、LiveKit 端口冲突、主应用启动异常是三类独立的问题。分阶段启动可以逐个定位，而直接 `docker compose up -d` 会把所有问题混在一起。
+## 启用 LiveKit（可选）
+
+如果你希望获得更低延迟的语音体验，可以额外启用 LiveKit。LiveKit 通过 WebRTC 传输音频，延迟通常可以降低到 20–50 ms，适合对语音实时性要求较高的场景。
+
+```bash
+# 启动全部服务（含 LiveKit）
+docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit.yml up -d
+```
+
+首次运行时，`livekit-init` 会自动生成凭据到 `./data/realtime/`。主应用启动后会自动检测 LiveKit 是否可用，并在可用时自动切换到 LiveKit 传输。
+
+::: tip 分阶段排查
+如果 LiveKit 启动遇到问题，可以分步执行以便定位：
+```bash
+docker compose --profile livekit run --rm livekit-init       # 生成凭据
+docker compose --profile livekit up -d livekit               # 启动 LiveKit
+docker compose logs -f livekit                               # 确认正常后 Ctrl-C
+docker compose -f docker-compose.yml -f docker-compose.livekit.yml up -d tx5dr
+```
 :::
+
+### 从独立模式切换到 LiveKit 模式
+
+如果你已经在独立模式下运行，只需停止后以 LiveKit 模式重新启动：
+
+```bash
+docker compose down
+docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit.yml up -d
+```
+
+配置和数据不受影响。
+
+### 从 LiveKit 模式切回独立模式
+
+```bash
+docker compose down
+docker compose up -d
+```
 
 ## Compose 配置说明
 
-### 三个服务
+### 服务
 
-| 服务 | 作用 | 生命周期 |
-|------|------|---------|
-| `livekit-init` | 生成 LiveKit 凭据和配置到 `./data/realtime/` | 一次性运行后退出 |
-| `livekit` | LiveKit 信令 + 媒体服务器 | 持续运行 |
-| `tx5dr` | 主应用（nginx 反代 + tx5dr-server，由 supervisor 管理） | 持续运行 |
+| 服务 | Profile | 作用 | 生命周期 |
+|------|---------|------|---------|
+| `tx5dr` | *（始终启动）* | 主应用（nginx 反代 + tx5dr-server，supervisor 管理） | 持续运行 |
+| `livekit-init` | `livekit` | 生成 LiveKit 凭据和配置到 `./data/realtime/` | 一次性运行后退出 |
+| `livekit` | `livekit` | LiveKit 信令 + 媒体服务器 | 持续运行 |
 
 ### 持久化目录
 
@@ -71,7 +113,7 @@ docker exec tx5dr cat /app/data/config/.admin-token
 | `./data/plugins` | 用户插件 |
 | `./data/logs` | 应用日志 |
 | `./data/cache` | 缓存数据 |
-| `./data/realtime` | LiveKit 凭据和配置（由 livekit-init 生成） |
+| `./data/realtime` | LiveKit 凭据和配置（由 livekit-init 生成，仅 LiveKit 模式使用） |
 
 ## 设备映射
 
@@ -139,6 +181,8 @@ group_add:
 
 ## LiveKit 网络
 
+> 以下内容仅在启用 LiveKit 时适用。独立模式无需关心这些端口。
+
 | 端口 | 协议 | 用途 |
 |------|------|------|
 | 7881 | TCP | RTC 媒体传输 |
@@ -151,8 +195,11 @@ group_add:
 ## 更新
 
 ```bash
-docker compose pull
-docker compose up -d
+# 独立模式
+docker compose pull && docker compose up -d
+
+# LiveKit 模式
+docker compose pull && docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit.yml up -d
 ```
 
 ::: warning
