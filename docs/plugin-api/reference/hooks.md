@@ -11,6 +11,8 @@
 - [StrategyDecisionMeta](#strategydecisionmeta)
 - [LastMessageInfo](#lastmessageinfo)
 - [AutoCallProposal](#autocallproposal)
+- [AutoCallExecutionRequest](#autocallexecutionrequest)
+- [AutoCallExecutionPlan](#autocallexecutionplan)
 - [PluginHooks](#pluginhooks)
 
 ## ScoredCandidate
@@ -66,6 +68,12 @@ control signals without breaking existing plugins.
 export interface StrategyDecision {
   /**
    * Requests that the host stop transmitting and leave the active QSO flow.
+   *
+   * During a late re-decision (`meta.isReDecision === true`), the host treats
+   * this as an immediate abort request for the operator's in-flight
+   * transmission. In other words, `stop: true` means both:
+   * - stop the operator's automation/runtime state; and
+   * - interrupt the operator's current audio/PTT contribution right away.
    */
   stop?: boolean;
 }
@@ -76,6 +84,10 @@ export interface StrategyDecision {
 ### stop
 
 Requests that the host stop transmitting and leave the active QSO flow.
+
+When `StrategyRuntime.decide(..., { isReDecision: true })` returns `stop: true`,
+the host also immediately interrupts the operator's current live
+audio/PTT contribution instead of waiting for the current TX period to finish.
 
 ```ts
 
@@ -211,6 +223,98 @@ Optional triggering frame context used to preserve slot alignment.
 lastMessage?: LastMessageInfo;
 
 ```
+## AutoCallExecutionRequest
+
+- Kind: `interface`
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+
+Immutable metadata about the automatic-call proposal that won arbitration.
+
+```ts
+export interface AutoCallExecutionRequest {
+  /** Plugin name that produced the winning proposal. */
+  sourcePluginName: string;
+  /** Target callsign chosen by the arbitration step. */
+  callsign: string;
+  /** Slot that is currently being processed when the autocall starts. */
+  slotInfo: SlotInfo;
+  /** Optional triggering frame context preserved from the proposal stage. */
+  lastMessage?: LastMessageInfo;
+}
+```
+
+## 成员
+
+### sourcePluginName
+
+Plugin name that produced the winning proposal.
+
+```ts
+
+sourcePluginName: string;
+
+```
+
+### callsign
+
+Target callsign chosen by the arbitration step.
+
+```ts
+
+callsign: string;
+
+```
+
+### slotInfo
+
+Slot that is currently being processed when the autocall starts.
+
+```ts
+
+slotInfo: SlotInfo;
+
+```
+
+### lastMessage
+
+Optional triggering frame context preserved from the proposal stage.
+
+```ts
+
+lastMessage?: LastMessageInfo;
+
+```
+## AutoCallExecutionPlan
+
+- Kind: `interface`
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+
+Host-managed execution plan for an accepted automatic-call proposal.
+
+Utility plugins may refine this plan in
+{@link PluginHooks.onConfigureAutoCallExecution}. The host then applies the
+merged plan before calling the active strategy runtime.
+
+```ts
+export interface AutoCallExecutionPlan {
+  /**
+   * Optional transmit audio offset to apply before starting the automatic call.
+   */
+  audioFrequency?: number;
+}
+```
+
+## 成员
+
+### audioFrequency
+
+Optional transmit audio offset to apply before starting the automatic call.
+
+```ts
+
+audioFrequency?: number;
+
+```
 ## PluginHooks
 
 - Kind: `interface`
@@ -240,6 +344,20 @@ export interface PluginHooks {
     messages: ParsedFT8Message[],
     ctx: PluginContext,
   ): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
+
+  /**
+   * Refines how an accepted automatic-call proposal should be executed.
+   *
+   * The host runs this as a utility-plugin pipeline after proposal
+   * arbitration. Each plugin receives the current execution plan and may return
+   * an updated copy. This is the preferred place to centralize execution
+   * policies such as pre-call frequency selection.
+   */
+  onConfigureAutoCallExecution?(
+    request: AutoCallExecutionRequest,
+    plan: AutoCallExecutionPlan,
+    ctx: PluginContext,
+  ): AutoCallExecutionPlan | null | undefined | Promise<AutoCallExecutionPlan | null | undefined>;
 
   /**
    * Filters candidate target messages before the scoring phase.
@@ -331,6 +449,25 @@ onAutoCallCandidate?(
     messages: ParsedFT8Message[],
     ctx: PluginContext,
   ): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
+
+```
+
+### onConfigureAutoCallExecution
+
+Refines how an accepted automatic-call proposal should be executed.
+
+The host runs this as a utility-plugin pipeline after proposal
+arbitration. Each plugin receives the current execution plan and may return
+an updated copy. This is the preferred place to centralize execution
+policies such as pre-call frequency selection.
+
+```ts
+
+onConfigureAutoCallExecution?(
+    request: AutoCallExecutionRequest,
+    plan: AutoCallExecutionPlan,
+    ctx: PluginContext,
+  ): AutoCallExecutionPlan | null | undefined | Promise<AutoCallExecutionPlan | null | undefined>;
 
 ```
 

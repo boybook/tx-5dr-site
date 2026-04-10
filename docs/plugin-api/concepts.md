@@ -62,6 +62,14 @@
 
 Host 会统一收集并仲裁多个 proposal，再最多执行一次真正的 `requestCall(...)`。这使得多个自动起呼插件可以稳定组合，而不会因为广播 Hook 的执行时序产生竞态。
 
+这里的 `lastMessage.slotInfo` 必须表示触发消息所属的真实 RX 时隙，因为后续自动起呼会依赖它去选择相反的回复周期。
+
+### Autocall Execution Hook
+
+- `onConfigureAutoCallExecution`
+
+这个入口位于 proposal 仲裁之后、真正 `requestCall(...)` 之前，用于描述“命中后怎么执行”。当前内置 `autocall-controls` 就使用它来统一控制自动起呼前的空闲频率选择。
+
 ### Broadcast Hooks
 
 - `onSlotStart`

@@ -106,6 +106,20 @@ export default plugin;
 - 让 Host 可以在同优先级下按命中消息顺序稳定排序
 - 更好保留触发时的 slot 上下文
 
+更关键的是，`lastMessage.slotInfo` 应表达**触发消息真正所属的 RX 时隙**。自动起呼后续会依据这个时隙去推导应该在哪个相反周期回复，因此它不能只是“当前 hook 正在处理的时隙参数”。如果插件只能拿到命中的 `ParsedFT8Message`，Host 也会尽量根据消息自己的 `timestamp/slotId` 恢复正确来源时隙，但插件若能明确提供，语义会更清晰。
+
+## proposal 之后还有什么
+
+proposal 被 Host 接受后，还会继续进入 `onConfigureAutoCallExecution(request, plan, ctx)` 这条执行策略管线。
+
+这一层适合放：
+
+- 自动起呼前是否先换到更空闲的音频频率
+- 多个自动起呼插件共享的执行策略
+- 其他不属于“目标发现”的统一执行行为
+
+例如内置 `autocall-controls` 就会在这里调用 `ctx.band.findIdleTransmitFrequency(...)`，复用宿主已有的空闲频率选择逻辑。
+
 ## 插件内部自己仍要判断什么
 
 proposal 机制不是把业务判断都交给 Host。插件内部仍然应该自己负责：

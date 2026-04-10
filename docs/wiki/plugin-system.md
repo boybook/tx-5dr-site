@@ -56,6 +56,19 @@
 
 这套 proposal 机制是当前推荐的新写法；旧插件仍可兼容直接 `call()`，但不再建议作为新插件的默认实现方式。
 
+这里最重要的细节之一是：`lastMessage.slotInfo` 必须表示**触发消息真正所属的 RX 时隙**，而不是简单复用当前 hook 被调用时的时隙参数。后续自动起呼会根据这条消息所属时隙去推导下一次发射周期；如果时隙语义写错，就可能出现同一时隙误发。
+
+### 自动起呼执行策略（Autocall Execution）
+
+proposal 胜出后，Host 还会继续调用 `onConfigureAutoCallExecution(request, plan, ctx)`。这个 hook 用来描述“命中后如何执行”，而不是“如何发现目标”。
+
+当前内置 `autocall-controls` 就是通过这个 hook 提供共享执行策略，例如：
+
+- 是否在自动起呼前先选择更空闲的发射音频频率
+- 后续不同自动起呼插件之间如何共享同一套执行层策略
+
+如果插件需要复用系统内已有的空闲频率选择算法，应使用 `ctx.band.findIdleTransmitFrequency(...)`，而不是自己重写一套频谱占用分析逻辑。
+
 ## 插件接口边界
 
 外部插件开发应优先依赖 `@tx5dr/plugin-api`。当前公共接口包括：

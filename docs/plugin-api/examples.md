@@ -27,7 +27,7 @@
 
 - 返回 proposal，而不是在广播 Hook 中直接 `ctx.operator.call(...)`
 - `priority` 用于表达插件意图强弱
-- `lastMessage` 建议始终带上，方便 Host 在同优先级下按命中消息顺序稳定仲裁
+- `lastMessage` 建议始终带上，方便 Host 在同优先级下按命中消息顺序稳定仲裁，并据此推导正确的回复时隙
 - 插件内部仍应自己判断 trigger mode、是否纯待机、是否被其他操作员占用、是否满足自己的黑白名单规则
 
 当前内置参考：

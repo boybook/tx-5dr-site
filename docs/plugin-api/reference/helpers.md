@@ -12,6 +12,7 @@
 - [OperatorControl](#operatorcontrol)
 - [RadioControl](#radiocontrol)
 - [LogbookAccess](#logbookaccess)
+- [IdleTransmitFrequencyOptions](#idletransmitfrequencyoptions)
 - [BandAccess](#bandaccess)
 - [UIBridge](#uibridge)
 
@@ -589,6 +590,67 @@ Checks whether the Maidenhead grid has already been worked.
 hasWorkedGrid(grid: string): Promise<boolean>;
 
 ```
+## IdleTransmitFrequencyOptions
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Optional constraints used when asking the host for a quieter transmit offset.
+
+```ts
+export interface IdleTransmitFrequencyOptions {
+  /** Slot identifier to analyze. Defaults to the latest available slot when omitted. */
+  slotId?: string;
+  /** Inclusive lower bound in Hz within the passband. */
+  minHz?: number;
+  /** Inclusive upper bound in Hz within the passband. */
+  maxHz?: number;
+  /** Guard bandwidth in Hz to keep around occupied frequencies. */
+  guardHz?: number;
+}
+```
+
+## 成员
+
+### slotId
+
+Slot identifier to analyze. Defaults to the latest available slot when omitted.
+
+```ts
+
+slotId?: string;
+
+```
+
+### minHz
+
+Inclusive lower bound in Hz within the passband.
+
+```ts
+
+minHz?: number;
+
+```
+
+### maxHz
+
+Inclusive upper bound in Hz within the passband.
+
+```ts
+
+maxHz?: number;
+
+```
+
+### guardHz
+
+Guard bandwidth in Hz to keep around occupied frequencies.
+
+```ts
+
+guardHz?: number;
+
+```
 ## BandAccess
 
 - Kind: `interface`
@@ -608,6 +670,15 @@ export interface BandAccess {
    * processed yet.
    */
   getLatestSlotPack(): SlotPack | null;
+
+  /**
+   * Asks the host to recommend a quieter transmit audio offset for the current
+   * decode environment.
+   *
+   * Returns `null` when the host cannot evaluate the slot or when no suitable
+   * idle window is found.
+   */
+  findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null;
 }
 ```
 
@@ -631,6 +702,20 @@ processed yet.
 ```ts
 
 getLatestSlotPack(): SlotPack | null;
+
+```
+
+### findIdleTransmitFrequency
+
+Asks the host to recommend a quieter transmit audio offset for the current
+decode environment.
+
+Returns `null` when the host cannot evaluate the slot or when no suitable
+idle window is found.
+
+```ts
+
+findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null;
 
 ```
 ## UIBridge

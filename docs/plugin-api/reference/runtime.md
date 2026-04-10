@@ -219,7 +219,9 @@ export interface StrategyRuntime {
   /**
    * Re-evaluates the current automation state using the latest decoded messages.
    *
-   * Return `{ stop: true }` to ask the host to stop transmitting. Any other
+   * Return `{ stop: true }` to ask the host to stop transmitting. During a
+   * late re-decision (`meta.isReDecision === true`), the host also immediately
+   * aborts the operator's current live transmission contribution. Any other
    * decision fields can be added in future API revisions, so plugins should
    * return an object rather than a bare boolean.
    */
@@ -287,7 +289,9 @@ export interface StrategyRuntime {
 
 Re-evaluates the current automation state using the latest decoded messages.
 
-Return `{ stop: true }` to ask the host to stop transmitting. Any other
+Return `{ stop: true }` to ask the host to stop transmitting. During a
+late re-decision (`meta.isReDecision === true`), the host also immediately
+aborts the operator's current live transmission contribution. Any other
 decision fields can be added in future API revisions, so plugins should
 return an object rather than a bare boolean.
 

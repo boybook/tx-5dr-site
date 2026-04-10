@@ -19,13 +19,42 @@
 
 ## Docker 命令
 
+### 启动（推荐分阶段）
+
 ```bash
-docker compose up -d
-docker compose logs -f
-docker exec tx5dr cat /app/data/config/.admin-token
+mkdir -p data/{config,plugins,logs,cache,realtime}
+docker compose pull
+docker compose run --rm livekit-init    # 首次生成 LiveKit 凭据
+docker compose up -d livekit
+docker compose up -d tx5dr
 ```
 
-这些命令分别对应容器启动、日志查看和管理员令牌读取。
+### 日常操作
+
+| 命令 | 说明 |
+| --- | --- |
+| `docker compose logs -f tx5dr` | 查看主应用日志 |
+| `docker compose logs -f livekit` | 查看 LiveKit 日志 |
+| `docker exec tx5dr cat /app/data/config/.admin-token` | 获取管理员令牌 |
+| `docker compose restart tx5dr` | 重启主应用 |
+
+### 更新
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### 容器内设备检查
+
+```bash
+# 串口设备
+docker exec tx5dr ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+# 音频设备
+docker exec tx5dr ls -l /dev/snd/
+```
+
+详细配置见 [Docker 部署](../guide/docker)。
 
 ## 开发命令
 

@@ -76,6 +76,10 @@ export default plugin;
 
 这个写法的好处是：
 
+- 自动起呼会先进入 Host 的 proposal 仲裁，而不是谁先跑到 Hook 就谁抢到
+- `lastMessage` 能帮助 Host 保留触发消息的真实时隙语义，避免同一时隙误发
+- proposal 胜出后，还可以继续通过 `onConfigureAutoCallExecution(...)` 叠加执行策略，例如先调用 `ctx.band.findIdleTransmitFrequency(...)` 选择更空闲的发射音频频率
+
 - 可与其他自动起呼插件稳定组合
 - 由 Host 统一仲裁优先级
 - 最终只会执行一次真正的自动起呼

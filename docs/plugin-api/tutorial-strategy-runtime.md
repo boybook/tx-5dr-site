@@ -88,6 +88,13 @@ export default plugin;
 
 > “收到这一批解码后，我当前这场 QSO 应该怎么走？”
 
+这里有一个很关键的宿主语义：
+
+- 普通决策里返回 `{ stop: true }`，表示停止这个 operator 的自动化
+- 如果 `meta?.isReDecision === true`，同样的 `{ stop: true }` 还会让 Host 立即中断当前正在播放/PTT 的那次发射
+
+这意味着 strategy 不需要自己偷偷调用别的宿主内部接口来“强停当前发射”；只要显式返回 `stop: true` 即可。
+
 ### `getTransmitText()`
 
 Host 在发射时隙会来取当前要发送的文本。

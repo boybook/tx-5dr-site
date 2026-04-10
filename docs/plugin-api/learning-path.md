@@ -38,7 +38,8 @@
 解决“命中目标后如何自动起呼，并且能和别的插件组合”的问题。你会学到：
 
 - `onAutoCallCandidate(...)` 的 proposal 模式
-- `priority` 和 `lastMessage` 的含义
+- `priority`、`lastMessage` 与自动起呼时隙语义
+- `onConfigureAutoCallExecution(...)` 与共享执行策略
 - 为什么新的守候型插件不建议直接 `ctx.operator.call(...)`
 - `watched-callsign-autocall` 与 `watched-novelty-autocall` 的设计思路
 

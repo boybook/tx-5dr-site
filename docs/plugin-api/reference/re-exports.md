@@ -8,9 +8,9 @@
 
 - `./definition.js`: `PluginDefinition`
 - `./context.js`: `PluginContext`
-- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`
+- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`
 - `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`
-- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`BandAccess`、`UIBridge`
+- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`BandAccess`、`IdleTransmitFrequencyOptions`、`UIBridge`
 
 ## 来自 @tx5dr/contracts 的类型导出
 
