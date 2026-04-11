@@ -19,14 +19,17 @@
 
 ## Docker 命令
 
-### 启动（推荐分阶段）
+### 启动
 
 ```bash
-mkdir -p data/{config,plugins,logs,cache,realtime}
+mkdir -p data/{config,plugins,logs,cache,realtime,ssl}
 docker compose pull
-docker compose run --rm livekit-init    # 首次生成 LiveKit 凭据
-docker compose up -d livekit
-docker compose up -d tx5dr
+
+# 独立模式
+docker compose up -d
+
+# LiveKit 模式（使用单独的 compose 文件）
+docker compose -f docker-compose.livekit.yml up -d
 ```
 
 ### 日常操作

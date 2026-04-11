@@ -62,9 +62,17 @@ docker exec tx5dr cat /app/data/config/.admin-token
 
 如果你希望获得更低延迟的语音体验，可以额外启用 LiveKit。LiveKit 通过 WebRTC 传输音频，延迟通常可以降低到 20–50 ms，适合对语音实时性要求较高的场景。
 
+仓库提供了两个独立的 Compose 文件：
+
+| 文件 | 模式 | 启动命令 |
+|------|------|---------|
+| `docker-compose.yml` | 独立模式（WebSocket 音频） | `docker compose up -d` |
+| `docker-compose.livekit.yml` | LiveKit 模式（WebRTC 低延迟） | `docker compose -f docker-compose.livekit.yml up -d` |
+
+使用 LiveKit 模式：
+
 ```bash
-# 启动全部服务（含 LiveKit）
-docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit.yml up -d
+docker compose -f docker-compose.livekit.yml up -d
 ```
 
 首次运行时，`livekit-init` 会自动生成凭据到 `./data/realtime/`。主应用启动后会自动检测 LiveKit 是否可用，并在可用时自动切换到 LiveKit 传输。
@@ -72,10 +80,10 @@ docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit
 ::: tip 分阶段排查
 如果 LiveKit 启动遇到问题，可以分步执行以便定位：
 ```bash
-docker compose --profile livekit run --rm livekit-init       # 生成凭据
-docker compose --profile livekit up -d livekit               # 启动 LiveKit
-docker compose logs -f livekit                               # 确认正常后 Ctrl-C
-docker compose -f docker-compose.yml -f docker-compose.livekit.yml up -d tx5dr
+docker compose -f docker-compose.livekit.yml run --rm livekit-init   # 生成凭据
+docker compose -f docker-compose.livekit.yml up -d livekit           # 启动 LiveKit
+docker compose -f docker-compose.livekit.yml logs -f livekit         # 确认正常后 Ctrl-C
+docker compose -f docker-compose.livekit.yml up -d tx5dr             # 启动主应用
 ```
 :::
 
@@ -85,7 +93,7 @@ docker compose -f docker-compose.yml -f docker-compose.livekit.yml up -d tx5dr
 
 ```bash
 docker compose down
-docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit.yml up -d
+docker compose -f docker-compose.livekit.yml up -d
 ```
 
 配置和数据不受影响。
@@ -93,7 +101,7 @@ docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit
 ### 从 LiveKit 模式切回独立模式
 
 ```bash
-docker compose down
+docker compose -f docker-compose.livekit.yml down
 docker compose up -d
 ```
 
@@ -101,11 +109,11 @@ docker compose up -d
 
 ### 服务
 
-| 服务 | Profile | 作用 | 生命周期 |
+| 服务 | 所在文件 | 作用 | 生命周期 |
 |------|---------|------|---------|
-| `tx5dr` | *（始终启动）* | 主应用（nginx 反代 + tx5dr-server，supervisor 管理） | 持续运行 |
-| `livekit-init` | `livekit` | 生成 LiveKit 凭据和配置到 `./data/realtime/` | 一次性运行后退出 |
-| `livekit` | `livekit` | LiveKit 信令 + 媒体服务器 | 持续运行 |
+| `tx5dr` | 两个文件均包含 | 主应用（nginx 反代 + tx5dr-server，supervisor 管理） | 持续运行 |
+| `livekit-init` | `docker-compose.livekit.yml` | 生成 LiveKit 凭据和配置到 `./data/realtime/` | 一次性运行后退出 |
+| `livekit` | `docker-compose.livekit.yml` | LiveKit 信令 + 媒体服务器 | 持续运行 |
 
 ### 持久化目录
 
@@ -246,7 +254,7 @@ group_add:
 docker compose pull && docker compose up -d
 
 # LiveKit 模式
-docker compose pull && docker compose --profile livekit -f docker-compose.yml -f docker-compose.livekit.yml up -d
+docker compose -f docker-compose.livekit.yml pull && docker compose -f docker-compose.livekit.yml up -d
 ```
 
 ::: warning
@@ -268,13 +276,10 @@ docker compose pull && docker compose --profile livekit -f docker-compose.yml -f
 
 ## 进阶话题
 
-以下内容见主仓库 [`docs/docker-deployment.md`](https://github.com/boybook/tx-5dr/blob/main/docs/docker-deployment.md)：
-
-- PVE / ESXi / VMware 虚拟机中的 USB 直通
-- `/dev/serial/by-id` 稳定设备命名
-- PulseAudio 配置
-- GitHub Actions 自动构建镜像
-- 本地多架构手动构建
+- **PVE / ESXi / VMware 虚拟机**：需要在虚拟机层面直通 USB 设备，然后在容器内映射对应的 tty 和音频节点
+- **`/dev/serial/by-id` 稳定设备命名**：可额外挂载 `- /dev/serial/by-id:/dev/serial/by-id:ro`，但仍需同时映射对应的 `/dev/ttyUSB*` 节点
+- **PulseAudio**：纯 USB 声卡场景通常不需要 PulseAudio，ALSA 直通即可。桌面 Linux 共享宿主机音频时才需要挂载 PulseAudio socket
+- **本地构建镜像**：`docker compose build --no-cache` 或使用仓库内的 `scripts/build-docker.sh`
 
 ## 与其他形态的区别
 
