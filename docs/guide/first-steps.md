@@ -12,6 +12,10 @@
 
 该步骤用于确认 Web UI、服务端入口和认证链路已连通。
 
+::: tip 使用 HTTPS 访问
+Linux 服务器版和 Docker 部署默认在 **8443** 端口提供 HTTPS 访问（自签名证书）。如果你需要使用语音功能（麦克风），浏览器要求通过 HTTPS 或 `localhost` 访问。首次打开 HTTPS 页面时，点击「高级」→「继续前往」接受自签名证书即可。
+:::
+
 ## 第二步：创建或选择 Profile
 
 `Profile` 是主项目里电台配置与音频配置的基本单元。根目录 `CLAUDE.md` 说明，`ProfileManager` 负责 Profile 的增删改查和激活。

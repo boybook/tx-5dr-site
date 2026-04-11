@@ -52,7 +52,11 @@ docker compose up -d
 docker exec tx5dr cat /app/data/config/.admin-token
 ```
 
-浏览器访问 `http://<宿主机IP>:8076`，使用管理员令牌登录。此时 TX-5DR 已完全可用。
+浏览器访问 `http://<宿主机IP>:8076`（或 `https://<宿主机IP>:8443`），使用管理员令牌登录。此时 TX-5DR 已完全可用。
+
+::: tip HTTPS 已自动启用
+容器首次启动时会自动生成自签名 SSL 证书，HTTPS 默认可通过 `8443` 端口访问。浏览器会提示安全警告——点击「高级」→「继续前往」即可。如需使用自己的证书，参见下方 [HTTPS 与 SSL 证书](#https-与-ssl-证书) 章节。
+:::
 
 ## 启用 LiveKit（可选）
 
@@ -113,7 +117,50 @@ docker compose up -d
 | `./data/plugins` | 用户插件 |
 | `./data/logs` | 应用日志 |
 | `./data/cache` | 缓存数据 |
+| `./data/ssl` | SSL 证书（自动生成自签名证书，可替换为自定义证书） |
 | `./data/realtime` | LiveKit 凭据和配置（由 livekit-init 生成，仅 LiveKit 模式使用） |
+
+## HTTPS 与 SSL 证书
+
+### 自签名证书（默认）
+
+容器首次启动时，entrypoint 脚本会自动生成自签名 SSL 证书并保存到 `./data/ssl/`。HTTPS 服务在容器内监听 443 端口，通过 `docker-compose.yml` 映射为宿主机的 **8443** 端口。
+
+访问方式：
+
+| 协议 | 地址 | 说明 |
+|------|------|------|
+| HTTP | `http://<宿主机IP>:8076` | 无加密，局域网可用 |
+| HTTPS | `https://<宿主机IP>:8443` | 自签名证书，浏览器会提示安全警告 |
+
+::: info 为什么需要 HTTPS？
+浏览器要求 HTTPS 才能授权麦克风访问。如果你需要使用语音功能（监听或发射），必须通过 HTTPS 或 `localhost` 访问。
+:::
+
+::: warning 自签名证书的局限性
+自签名证书**不被**浏览器信任，每次打开页面时都会出现安全警告。这不影响功能使用——加密强度与正式证书完全相同，只是身份未经第三方验证。点击「高级」→「继续前往」即可正常使用。
+:::
+
+### 替换为自定义证书
+
+如果你有域名和正式 SSL 证书，可以替换自签名证书：
+
+```bash
+# 1. 将你的证书文件放入 ssl 目录
+cp your-cert.crt ./data/ssl/server.crt
+cp your-cert.key ./data/ssl/server.key
+
+# 2. 更新证书模式标记（可选，用于 status 显示）
+sed -i 's/TX5DR_SSL_MODE=self-signed/TX5DR_SSL_MODE=custom/' ./data/ssl/cert-info.env
+
+# 3. 重启容器（或仅 reload nginx）
+docker compose restart tx5dr
+# 或：docker exec tx5dr nginx -s reload
+```
+
+::: tip
+证书文件名必须是 `server.crt` 和 `server.key`。替换后容器重启不会覆盖自定义证书。
+:::
 
 ## 设备映射
 
@@ -216,6 +263,8 @@ docker compose pull && docker compose --profile livekit -f docker-compose.yml -f
 | 容器不断重启 | `supervisord` 配置解析错误 | `docker compose build --no-cache` 或 `docker compose pull` |
 | 宿主机有 USB 但容器无 tty | 只映射了 `/dev/bus/usb` | 在 `devices` 中映射具体 `/dev/ttyUSB*` 或 `/dev/ttyACM*` |
 | 电台连接正常但无音频 | USB 声卡未映射 | 在 `volumes` 和 `devices` 中映射 `/dev/snd` |
+| 浏览器无法使用麦克风 | 非 HTTPS 访问 | 使用 `https://<IP>:8443` 访问，接受自签名证书警告 |
+| HTTPS 访问 ERR_CONNECTION_REFUSED | 未映射 443 端口 | `docker-compose.yml` 中添加 `"8443:443"` 端口映射 |
 
 ## 进阶话题
 
