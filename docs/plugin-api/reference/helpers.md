@@ -12,6 +12,7 @@
 - [OperatorControl](#operatorcontrol)
 - [RadioControl](#radiocontrol)
 - [QSOQueryFilter](#qsoqueryfilter)
+- [CallsignLogbookAccess](#callsignlogbookaccess)
 - [LogbookAccess](#logbookaccess)
 - [IdleTransmitFrequencyOptions](#idletransmitfrequencyoptions)
 - [AutoTargetEligibilityReason](#autotargeteligibilityreason)
@@ -19,6 +20,12 @@
 - [BandAccess](#bandaccess)
 - [UIBridge](#uibridge)
 - [PluginUIHandler](#pluginuihandler)
+- [PluginUIRequestUser](#pluginuirequestuser)
+- [PluginUIBoundResource](#pluginuiboundresource)
+- [PluginUIInstanceTarget](#pluginuiinstancetarget)
+- [PluginUIPageSessionInfo](#pluginuipagesessioninfo)
+- [PluginUIPageContext](#pluginuipagecontext)
+- [PluginUIRequestContext](#pluginuirequestcontext)
 - [PluginFileStore](#pluginfilestore)
 
 ## KVStore
@@ -667,6 +674,120 @@ Sort direction. Defaults to descending (newest first).
 orderDirection?: 'asc' | 'desc';
 
 ```
+## CallsignLogbookAccess
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+Callsign-bound view over a single logbook.
+
+The host resolves the concrete logbook lazily on each operation, which keeps
+the handle valid even if the underlying logbook is created or reloaded later.
+
+```ts
+export interface CallsignLogbookAccess {
+  /** Normalized callsign that scopes this accessor. */
+  readonly callsign: string;
+
+  /** Returns the resolved logbook id, or null when no logbook exists yet. */
+  getLogBookId(): Promise<string | null>;
+
+  /** Queries QSO records matching the given filter. */
+  queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+  /** Counts QSO records matching the given filter. */
+  countQSOs(filter?: QSOQueryFilter): Promise<number>;
+  /** Adds a new QSO record to this callsign's logbook. */
+  addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
+  /** Updates partial fields of an existing QSO record. */
+  updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
+  /** Returns current statistics for this callsign's logbook. */
+  getStatistics(): Promise<import('@tx5dr/contracts').LogBookStatistics | null>;
+  /** Notifies the frontend that this callsign's logbook changed. */
+  notifyUpdated(operatorId?: string): Promise<void>;
+}
+```
+
+## 成员
+
+### callsign
+
+Normalized callsign that scopes this accessor.
+
+```ts
+
+readonly callsign: string;
+
+```
+
+### getLogBookId
+
+Returns the resolved logbook id, or null when no logbook exists yet.
+
+```ts
+
+getLogBookId(): Promise<string | null>;
+
+```
+
+### queryQSOs
+
+Queries QSO records matching the given filter.
+
+```ts
+
+queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+
+```
+
+### countQSOs
+
+Counts QSO records matching the given filter.
+
+```ts
+
+countQSOs(filter?: QSOQueryFilter): Promise<number>;
+
+```
+
+### addQSO
+
+Adds a new QSO record to this callsign's logbook.
+
+```ts
+
+addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
+
+```
+
+### updateQSO
+
+Updates partial fields of an existing QSO record.
+
+```ts
+
+updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
+
+```
+
+### getStatistics
+
+Returns current statistics for this callsign's logbook.
+
+```ts
+
+getStatistics(): Promise<import('@tx5dr/contracts').LogBookStatistics | null>;
+
+```
+
+### notifyUpdated
+
+Notifies the frontend that this callsign's logbook changed.
+
+```ts
+
+notifyUpdated(operatorId?: string): Promise<void>;
+
+```
 ## LogbookAccess
 
 - Kind: `interface`
@@ -696,6 +817,9 @@ export interface LogbookAccess {
   /** Counts QSO records matching the given filter. */
   countQSOs(filter?: QSOQueryFilter): Promise<number>;
 
+  /** Returns a callsign-bound accessor suitable for global plugin instances. */
+  forCallsign(callsign: string): CallsignLogbookAccess;
+
   // === Write ===
 
   /** Adds a new QSO record. Deduplication is the caller's responsibility. */
@@ -706,7 +830,7 @@ export interface LogbookAccess {
   // === Notification ===
 
   /** Notifies the frontend to refresh logbook data (call after batch writes). */
-  notifyUpdated(): void;
+  notifyUpdated(): Promise<void>;
 }
 ```
 
@@ -762,6 +886,16 @@ countQSOs(filter?: QSOQueryFilter): Promise<number>;
 
 ```
 
+### forCallsign
+
+Returns a callsign-bound accessor suitable for global plugin instances.
+
+```ts
+
+forCallsign(callsign: string): CallsignLogbookAccess;
+
+```
+
 ### addQSO
 
 Adds a new QSO record. Deduplication is the caller's responsibility.
@@ -788,7 +922,7 @@ Notifies the frontend to refresh logbook data (call after batch writes).
 
 ```ts
 
-notifyUpdated(): void;
+notifyUpdated(): Promise<void>;
 
 ```
 ## IdleTransmitFrequencyOptions
@@ -1041,8 +1175,28 @@ export interface UIBridge {
   registerPageHandler(handler: PluginUIHandler): void;
 
   /**
-   * Pushes a custom message to an iframe UI page. The page receives it via the
-   * `bridge.onPush()` SDK method.
+   * Pushes a custom message to the specific page session.
+   *
+   * Prefer this API whenever the plugin already knows the target session id
+   * (for example from {@link PluginUIRequestContext.pageSessionId} or
+   * `requestContext.page.sessionId`).
+   */
+  pushToSession(pageSessionId: string, action: string, data?: unknown): void;
+
+  /**
+   * Lists active page sessions for the current plugin instance and page id.
+   *
+   * This is useful for background timers or sync completions that need to
+   * notify every open page tied to the same runtime instance.
+   */
+  listActivePageSessions(pageId: string): PluginUIPageSessionInfo[];
+
+  /**
+   * Pushes a custom message to an iframe UI page by page id.
+   *
+   * This compatibility helper only succeeds when exactly one active session of
+   * the current plugin instance matches the page id. If multiple sessions are
+   * open, the host throws `explicit_page_session_required`.
    */
   pushToPage(pageId: string, action: string, data?: unknown): void;
 }
@@ -1075,10 +1229,40 @@ registerPageHandler(handler: PluginUIHandler): void;
 
 ```
 
+### pushToSession
+
+Pushes a custom message to the specific page session.
+
+Prefer this API whenever the plugin already knows the target session id
+(for example from {@link PluginUIRequestContext.pageSessionId} or
+`requestContext.page.sessionId`).
+
+```ts
+
+pushToSession(pageSessionId: string, action: string, data?: unknown): void;
+
+```
+
+### listActivePageSessions
+
+Lists active page sessions for the current plugin instance and page id.
+
+This is useful for background timers or sync completions that need to
+notify every open page tied to the same runtime instance.
+
+```ts
+
+listActivePageSessions(pageId: string): PluginUIPageSessionInfo[];
+
+```
+
 ### pushToPage
 
-Pushes a custom message to an iframe UI page. The page receives it via the
-`bridge.onPush()` SDK method.
+Pushes a custom message to an iframe UI page by page id.
+
+This compatibility helper only succeeds when exactly one active session of
+the current plugin instance matches the page id. If multiple sessions are
+open, the host throws `explicit_page_session_required`.
 
 ```ts
 
@@ -1104,9 +1288,16 @@ export interface PluginUIHandler {
    * @param pageId - The page that sent the message.
    * @param action - Developer-defined action identifier.
    * @param data - Arbitrary payload from the iframe.
+   * @param requestContext - Host-authenticated page context, including any
+   * bound resource for this page session.
    * @returns The response value sent back to the iframe.
    */
-  onMessage(pageId: string, action: string, data: unknown): Promise<unknown>;
+  onMessage(
+    pageId: string,
+    action: string,
+    data: unknown,
+    requestContext: PluginUIRequestContext,
+  ): Promise<unknown>;
 }
 ```
 
@@ -1119,11 +1310,260 @@ Called when the iframe sends an invoke request via `bridge.invoke(action, data)`
 @param pageId - The page that sent the message.
 @param action - Developer-defined action identifier.
 @param data - Arbitrary payload from the iframe.
+@param requestContext - Host-authenticated page context, including any
+bound resource for this page session.
 @returns The response value sent back to the iframe.
 
 ```ts
 
-onMessage(pageId: string, action: string, data: unknown): Promise<unknown>;
+onMessage(
+    pageId: string,
+    action: string,
+    data: unknown,
+    requestContext: PluginUIRequestContext,
+  ): Promise<unknown>;
+
+```
+## PluginUIRequestUser
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export interface PluginUIRequestUser {
+  readonly tokenId: string;
+  readonly role: 'viewer' | 'operator' | 'admin';
+  readonly operatorIds: string[];
+  readonly permissionGrants?: PermissionGrant[];
+}
+```
+
+## 成员
+
+### tokenId
+
+未提供额外注释。
+
+```ts
+
+readonly tokenId: string;
+
+```
+
+### role
+
+未提供额外注释。
+
+```ts
+
+readonly role: 'viewer' | 'operator' | 'admin';
+
+```
+
+### operatorIds
+
+未提供额外注释。
+
+```ts
+
+readonly operatorIds: string[];
+
+```
+
+### permissionGrants
+
+未提供额外注释。
+
+```ts
+
+readonly permissionGrants?: PermissionGrant[];
+
+```
+## PluginUIBoundResource
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export interface PluginUIBoundResource {
+  readonly kind: 'callsign' | 'operator';
+  readonly value: string;
+}
+```
+
+## 成员
+
+### kind
+
+未提供额外注释。
+
+```ts
+
+readonly kind: 'callsign' | 'operator';
+
+```
+
+### value
+
+未提供额外注释。
+
+```ts
+
+readonly value: string;
+
+```
+## PluginUIInstanceTarget
+
+- Kind: `type`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export type PluginUIInstanceTarget =
+  | { readonly kind: 'global' }
+  | { readonly kind: 'operator'; readonly operatorId: string };
+```
+## PluginUIPageSessionInfo
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export interface PluginUIPageSessionInfo {
+  readonly sessionId: string;
+  readonly pageId: string;
+  readonly resource?: PluginUIBoundResource;
+}
+```
+
+## 成员
+
+### sessionId
+
+未提供额外注释。
+
+```ts
+
+readonly sessionId: string;
+
+```
+
+### pageId
+
+未提供额外注释。
+
+```ts
+
+readonly pageId: string;
+
+```
+
+### resource
+
+未提供额外注释。
+
+```ts
+
+readonly resource?: PluginUIBoundResource;
+
+```
+## PluginUIPageContext
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export interface PluginUIPageContext extends PluginUIPageSessionInfo {
+  push(action: string, data?: unknown): void;
+}
+```
+
+## 成员
+
+### push
+
+未提供额外注释。
+
+```ts
+
+push(action: string, data?: unknown): void;
+
+```
+## PluginUIRequestContext
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export interface PluginUIRequestContext {
+  readonly pageSessionId: string;
+  readonly user: PluginUIRequestUser;
+  readonly resource?: PluginUIBoundResource;
+  readonly instanceTarget: PluginUIInstanceTarget;
+  readonly page: PluginUIPageContext;
+}
+```
+
+## 成员
+
+### pageSessionId
+
+未提供额外注释。
+
+```ts
+
+readonly pageSessionId: string;
+
+```
+
+### user
+
+未提供额外注释。
+
+```ts
+
+readonly user: PluginUIRequestUser;
+
+```
+
+### resource
+
+未提供额外注释。
+
+```ts
+
+readonly resource?: PluginUIBoundResource;
+
+```
+
+### instanceTarget
+
+未提供额外注释。
+
+```ts
+
+readonly instanceTarget: PluginUIInstanceTarget;
+
+```
+
+### page
+
+未提供额外注释。
+
+```ts
+
+readonly page: PluginUIPageContext;
 
 ```
 ## PluginFileStore

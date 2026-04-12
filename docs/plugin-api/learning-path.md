@@ -72,7 +72,7 @@
 - `invoke()` / `onPush()` 双向通信模型
 - CSS Design Tokens 主题适配
 - `slot: 'operator'` vs `slot: 'automation'` 面板渲染位置
-- `ctx.ui.pushToPage()` 服务端主动推送
+- `requestContext.page.push()` / `ctx.ui.pushToSession()` / `ctx.ui.pushToPage()` 的分层推送模型
 
 ### 第 7 章：日志同步 Provider
 

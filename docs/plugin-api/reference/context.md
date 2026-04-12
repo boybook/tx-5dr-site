@@ -105,9 +105,9 @@ export interface PluginContext {
   /**
    * Persistent binary file storage sandboxed to the plugin.
    *
-   * Files are stored under `{dataDir}/plugins/{pluginName}/files/`. Use this
-   * for binary assets such as certificates, images or cached data. For
-   * structured JSON data, prefer {@link PluginContext.store} instead.
+   * Files are stored in the plugin data directory under a host-managed sandbox.
+   * Use this for binary assets such as certificates, images or cached data.
+   * For structured JSON data, prefer {@link PluginContext.store} instead.
    */
   readonly files: PluginFileStore;
 
@@ -256,9 +256,9 @@ readonly ui: UIBridge;
 
 Persistent binary file storage sandboxed to the plugin.
 
-Files are stored under `{dataDir}/plugins/{pluginName}/files/`. Use this
-for binary assets such as certificates, images or cached data. For
-structured JSON data, prefer {@link PluginContext.store} instead.
+Files are stored in the plugin data directory under a host-managed sandbox.
+Use this for binary assets such as certificates, images or cached data.
+For structured JSON data, prefer {@link PluginContext.store} instead.
 
 ```ts
 

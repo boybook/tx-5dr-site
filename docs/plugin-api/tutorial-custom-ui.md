@@ -114,15 +114,15 @@ iframe 内可以通过 `window.tx5dr` 访问 Bridge SDK。它提供以下 API：
 | `tx5dr.resize(height)` | 通知宿主调整 iframe 高度 |
 | `tx5dr.onThemeChange(callback)` | 监听主题切换 |
 | `tx5dr.requestClose()` | 请求宿主关闭当前面板/页面 |
-| `tx5dr.storeGet(key, default)` | 读取 KV 存储 |
-| `tx5dr.storeSet(key, value)` | 写入 KV 存储 |
-| `tx5dr.storeDelete(key)` | 删除 KV 存储项 |
-| `tx5dr.fileUpload(path, file)` | 上传文件到插件沙盒存储 |
-| `tx5dr.fileRead(path)` | 读取插件沙盒文件 |
-| `tx5dr.fileDelete(path)` | 删除插件沙盒文件 |
-| `tx5dr.fileList(prefix?)` | 列出插件沙盒文件 |
+| `tx5dr.storeGet(key, default)` | 读取页面私有 KV（按实例目标 + 绑定资源 + pageId 共享） |
+| `tx5dr.storeSet(key, value)` | 写入当前页面 scope 的 KV |
+| `tx5dr.storeDelete(key)` | 删除当前页面 scope 的 KV 项 |
+| `tx5dr.fileUpload(path, file)` | 上传文件到当前页面 scope（按实例目标 + 绑定资源 + pageId 收口） |
+| `tx5dr.fileRead(path)` | 读取当前页面 scope 的文件 |
+| `tx5dr.fileDelete(path)` | 删除当前页面 scope 的文件 |
+| `tx5dr.fileList(prefix?)` | 列出当前页面 scope 下的文件 |
 
-其中最核心的两对是 `invoke` / `registerPageHandler` 和 `onPush` / `pushToPage`。
+其中最核心的是 `invoke` / `registerPageHandler` 这条请求-响应链，以及 `requestContext.page.push()` / `ctx.ui.pushToSession()` / `tx5dr.onPush()` 这条精确推送链；`pushToPage()` 只适合“当前插件实例下该 pageId 只有一个活跃 session”时的兼容场景。
 
 ## invoke：从 iframe 请求服务端
 
@@ -133,7 +133,7 @@ iframe 内可以通过 `window.tx5dr` 访问 Bridge SDK。它提供以下 API：
 ```ts
 onLoad(ctx) {
   ctx.ui.registerPageHandler({
-    async onMessage(pageId, action, data) {
+    async onMessage(pageId, action, data, requestContext) {
       switch (action) {
         case 'getState':
           return {
@@ -154,8 +154,9 @@ onLoad(ctx) {
 
 几点说明：
 
-- `registerPageHandler` 在 `onLoad` 中调用，整个插件只注册一个 handler
+- `registerPageHandler` 在 `onLoad` 中调用，整个插件实例只注册一个 handler
 - `onMessage` 的第一个参数 `pageId` 标识请求来自哪个页面
+- 第四个参数 `requestContext` 是宿主基于页面 session 注入的可信上下文，包含 `pageSessionId`、`instanceTarget`、`resource` 和 `requestContext.page.push()`
 - 返回值会作为 Promise 结果返回给 iframe
 - 抛出异常会导致 iframe 侧的 Promise reject
 
@@ -181,7 +182,7 @@ document.getElementById('incrementBtn').addEventListener('click', function() {
 
 ## onPush：服务端主动推送
 
-`invoke` 是 iframe 主动拉取。如果你需要服务端主动向 iframe 推送数据，使用 `pushToPage` 和 `onPush`。
+`invoke` 是 iframe 主动拉取。如果你需要服务端主动向 iframe 推送数据，优先使用 session 级 API：在 handler 内直接 `requestContext.page.push()`，或在后台任务里配合 `ctx.ui.listActivePageSessions()` + `ctx.ui.pushToSession()`；`pushToPage()` 只作为“当前实例下该 pageId 只有一个活跃 session”时的兼容简写。
 
 ### 服务端推送
 
@@ -190,19 +191,23 @@ document.getElementById('incrementBtn').addEventListener('click', function() {
 hooks: {
   onTimer(timerId, ctx) {
     if (timerId !== 'heartbeat') return;
-    ctx.ui.pushToPage('dashboard', 'tick', {
-      timestamp: Date.now(),
-      signalStrength: -50 + Math.random() * 40,
-    });
+    for (const session of ctx.ui.listActivePageSessions('dashboard')) {
+      ctx.ui.pushToSession(session.sessionId, 'tick', {
+        timestamp: Date.now(),
+        signalStrength: -50 + Math.random() * 40,
+      });
+    }
   },
 },
 ```
 
-`pushToPage` 的三个参数：
+如果你使用 `pushToPage`，它的三个参数分别是：
 
 1. `pageId` —— 目标页面 id
 2. `action` —— 推送事件名
 3. `data` —— 任意数据
+
+但要注意：`pushToPage(pageId, ...)` 现在只在“当前插件实例下这个 `pageId` 恰好只有一个活跃 session”时才安全。只要同一页面可能同时打开多个实例，应该改用 `pushToSession()`。
 
 ### iframe 接收
 
@@ -390,7 +395,7 @@ panels: [
 思路很简单：
 
 1. quick-controls iframe 调用 `tx5dr.invoke('increment')`
-2. 服务端 handler 处理完成后，调用 `ctx.ui.pushToPage('live-monitor', 'counterUpdated', { counter: next })`
+2. 服务端 handler 处理完成后，先用 `requestContext.page.push(...)` 回推当前请求页面；再遍历 `ctx.ui.listActivePageSessions('live-monitor')`，用 `pushToSession()` 同步到其他 live-monitor 页面
 3. live-monitor iframe 通过 `tx5dr.onPush('counterUpdated', ...)` 接收更新
 
 画成图：
@@ -400,7 +405,9 @@ quick-controls iframe                Server                    live-monitor ifra
       │                                │                              │
       ├─ invoke('increment') ──────────►│                              │
       │                                ├─ 更新 store                   │
-      │                                ├─ pushToPage('live-monitor',   │
+      │                                ├─ requestContext.page.push(...)│
+      │                                ├─ listActivePageSessions()     │
+      │                                ├─ pushToSession(...,           │
       │                                │    'counterUpdated', data) ──►│
       │◄──────── return { counter } ───┤                              ├─ 更新 UI
       ├─ 更新本地 UI                    │                              │
@@ -431,11 +438,11 @@ ui: {
 - **面板页面**：嵌入在操作员界面的固定位置，跟随操作员生命周期
 - **独立页面**：由宿主按需加载，通常在弹窗或专用路由里，用 `params` 接收上下文
 
-独立页面同样可以使用完整的 Bridge SDK —— `invoke`、`onPush`、`storeGet`、`fileUpload` 一样可用。
+独立页面同样可以使用完整的 Bridge SDK —— `invoke`、`onPush`、`storeGet`、`fileUpload` 一样可用。但要注意，`tx5dr.store*` / `tx5dr.file*` 仍然是页面 scope 能力，而不是对 `ctx.store` / `ctx.files` 的直接暴露。
 
 ## 存储与文件
 
-iframe 可以直接访问插件的持久化存储，不需要经过 `invoke` 绕服务端。
+iframe 可以直接访问宿主提供的页面级 KV / 文件能力，不需要额外通过 `invoke` 包一层。但它们不是对 `ctx.store` / `ctx.files` 的原样暴露，而是宿主按页面 session 收口后的访问能力。
 
 ### KV 存储
 
@@ -466,7 +473,7 @@ var files = await tx5dr.fileList('certificates/');
 await tx5dr.fileDelete('certificates/my-cert.p12');
 ```
 
-文件存储在插件的沙盒目录下，路径不能逃逸到沙盒外。
+这些页面能力和插件运行时共用同一个插件数据目录，但作用域更窄：宿主始终按 `instanceTarget + resourceBinding + pageId` 进行收口，路径也不能逃逸到页面沙盒外。对于运行时逻辑本身，仍优先使用 `ctx.store.*` 和 `ctx.files`。
 
 ## 内置参考
 
@@ -491,11 +498,12 @@ await tx5dr.fileDelete('certificates/my-cert.p12');
 
 - iframe 面板通过 `component: 'iframe'` + `pageId` + `ui.pages` 声明
 - `tx5dr.invoke()` 和 `registerPageHandler` 实现请求-响应通信
-- `tx5dr.onPush()` 和 `pushToPage` 实现服务端主动推送
+- `requestContext.page.push()` / `ctx.ui.pushToSession()` / `tx5dr.onPush()` 是当前推荐的精确推送链路，`pushToPage()` 只是兼容简写
 - `ResizeObserver` + `tx5dr.resize()` 实现高度自适应
 - CSS 设计变量让 iframe 自动适配明暗主题
 - `slot` 控制面板渲染在操作员卡片还是自动化弹窗
-- 跨面板同步的标准模式：iframe A invoke -> 服务端 -> pushToPage -> iframe B
+- 跨面板同步的标准模式：iframe A invoke -> 服务端 -> session 级推送 -> iframe B
+- `tx5dr.store*` / `tx5dr.file*` 是页面 scope 能力，作用域按 `instanceTarget + resourceBinding + pageId` 收口
 - 独立页面用于设置弹窗、向导等场景
 
 下一章将进入日志同步插件的开发，那是独立页面和 Bridge SDK 的一个完整实战应用。

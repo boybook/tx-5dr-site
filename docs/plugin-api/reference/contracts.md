@@ -28,6 +28,7 @@
 - [DxccStatus](#dxccstatus)
 - [TargetSelectionPriorityMode](#targetselectionprioritymode)
 - [PluginType](#plugintype)
+- [PluginInstanceScope](#plugininstancescope)
 - [PluginPermission](#pluginpermission)
 - [PluginSettingType](#pluginsettingtype)
 - [PluginSettingDescriptor](#pluginsettingdescriptor)
@@ -711,6 +712,25 @@ export const PluginTypeSchema = z.enum(['strategy', 'utility']);
 ```ts
 export type PluginType = z.infer<typeof PluginTypeSchema>;
 ```
+## PluginInstanceScope
+
+- Kind: `type`
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Related schema: `PluginInstanceScopeSchema`
+
+Runtime instance scope for a plugin.
+
+### 数据结构
+
+```ts
+export const PluginInstanceScopeSchema = z.enum(['operator', 'global']);
+```
+
+### 类型导出
+
+```ts
+export type PluginInstanceScope = z.infer<typeof PluginInstanceScopeSchema>;
+```
 ## PluginPermission
 
 - Kind: `type`
@@ -992,6 +1012,7 @@ export const PluginManifestSchema = z.object({
   name: z.string(),
   version: z.string(),
   type: PluginTypeSchema,
+  instanceScope: PluginInstanceScopeSchema.optional().default('operator'),
   description: z.string().optional(),
   permissions: z.array(PluginPermissionSchema).optional(),
   settings: z.record(z.string(), PluginSettingDescriptorSchema).optional(),
@@ -1022,6 +1043,7 @@ Runtime-facing plugin status snapshot exposed to the frontend.
 export const PluginStatusSchema = z.object({
   name: z.string(),
   type: PluginTypeSchema,
+  instanceScope: PluginInstanceScopeSchema.optional().default('operator'),
   version: z.string(),
   description: z.string().optional(),
   isBuiltIn: z.boolean(),
@@ -1070,6 +1092,10 @@ export const PluginUIPageDescriptorSchema = z.object({
   entry: z.string(),
   /** Optional icon identifier. */
   icon: z.string().optional(),
+  /** Who may access this page through the host iframe bridge. Defaults to admin. */
+  accessScope: z.enum(['admin', 'operator']).optional().default('admin'),
+  /** Optional resource binding enforced by the host for iframe invoke requests. */
+  resourceBinding: z.enum(['none', 'callsign', 'operator']).optional().default('none'),
 });
 ```
 
