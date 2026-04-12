@@ -501,6 +501,55 @@ await tx5dr.fileDelete('certificates/my-cert.p12');
 3. `ui/live-monitor.html` / `live-monitor.js` —— 数据展示面板
 4. `ui/quick-controls.css` —— CSS 变量用法示例
 
+## 开发工具链
+
+到这里你已经知道 iframe 面板怎么写了。但实际开发中，你可能不想每次改一行 HTML 就手动复制文件、手动点重载。
+
+### 脚手架
+
+`create-tx5dr-plugin` 可以直接生成带 UI 的完整项目：
+
+```bash
+# 原生 HTML/JS/CSS（不需要构建工具）
+npx create-tx5dr-plugin my-plugin --template ui-vanilla
+
+# React + Vite（推荐需要交互复杂 UI 时使用）
+npx create-tx5dr-plugin my-plugin --template ui-react
+
+# Vue + Vite
+npx create-tx5dr-plugin my-plugin --template ui-vue
+```
+
+React/Vue 模板会自动配置 Vite 多页面构建，将 `.tsx` / `.vue` 编译成 TX-5DR 能加载的独立 HTML 文件。
+
+### TypeScript 类型提示
+
+Bridge SDK 是运行时注入的全局变量，但你仍然可以获得完整的类型提示。安装 `@tx5dr/plugin-api` 后，在 `tsconfig.json` 或 `jsconfig.json` 中加入：
+
+```json
+{
+  "compilerOptions": {
+    "types": ["@tx5dr/plugin-api/bridge"]
+  }
+}
+```
+
+之后 `tx5dr.invoke()`、`tx5dr.onPush()` 等方法就都有自动补全了。原生 JS 文件也可以在顶部加 `/// <reference types="@tx5dr/plugin-api/bridge" />` 获得同样效果。
+
+### CSS 变量补全
+
+`@tx5dr/plugin-api` 包里附带了一个 `tokens.css` 参考文件。复制到项目中后，VS Code 在你输入 `var(--tx5dr-` 时会自动补全所有变量名：
+
+```bash
+cp node_modules/@tx5dr/plugin-api/tokens.css ./ui/
+```
+
+### 链接与自动重载
+
+开发时不需要每次手动复制 dist 到 TX-5DR 的 plugins 目录。脚手架生成的项目自带一个 `npm run link` 命令，它会创建一个符号链接，把你的 `dist/` 直接映射到 TX-5DR 的插件目录，并创建 `.hotreload` 标记文件。之后每次编译的结果 TX-5DR 都能直接读取，开发模式下还会自动检测文件变化并重载插件。
+
+完整的开发工作流详见 [插件 UI 开发实战](./tutorial-ui-dev-workflow)。
+
 ## 这一章你应该学会什么
 
 - iframe 面板通过 `component: 'iframe'` + `pageId` + `ui.pages` 声明
@@ -512,5 +561,8 @@ await tx5dr.fileDelete('certificates/my-cert.p12');
 - 跨面板同步的标准模式：iframe A invoke -> 服务端 -> session 级推送 -> iframe B
 - `tx5dr.store*` / `tx5dr.file*` 是页面 scope 能力，作用域按 `instanceTarget + resourceBinding + pageId` 收口
 - 独立页面用于设置弹窗、向导等场景
+- `create-tx5dr-plugin --template ui-react` 可生成完整的 React + Vite 项目
+- `@tx5dr/plugin-api/bridge` 提供 Bridge SDK 的 TypeScript 类型定义
+- `npm run link` + `.hotreload` 实现开发时的自动链接和热重载
 
 下一章将进入日志同步插件的开发，那是独立页面和 Bridge SDK 的一个完整实战应用。

@@ -69,6 +69,7 @@ const pluginApiSidebar = [
   {
     text: '补充资料',
     items: [
+      { text: 'UI 开发实战', link: '/plugin-api/tutorial-ui-dev-workflow' },
       { text: '心智模型', link: '/plugin-api/concepts' },
       { text: '示例与约定', link: '/plugin-api/examples' },
     ],
