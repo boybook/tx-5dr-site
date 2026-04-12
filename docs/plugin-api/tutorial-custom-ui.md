@@ -369,6 +369,7 @@ panels: [
     title: 'liveMonitorPanel',
     component: 'iframe',
     pageId: 'live-monitor',
+    width: 'full',
     // slot 默认为 'operator'，可省略
   },
   // 自动化弹出面板
@@ -385,6 +386,12 @@ panels: [
 `operator` slot 适合展示实时监控数据，面积更大，用户在操作员卡片里就能看到。
 
 `automation` slot 适合放快捷控件，面积更紧凑，用户在自动化面板里操作。
+
+你还可以再配合 `width` 声明宽度偏好：
+
+- `width: 'half'`（默认）表示沿用宿主默认的紧凑布局
+- `width: 'full'` 表示希望宿主给它更宽的展示空间
+- 当前操作员卡片 host 会把 `full` 解释为桌面端跨整行显示；其他 host 可以忽略它
 
 同一个插件完全可以在两个位置各放一个面板。
 

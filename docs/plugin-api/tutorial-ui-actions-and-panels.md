@@ -116,7 +116,7 @@ const plugin: PluginDefinition = {
   version: '1.0.0',
   type: 'utility',
   panels: [
-    { id: 'stats', label: 'statsPanel' },
+    { id: 'stats', title: 'statsPanel', component: 'key-value', width: 'full' },
   ],
   hooks: {
     onDecode(messages, ctx) {
@@ -132,6 +132,12 @@ export default plugin;
 ```
 
 这样前端面板就可以订阅这份数据并渲染。
+
+这里顺便出现了一个新字段：`width`。
+
+- `width: 'half'`（默认）表示沿用宿主的常规紧凑布局
+- `width: 'full'` 表示“这个面板更重要，希望给它更宽的展示空间”
+- 当前操作员卡片 host 会把 `full` 解释为桌面端跨整行显示；但 `automation` 之类的 host 可以按自己的布局策略忽略它，所以它是声明式 hint，而不是绝对布局命令
 
 ## 两个内置案例
 

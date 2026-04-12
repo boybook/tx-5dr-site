@@ -48,6 +48,7 @@
 - [`PluginCapability`](./contracts#plugincapability)
 - [`PluginPanelDescriptor`](./contracts#pluginpaneldescriptor)
 - [`PluginPanelComponent`](./contracts#pluginpanelcomponent)
+- [`PluginPanelWidth`](./contracts#pluginpanelwidth)
 - [`PluginSettingOption`](./contracts#pluginsettingoption)
 - [`PluginStorageScope`](./contracts#pluginstoragescope)
 - [`PluginStorageConfig`](./contracts#pluginstorageconfig)

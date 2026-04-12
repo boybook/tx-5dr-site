@@ -38,6 +38,7 @@
 - [PluginCapability](#plugincapability)
 - [PluginPanelDescriptor](#pluginpaneldescriptor)
 - [PluginPanelComponent](#pluginpanelcomponent)
+- [PluginPanelWidth](#pluginpanelwidth)
 - [PluginSettingOption](#pluginsettingoption)
 - [PluginStorageScope](#pluginstoragescope)
 - [PluginStorageConfig](#pluginstorageconfig)
@@ -908,6 +909,8 @@ export const PluginPanelDescriptorSchema = z.object({
   pageId: z.string().optional(),
   /** Where the panel renders. Defaults to `'operator'` (operator card live-panel area). */
   slot: PluginPanelSlotSchema.optional(),
+  /** Preferred width hint. Defaults to `'half'`. */
+  width: PluginPanelWidthSchema.optional(),
 });
 ```
 
@@ -934,6 +937,25 @@ export const PluginPanelComponentSchema = z.enum(['table', 'key-value', 'chart',
 
 ```ts
 export type PluginPanelComponent = z.infer<typeof PluginPanelComponentSchema>;
+```
+## PluginPanelWidth
+
+- Kind: `type`
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Related schema: `PluginPanelWidthSchema`
+
+Preferred width hint for plugin-owned panels.
+
+### 数据结构
+
+```ts
+export const PluginPanelWidthSchema = z.enum(['half', 'full']);
+```
+
+### 类型导出
+
+```ts
+export type PluginPanelWidth = z.infer<typeof PluginPanelWidthSchema>;
 ```
 ## PluginSettingOption
 
