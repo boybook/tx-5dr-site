@@ -10,7 +10,9 @@
 - `./context.js`: `PluginContext`
 - `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`
 - `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`
-- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`BandAccess`、`IdleTransmitFrequencyOptions`、`UIBridge`
+- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PluginUIHandler`、`PluginFileStore`
+- `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncTestResult`、`SyncUploadResult`、`SyncDownloadResult`、`SyncDownloadOptions`
+- `./ft8-message-type.js`: `FT8MessageType`
 
 ## 来自 @tx5dr/contracts 的类型导出
 
@@ -42,6 +44,7 @@
 - [`PluginSettingScope`](./contracts#pluginsettingscope)
 - [`PluginQuickAction`](./contracts#pluginquickaction)
 - [`PluginQuickSetting`](./contracts#pluginquicksetting)
+- [`PluginCapability`](./contracts#plugincapability)
 - [`PluginPanelDescriptor`](./contracts#pluginpaneldescriptor)
 - [`PluginPanelComponent`](./contracts#pluginpanelcomponent)
 - [`PluginSettingOption`](./contracts#pluginsettingoption)
@@ -49,7 +52,8 @@
 - [`PluginStorageConfig`](./contracts#pluginstorageconfig)
 - [`PluginManifest`](./contracts#pluginmanifest)
 - [`PluginStatus`](./contracts#pluginstatus)
+- [`PluginUIPageDescriptor`](./contracts#pluginuipagedescriptor)
+- [`PluginUIConfig`](./contracts#pluginuiconfig)
 
 ## 来自 @tx5dr/contracts 的值导出
 
-- [`FT8MessageType`](./contracts#ft8messagetype)

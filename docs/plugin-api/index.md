@@ -13,6 +13,8 @@
 - [第 3 章：守候与自动起呼](./tutorial-watcher-autocall)
 - [第 4 章：面板、按钮与定时器](./tutorial-ui-actions-and-panels)
 - [第 5 章：StrategyRuntime](./tutorial-strategy-runtime)
+- [第 6 章：自定义 UI 与 iframe 面板](./tutorial-custom-ui)
+- [第 7 章：日志同步 Provider](./tutorial-logbook-sync)
 - [心智模型](./concepts)：说明 `PluginDefinition`、`PluginContext`、`PluginHooks` 和 `StrategyRuntime` 的关系
 - [示例与约定](./examples)：说明常见插件类型与编写边界
 - [Reference](./reference/)：从 `packages/plugin-api/src` 与 `packages/contracts/src` 自动生成的接口文档

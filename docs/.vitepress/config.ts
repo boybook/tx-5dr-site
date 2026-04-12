@@ -62,6 +62,8 @@ const pluginApiSidebar = [
       { text: '第 3 章：守候与自动起呼', link: '/plugin-api/tutorial-watcher-autocall' },
       { text: '第 4 章：面板、按钮与定时器', link: '/plugin-api/tutorial-ui-actions-and-panels' },
       { text: '第 5 章：StrategyRuntime', link: '/plugin-api/tutorial-strategy-runtime' },
+      { text: '第 6 章：自定义 UI 与 iframe', link: '/plugin-api/tutorial-custom-ui' },
+      { text: '第 7 章：日志同步 Provider', link: '/plugin-api/tutorial-logbook-sync' },
     ],
   },
   {

@@ -30,9 +30,11 @@
 - `timers`
 - `operator`
 - `radio`
-- `logbook`
+- `logbook`（查询 + 写入 + 通知）
 - `band`
-- `ui`
+- `ui`（结构化面板推送 + iframe 页面通信）
+- `files`（二进制文件持久化）
+- `logbookSync`（日志同步 Provider 注册）
 - `fetch`（声明 `network` 权限时可用）
 
 这些字段对应主项目中明确开放给插件的运行时表面。

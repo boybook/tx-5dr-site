@@ -11,15 +11,20 @@
 - [PluginTimers](#plugintimers)
 - [OperatorControl](#operatorcontrol)
 - [RadioControl](#radiocontrol)
+- [QSOQueryFilter](#qsoqueryfilter)
 - [LogbookAccess](#logbookaccess)
 - [IdleTransmitFrequencyOptions](#idletransmitfrequencyoptions)
+- [AutoTargetEligibilityReason](#autotargeteligibilityreason)
+- [AutoTargetEligibilityDecision](#autotargeteligibilitydecision)
 - [BandAccess](#bandaccess)
 - [UIBridge](#uibridge)
+- [PluginUIHandler](#pluginuihandler)
+- [PluginFileStore](#pluginfilestore)
 
 ## KVStore
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Simple persistent key-value store exposed to plugins.
 
@@ -98,7 +103,7 @@ getAll(): Record<string, unknown>;
 ## PluginLogger
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Structured logger dedicated to a plugin instance.
 
@@ -162,7 +167,7 @@ error(message: string, error?: unknown): void;
 ## PluginTimers
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Host-managed named timers for plugin code.
 
@@ -221,7 +226,7 @@ clearAll(): void;
 ## OperatorControl
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Control surface for the active operator instance.
 
@@ -474,7 +479,7 @@ notifyStateChanged(state: string): void;
 ## RadioControl
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Read/write access to radio state that is safe for plugins.
 
@@ -541,21 +546,167 @@ any safety or capability constraints.
 setFrequency(freq: number): Promise<void>;
 
 ```
+## QSOQueryFilter
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+Filter criteria for querying QSO records from the logbook.
+
+This type is defined in the plugin-api layer so plugins have no compile-time
+dependency on core internals. The host translates it to the storage layer's
+native query format.
+
+```ts
+export interface QSOQueryFilter {
+  /** Match a specific callsign (exact match). */
+  callsign?: string;
+  /** Restrict to a time window (epoch ms). */
+  timeRange?: { start: number; end: number };
+  /** Restrict to a frequency window (Hz). */
+  frequencyRange?: { min: number; max: number };
+  /** Mode filter (e.g. 'FT8'). */
+  mode?: string;
+  /**
+   * QSL confirmation status filter.
+   * - `'confirmed'`: at least one platform confirmed
+   * - `'uploaded'`: at least one platform uploaded but not confirmed
+   * - `'none'`: not uploaded to any platform
+   */
+  qslStatus?: 'confirmed' | 'uploaded' | 'none';
+  /** Maximum number of records to return. */
+  limit?: number;
+  /** Number of records to skip (for pagination). */
+  offset?: number;
+  /** Sort direction. Defaults to descending (newest first). */
+  orderDirection?: 'asc' | 'desc';
+}
+```
+
+## 成员
+
+### callsign
+
+Match a specific callsign (exact match).
+
+```ts
+
+callsign?: string;
+
+```
+
+### timeRange
+
+Restrict to a time window (epoch ms).
+
+```ts
+
+timeRange?: { start: number; end: number };
+
+```
+
+### frequencyRange
+
+Restrict to a frequency window (Hz).
+
+```ts
+
+frequencyRange?: { min: number; max: number };
+
+```
+
+### mode
+
+Mode filter (e.g. 'FT8').
+
+```ts
+
+mode?: string;
+
+```
+
+### qslStatus
+
+QSL confirmation status filter.
+- `'confirmed'`: at least one platform confirmed
+- `'uploaded'`: at least one platform uploaded but not confirmed
+- `'none'`: not uploaded to any platform
+
+```ts
+
+qslStatus?: 'confirmed' | 'uploaded' | 'none';
+
+```
+
+### limit
+
+Maximum number of records to return.
+
+```ts
+
+limit?: number;
+
+```
+
+### offset
+
+Number of records to skip (for pagination).
+
+```ts
+
+offset?: number;
+
+```
+
+### orderDirection
+
+Sort direction. Defaults to descending (newest first).
+
+```ts
+
+orderDirection?: 'asc' | 'desc';
+
+```
 ## LogbookAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
-Read-only helpers backed by the station logbook.
+Full logbook access for plugins.
+
+Extends the original read-only helpers with query, write and notification
+capabilities so that sync providers can self-orchestrate their entire flow
+without host-side special handling.
 
 ```ts
 export interface LogbookAccess {
+  // === Read-only helpers (original) ===
+
   /** Checks whether the callsign has already been worked. */
   hasWorked(callsign: string): Promise<boolean>;
   /** Checks whether the DXCC entity has already been worked. */
   hasWorkedDXCC(dxccEntity: string): Promise<boolean>;
   /** Checks whether the Maidenhead grid has already been worked. */
   hasWorkedGrid(grid: string): Promise<boolean>;
+
+  // === Query ===
+
+  /** Queries QSO records matching the given filter. */
+  queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+  /** Counts QSO records matching the given filter. */
+  countQSOs(filter?: QSOQueryFilter): Promise<number>;
+
+  // === Write ===
+
+  /** Adds a new QSO record. Deduplication is the caller's responsibility. */
+  addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
+  /** Updates partial fields of an existing QSO record (e.g. QSL status). */
+  updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
+
+  // === Notification ===
+
+  /** Notifies the frontend to refresh logbook data (call after batch writes). */
+  notifyUpdated(): void;
 }
 ```
 
@@ -590,10 +741,60 @@ Checks whether the Maidenhead grid has already been worked.
 hasWorkedGrid(grid: string): Promise<boolean>;
 
 ```
+
+### queryQSOs
+
+Queries QSO records matching the given filter.
+
+```ts
+
+queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+
+```
+
+### countQSOs
+
+Counts QSO records matching the given filter.
+
+```ts
+
+countQSOs(filter?: QSOQueryFilter): Promise<number>;
+
+```
+
+### addQSO
+
+Adds a new QSO record. Deduplication is the caller's responsibility.
+
+```ts
+
+addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
+
+```
+
+### updateQSO
+
+Updates partial fields of an existing QSO record (e.g. QSL status).
+
+```ts
+
+updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
+
+```
+
+### notifyUpdated
+
+Notifies the frontend to refresh logbook data (call after batch writes).
+
+```ts
+
+notifyUpdated(): void;
+
+```
 ## IdleTransmitFrequencyOptions
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Optional constraints used when asking the host for a quieter transmit offset.
 
@@ -651,10 +852,84 @@ Guard bandwidth in Hz to keep around occupied frequencies.
 guardHz?: number;
 
 ```
+## AutoTargetEligibilityReason
+
+- Kind: `type`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+Reason codes returned by the host when evaluating whether a decoded target
+should be eligible for automatic CQ-style replies.
+
+```ts
+export type AutoTargetEligibilityReason =
+  | 'non_cq_message'
+  | 'plain_cq'
+  | 'missing_callsign_identity'
+  | 'missing_target_identity'
+  | 'unsupported_activity_token'
+  | 'unsupported_callback_token'
+  | 'continent_match'
+  | 'continent_mismatch'
+  | 'dx_match'
+  | 'dx_same_continent'
+  | 'entity_match'
+  | 'entity_mismatch'
+  | 'unknown_modifier';
+```
+## AutoTargetEligibilityDecision
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+Structured result returned by the host for automatic-target eligibility
+checks.
+
+```ts
+export interface AutoTargetEligibilityDecision {
+  /** Whether the host would currently allow automation to react to the target. */
+  eligible: boolean;
+  /** Machine-friendly explanation of the decision. */
+  reason: AutoTargetEligibilityReason;
+  /** Directed CQ modifier/token extracted from the message, when present. */
+  modifier?: string;
+}
+```
+
+## 成员
+
+### eligible
+
+Whether the host would currently allow automation to react to the target.
+
+```ts
+
+eligible: boolean;
+
+```
+
+### reason
+
+Machine-friendly explanation of the decision.
+
+```ts
+
+reason: AutoTargetEligibilityReason;
+
+```
+
+### modifier
+
+Directed CQ modifier/token extracted from the message, when present.
+
+```ts
+
+modifier?: string;
+
+```
 ## BandAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Read-only access to the current decode environment.
 
@@ -679,6 +954,15 @@ export interface BandAccess {
    * idle window is found.
    */
   findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null;
+
+  /**
+   * Evaluates whether the given decoded message is eligible for automatic
+   * target selection under the host's built-in CQ modifier rules.
+   *
+   * This lets third-party plugins reuse the same directed-CQ policy that the
+   * host applies to standard autocall and auto-reply flows.
+   */
+  evaluateAutoTargetEligibility(message: ParsedFT8Message): AutoTargetEligibilityDecision;
 }
 ```
 
@@ -718,10 +1002,24 @@ idle window is found.
 findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null;
 
 ```
+
+### evaluateAutoTargetEligibility
+
+Evaluates whether the given decoded message is eligible for automatic
+target selection under the host's built-in CQ modifier rules.
+
+This lets third-party plugins reuse the same directed-CQ policy that the
+host applies to standard autocall and auto-reply flows.
+
+```ts
+
+evaluateAutoTargetEligibility(message: ParsedFT8Message): AutoTargetEligibilityDecision;
+
+```
 ## UIBridge
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
 
 Minimal bridge for sending structured data to plugin panels in the frontend.
 
@@ -731,6 +1029,22 @@ export interface UIBridge {
    * Publishes new panel data for the given declarative panel id.
    */
   send(panelId: string, data: unknown): void;
+
+  /**
+   * Registers a handler for custom messages sent from iframe UI pages via the
+   * `bridge.invoke()` SDK method. The host routes incoming invoke requests to
+   * the handler and sends the return value back to the iframe.
+   *
+   * Only one handler can be registered per plugin instance. Calling this method
+   * again replaces the previous handler.
+   */
+  registerPageHandler(handler: PluginUIHandler): void;
+
+  /**
+   * Pushes a custom message to an iframe UI page. The page receives it via the
+   * `bridge.onPush()` SDK method.
+   */
+  pushToPage(pageId: string, action: string, data?: unknown): void;
 }
 ```
 
@@ -743,5 +1057,139 @@ Publishes new panel data for the given declarative panel id.
 ```ts
 
 send(panelId: string, data: unknown): void;
+
+```
+
+### registerPageHandler
+
+Registers a handler for custom messages sent from iframe UI pages via the
+`bridge.invoke()` SDK method. The host routes incoming invoke requests to
+the handler and sends the return value back to the iframe.
+
+Only one handler can be registered per plugin instance. Calling this method
+again replaces the previous handler.
+
+```ts
+
+registerPageHandler(handler: PluginUIHandler): void;
+
+```
+
+### pushToPage
+
+Pushes a custom message to an iframe UI page. The page receives it via the
+`bridge.onPush()` SDK method.
+
+```ts
+
+pushToPage(pageId: string, action: string, data?: unknown): void;
+
+```
+## PluginUIHandler
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+Handler for custom messages sent from iframe UI pages.
+
+Plugins register a handler via `ctx.ui.registerPageHandler()` to receive
+arbitrary invoke requests from their iframe-based UIs. The host acts as a
+transparent router — it does not inspect or interpret the action or data.
+
+```ts
+export interface PluginUIHandler {
+  /**
+   * Called when the iframe sends an invoke request via `bridge.invoke(action, data)`.
+   *
+   * @param pageId - The page that sent the message.
+   * @param action - Developer-defined action identifier.
+   * @param data - Arbitrary payload from the iframe.
+   * @returns The response value sent back to the iframe.
+   */
+  onMessage(pageId: string, action: string, data: unknown): Promise<unknown>;
+}
+```
+
+## 成员
+
+### onMessage
+
+Called when the iframe sends an invoke request via `bridge.invoke(action, data)`.
+
+@param pageId - The page that sent the message.
+@param action - Developer-defined action identifier.
+@param data - Arbitrary payload from the iframe.
+@returns The response value sent back to the iframe.
+
+```ts
+
+onMessage(pageId: string, action: string, data: unknown): Promise<unknown>;
+
+```
+## PluginFileStore
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+
+Persistent binary file storage for plugins.
+
+Files are stored in a sandboxed directory under the plugin's data path. Path
+traversal outside the sandbox is rejected by the host.
+
+```ts
+export interface PluginFileStore {
+  /** Writes (or overwrites) a file at the given path. */
+  write(path: string, data: Buffer): Promise<void>;
+
+  /** Reads a file. Returns `null` when the path does not exist. */
+  read(path: string): Promise<Buffer | null>;
+
+  /** Deletes a file. Returns `true` if the file existed and was removed. */
+  delete(path: string): Promise<boolean>;
+
+  /** Lists file paths under the given prefix (or all files when omitted). */
+  list(prefix?: string): Promise<string[]>;
+}
+```
+
+## 成员
+
+### write
+
+Writes (or overwrites) a file at the given path.
+
+```ts
+
+write(path: string, data: Buffer): Promise<void>;
+
+```
+
+### read
+
+Reads a file. Returns `null` when the path does not exist.
+
+```ts
+
+read(path: string): Promise<Buffer | null>;
+
+```
+
+### delete
+
+Deletes a file. Returns `true` if the file existed and was removed.
+
+```ts
+
+delete(path: string): Promise<boolean>;
+
+```
+
+### list
+
+Lists file paths under the given prefix (or all files when omitted).
+
+```ts
+
+list(prefix?: string): Promise<string[]>;
 
 ```

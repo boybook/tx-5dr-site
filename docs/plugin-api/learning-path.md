@@ -10,8 +10,10 @@
 4. [第 3 章：守候与自动起呼](./tutorial-watcher-autocall)
 5. [第 4 章：面板、按钮与定时器](./tutorial-ui-actions-and-panels)
 6. [第 5 章：StrategyRuntime](./tutorial-strategy-runtime)
-7. [心智模型](./concepts)
-8. [Reference](./reference/)
+7. [第 6 章：自定义 UI 与 iframe 面板](./tutorial-custom-ui)
+8. [第 7 章：日志同步 Provider](./tutorial-logbook-sync)
+9. [心智模型](./concepts)
+10. [Reference](./reference/)
 
 ## 每一章解决什么问题
 
@@ -54,25 +56,51 @@
 
 ### 第 5 章：StrategyRuntime
 
-解决“如何接管自动化流程本身”的问题。你会学到：
+解决”如何接管自动化流程本身”的问题。你会学到：
 
 - `type: 'strategy'`
 - `createStrategyRuntime(ctx)`
 - `decide(...)`、`getTransmitText()`、`requestCall(...)`
 - 什么时候应该写 strategy，而不是 utility
 
-## 两条最重要的分界线
+### 第 6 章：自定义 UI 与 iframe 面板
 
-先记住这两条，后面大多数设计判断都会变简单：
+解决”结构化面板不够灵活，需要完全自定义界面”的问题。你会学到：
 
-- 如果你只是“影响候选排序或补充能力”，优先写 `utility`
-- 如果你要“接管整个 QSO 流程”，才写 `strategy`
+- `component: 'iframe'` 面板与 `ui.pages` 声明
+- Bridge SDK（`window.tx5dr`）的完整 API
+- `invoke()` / `onPush()` 双向通信模型
+- CSS Design Tokens 主题适配
+- `slot: 'operator'` vs `slot: 'automation'` 面板渲染位置
+- `ctx.ui.pushToPage()` 服务端主动推送
 
-以及：
+### 第 7 章：日志同步 Provider
 
+解决”如何接入外部日志同步服务”的问题。你会学到：
+
+- `LogbookSyncProvider` 接口与注册流程
+- `ctx.logbook` 的查询/写入能力
+- `ctx.files` 文件存储
+- 设置页面与 `SyncAction` 自定义操作
+- 自动上传管线
+
+## 三条最重要的分界线
+
+先记住这几条，后面大多数设计判断都会变简单：
+
+**自动化逻辑**：
+- 如果你只是”影响候选排序或补充能力”，优先写 `utility`
+- 如果你要”接管整个 QSO 流程”，才写 `strategy`
+
+**目标选择**：
 - “硬过滤”优先用 `onFilterCandidates(...)`
 - “软偏置”优先用 `onScoreCandidates(...)`
 - “守候后自动起呼”优先用 `onAutoCallCandidate(...)`
+
+**UI 与数据展示**：
+- 只需要展示简单数据 → 第 4 章的结构化面板（`ctx.ui.send()`）
+- 需要自定义交互界面 → 第 6 章的 iframe 面板
+- 需要接入外部日志服务 → 第 7 章的日志同步 Provider
 
 ## 和主仓库文档的关系
 

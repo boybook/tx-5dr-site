@@ -20,6 +20,6 @@
 npm run docs:sync-plugin-api
 ```
 
-当前默认读取的主仓库分支是 `main`。
+当前默认读取的主仓库分支是 `feat/plugin-logbook-sync-migration`。
 
 如果 TX-5DR 主仓库不在默认的 `../tx-5dr`，请先设置环境变量 `TX5DR_SOURCE_DIR`。

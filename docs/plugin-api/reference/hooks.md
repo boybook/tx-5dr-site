@@ -18,7 +18,7 @@
 ## ScoredCandidate
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Candidate message plus an accumulated ranking score.
 
@@ -57,7 +57,7 @@ score: number;
 ## StrategyDecision
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Decision returned from {@link StrategyRuntime.decide}.
 
@@ -85,9 +85,11 @@ export interface StrategyDecision {
 
 Requests that the host stop transmitting and leave the active QSO flow.
 
-When `StrategyRuntime.decide(..., { isReDecision: true })` returns `stop: true`,
-the host also immediately interrupts the operator's current live
-audio/PTT contribution instead of waiting for the current TX period to finish.
+During a late re-decision (`meta.isReDecision === true`), the host treats
+this as an immediate abort request for the operator's in-flight
+transmission. In other words, `stop: true` means both:
+- stop the operator's automation/runtime state; and
+- interrupt the operator's current audio/PTT contribution right away.
 
 ```ts
 
@@ -97,7 +99,7 @@ stop?: boolean;
 ## StrategyDecisionMeta
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Metadata describing why a strategy decision is being evaluated.
 
@@ -132,7 +134,7 @@ isReDecision?: boolean;
 ## LastMessageInfo
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Pairing of a received frame and its slot metadata.
 
@@ -172,7 +174,7 @@ slotInfo: SlotInfo;
 ## AutoCallProposal
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Declarative automatic-call request proposed by a utility plugin.
 
@@ -226,7 +228,7 @@ lastMessage?: LastMessageInfo;
 ## AutoCallExecutionRequest
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Immutable metadata about the automatic-call proposal that won arbitration.
 
@@ -238,6 +240,14 @@ export interface AutoCallExecutionRequest {
   callsign: string;
   /** Slot that is currently being processed when the autocall starts. */
   slotInfo: SlotInfo;
+  /**
+   * Source receive slot that produced the accepted proposal.
+   *
+   * Execution-stage plugins should prefer this slot when they need to inspect
+   * the decode environment that triggered the autocall, such as picking a
+   * quieter transmit offset from the previous RX slot.
+   */
+  sourceSlotInfo?: SlotInfo;
   /** Optional triggering frame context preserved from the proposal stage. */
   lastMessage?: LastMessageInfo;
 }
@@ -275,6 +285,20 @@ slotInfo: SlotInfo;
 
 ```
 
+### sourceSlotInfo
+
+Source receive slot that produced the accepted proposal.
+
+Execution-stage plugins should prefer this slot when they need to inspect
+the decode environment that triggered the autocall, such as picking a
+quieter transmit offset from the previous RX slot.
+
+```ts
+
+sourceSlotInfo?: SlotInfo;
+
+```
+
 ### lastMessage
 
 Optional triggering frame context preserved from the proposal stage.
@@ -287,7 +311,7 @@ lastMessage?: LastMessageInfo;
 ## AutoCallExecutionPlan
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Host-managed execution plan for an accepted automatic-call proposal.
 
@@ -318,7 +342,7 @@ audioFrequency?: number;
 ## PluginHooks
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
 
 Hook collection implemented by a plugin.
 

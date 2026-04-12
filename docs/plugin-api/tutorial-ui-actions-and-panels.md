@@ -161,10 +161,24 @@ export default plugin;
 
 这些应该继续走各自明确的宿主机制。
 
+## 需要更灵活的界面？
+
+本章介绍的结构化面板（`key-value`、`table`、`log`、`chart`）适合展示简单数据。但如果你需要：
+
+- 自定义的表单输入
+- 交互式图表
+- 多步向导
+- 完全定制的布局
+
+可以使用 **iframe 面板** —— 插件提供自己的 HTML/CSS/JS 页面，由宿主在沙箱 iframe 中渲染。iframe 面板支持双向通信：`tx5dr.invoke()` 向服务端请求数据，`tx5dr.onPush()` 接收服务端推送。
+
+详见 [第 6 章：自定义 UI 与 iframe 面板](./tutorial-custom-ui)。
+
 ## 这一章你应该学会什么
 
 - 按钮是 `quickActions + onUserAction(...)`
 - 定时逻辑是 `timers + onTimer(...)`
 - 面板数据是 `ctx.ui.send(...)`
+- 需要自定义交互时，用 iframe 面板（第 6 章）
 
 下一章进入最复杂、也最强大的部分：自己写一个 `strategy` 插件。
