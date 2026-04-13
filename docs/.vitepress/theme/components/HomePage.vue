@@ -61,7 +61,7 @@ const home = reactive(useHomeData());
         />
       </main>
 
-      <SiteFooter :app-release-url="home.NIGHTLY_APP_RELEASE_URL" :repo-url="home.REPO_URL" :t="home.t" />
+      <SiteFooter :app-release-url="home.NIGHTLY_APP_RELEASE_URL" :locale="home.locale" :repo-url="home.REPO_URL" :t="home.t" />
     </div>
   </div>
 </template>

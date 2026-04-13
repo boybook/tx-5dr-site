@@ -103,6 +103,7 @@ const translations: Translations = {
       releases: 'Releases',
       readme: 'README',
       issues: 'Issues',
+      icp: 'Zhe ICP Bei 2022033471 Hao-2',
     },
   },
   'zh-CN': {
@@ -201,6 +202,7 @@ const translations: Translations = {
       releases: '发布页',
       readme: 'README',
       issues: '问题反馈',
+      icp: '浙ICP备2022033471号-2',
     },
   },
 };
