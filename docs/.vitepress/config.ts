@@ -14,6 +14,12 @@ const guideSidebar = [
     ],
   },
   {
+    text: '实时语音',
+    items: [
+      { text: 'LiveKit 与实时语音配置', link: '/guide/livekit' },
+    ],
+  },
+  {
     text: '部署方式',
     items: [
       { text: '桌面版安装', link: '/guide/desktop' },
