@@ -69,6 +69,8 @@ tx5dr token
 | `tx5dr ssl status` | 查看 SSL 证书状态 |
 | `tx5dr ssl renew` | 续签自签名证书 |
 | `tx5dr logs` | 查看日志 |
+| `tx5dr enable-livekit` | 安装并启用 LiveKit |
+| `tx5dr disable-livekit` | 禁用 LiveKit，切换到 `ws-compat` |
 
 ## 服务组成
 
@@ -79,6 +81,59 @@ Linux 服务器版的运行结构由以下组件构成：
 - `nginx`：统一入口与 HTTPS 反向代理
 
 该结构决定了服务器版适合长期运行、反向代理和远程访问场景。
+
+## 统一的 LiveKit 配置方式
+
+从当前版本开始，Linux 服务器版不再推荐通过手工修改 YAML 来配置 LiveKit。统一做法是：
+
+1. 打开“系统设置 > 实时音频”
+2. 选择 `Auto`、`LiveKit` 或 `ws-compat`
+3. 如果使用 LiveKit，再选择媒体网络模式
+4. 保存后执行一次重启
+
+安装包会维护托管运行文件：
+
+- `/var/lib/tx5dr/realtime/livekit.resolved.yaml`
+
+这个文件会随着设置保存、安装流程或修复脚本更新，因此不建议手工编辑。
+
+### 什么时候用 LiveKit，什么时候用 ws-compat
+
+| 实际场景 | 推荐 |
+| --- | --- |
+| 局域网、本机、简单部署 | `ws-compat` 或 LiveKit + `局域网 / 本机` |
+| 云服务器直出公网 | LiveKit + `公网自动发现` |
+| 家宽 NAT、多网卡、自动识别错误 | LiveKit + `公网手动指定` |
+| FRP 只转网页、只反代 `/livekit`、无法开放 UDP | 直接使用 `ws-compat` |
+
+### 修改设置后如何生效
+
+```bash
+sudo tx5dr restart
+```
+
+如果你要单独查看或重启 LiveKit 相关单元，也可以使用：
+
+```bash
+sudo systemctl status tx5dr-livekit
+sudo systemctl restart tx5dr-livekit
+sudo systemctl restart tx5dr
+```
+
+### 公网部署时需要额外注意什么
+
+启用 LiveKit 后，浏览器通常通过当前站点的同源 `/livekit` 路径接入 signaling，因此 `7880/tcp` 通常不需要单独暴露到公网。
+
+但这不代表 LiveKit 只需要 `/livekit` 路径。真正的媒体链路仍需要：
+
+- `7881/tcp`
+- `50000-50100/udp`
+
+::: warning FRP / 单端口公网入口
+如果你的公网入口本质上只能提供网页访问，或者只是把 `/livekit` 这一条路径转发出去，而没有同时开放媒体端口，建议直接使用 `ws-compat`。这通常比强行使用 LiveKit 更稳定。
+:::
+
+更完整的判断方法请阅读 [LiveKit 与实时语音配置](./livekit)。
 
 ## HTTPS 与 SSL 证书
 
@@ -130,4 +185,4 @@ sudo tx5dr doctor --fix
 
 ## 后续步骤
 
-安装完成后，建议继续阅读 [首次进入与基本使用](./first-steps)。需要维护、升级或备份时，再阅读 [部署建议与升级](./deployment)。
+安装完成后，建议继续阅读 [首次进入与基本使用](./first-steps)。需要配置公网语音、LiveKit 或反向代理时，继续阅读 [LiveKit 与实时语音配置](./livekit)。需要维护、升级或备份时，再阅读 [部署建议与升级](./deployment)。

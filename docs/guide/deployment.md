@@ -49,10 +49,11 @@ Docker 形态通常通过更新镜像标签并重新执行 `docker compose up -d
 - 插件目录
 - SSL 证书（`/etc/tx5dr/ssl/`，尤其是自定义证书）
 - 需要长期保留的日志和缓存
+- `/var/lib/tx5dr/realtime/livekit.resolved.yaml` 所对应的系统配置来源（真正建议备份的仍然是主配置和设置，而不是手改运行文件）
 
 ### Docker
 
-建议重点备份映射到宿主机的 `./data` 目录。该目录通常包含配置、日志、缓存、SSL 证书和实时音频运行时文件。
+建议重点备份映射到宿主机的 `./data` 目录。该目录通常包含配置、日志、缓存、SSL 证书、LiveKit 凭据和托管运行时文件。
 
 ## 公网访问相关项
 
@@ -67,6 +68,18 @@ Docker 形态通常通过更新镜像标签并重新执行 `docker compose up -d
 ::: tip 自签名证书与公网
 自签名证书适合局域网使用。如果需要公网访问，建议替换为受信任的 CA 证书，否则用户每次访问都需要手动接受安全警告。替换方式参见 [Linux 服务器 HTTPS 管理](./linux-server#https-与-ssl-证书) 或 [Docker HTTPS 配置](./docker#https-与-ssl-证书)。
 :::
+
+## 关于 LiveKit 运行配置的维护建议
+
+当前版本已经把 Docker、Linux 服务器版和桌面版的 LiveKit 配置入口统一到了“系统设置 > 实时音频”。维护时建议遵循下面的边界：
+
+- 日常调整优先改系统设置，不手改生成后的 YAML
+- Docker 侧重点是保持整个 `./data` 根目录持久化
+- Linux 服务器侧重点是通过 `tx5dr restart` 或 systemd 管理服务重启
+- 桌面版侧重点是修改后重启应用
+- 如果部署约束决定你无法暴露 LiveKit 媒体端口，应直接改用 `ws-compat`
+
+完整判断方法请参阅 [LiveKit 与实时语音配置](./livekit)。
 
 ## 后续页面
 

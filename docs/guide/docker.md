@@ -40,7 +40,7 @@ ls -l /dev/serial/by-id/ 2>/dev/null            # 稳定设备名
 
 ```bash
 # 1. 创建数据目录
-mkdir -p data/{config,plugins,logs,cache,realtime}
+mkdir -p data/{logs/nginx,logs/supervisor}
 
 # 2. 拉取镜像
 docker compose pull
@@ -75,12 +75,16 @@ docker exec tx5dr cat /app/data/config/.admin-token
 docker compose -f docker-compose.livekit.yml up -d
 ```
 
-首次运行时，`livekit-init` 会自动生成凭据到 `./data/realtime/`。主应用启动后会自动检测 LiveKit 是否可用，并在可用时自动切换到 LiveKit 传输。
+首次运行时，`livekit-init` 会自动生成凭据到 `./data/realtime/`，并根据系统设置生成托管的 `livekit.resolved.yaml`。主应用启动后会自动检测 LiveKit 是否可用，并在可用时自动切换到 LiveKit 传输。
+
+::: info 统一配置方式
+LiveKit 的浏览器入口、媒体网络模式和手动公网 IPv4 统一从“系统设置 > 实时音频”配置。不要再手工编辑 `./data/realtime/livekit.resolved.yaml`。
+:::
 
 ::: tip 分阶段排查
 如果 LiveKit 启动遇到问题，可以分步执行以便定位：
 ```bash
-docker compose -f docker-compose.livekit.yml run --rm livekit-init   # 生成凭据
+docker compose -f docker-compose.livekit.yml run --rm livekit-init   # 生成凭据与运行配置
 docker compose -f docker-compose.livekit.yml up -d livekit           # 启动 LiveKit
 docker compose -f docker-compose.livekit.yml logs -f livekit         # 确认正常后 Ctrl-C
 docker compose -f docker-compose.livekit.yml up -d tx5dr             # 启动主应用
@@ -105,6 +109,20 @@ docker compose -f docker-compose.livekit.yml down
 docker compose up -d
 ```
 
+### 修改 LiveKit 设置后如何生效
+
+当你在“系统设置 > 实时音频”里修改了 LiveKit 媒体网络模式或浏览器入口后，运行配置文件会立即更新，但 LiveKit 容器通常仍需要重启一次才能完全生效：
+
+```bash
+docker compose -f docker-compose.livekit.yml restart livekit
+```
+
+如果你同时还修改了 Compose、环境变量或证书，直接重新拉起整套服务更稳妥：
+
+```bash
+docker compose -f docker-compose.livekit.yml up -d
+```
+
 ## Compose 配置说明
 
 ### 服务
@@ -112,21 +130,32 @@ docker compose up -d
 | 服务 | 所在文件 | 作用 | 生命周期 |
 |------|---------|------|---------|
 | `tx5dr` | 两个文件均包含 | 主应用（nginx 反代 + tx5dr-server，supervisor 管理） | 持续运行 |
-| `livekit-init` | `docker-compose.livekit.yml` | 生成 LiveKit 凭据和配置到 `./data/realtime/` | 一次性运行后退出 |
+| `livekit-init` | `docker-compose.livekit.yml` | 生成 LiveKit 凭据和托管运行配置到 `./data/realtime/` | 一次性运行后退出 |
 | `livekit` | `docker-compose.livekit.yml` | LiveKit 信令 + 媒体服务器 | 持续运行 |
 
 ### 持久化目录
 
-以下卷必须映射，否则重启后数据丢失：
+Compose 现在推荐直接持久化整个应用数据根目录：
 
-| 目录 | 内容 |
+```yaml
+volumes:
+  - ./data:/app/data
+```
+
+这样镜像更新、容器重建或切换 Compose 文件时，以下内容都会统一保留：
+
+| 宿主机目录 | 内容 |
 |------|------|
 | `./data/config` | 应用配置、管理员令牌、认证数据 |
 | `./data/plugins` | 用户插件 |
-| `./data/logs` | 应用日志 |
+| `./data/logs` | 应用日志与通联日志 |
 | `./data/cache` | 缓存数据 |
-| `./data/ssl` | SSL 证书（自动生成自签名证书，可替换为自定义证书） |
-| `./data/realtime` | LiveKit 凭据和配置（由 livekit-init 生成，仅 LiveKit 模式使用） |
+| `./data/ssl` | SSL 证书 |
+| `./data/realtime` | LiveKit 凭据与托管运行配置 |
+
+::: warning 不建议只零散挂载某几个子目录
+如果你只挂载部分子目录，镜像更新或容器重建后更容易出现日志、凭据或运行时文件丢失。优先保持整个 `./data` 根目录持久化。
+:::
 
 ## HTTPS 与 SSL 证书
 
@@ -243,9 +272,15 @@ group_add:
 | 7881 | TCP | RTC 媒体传输 |
 | 50000-50100 | UDP | 媒体端口范围 |
 
-浏览器客户端通过当前站点的同源 `/livekit` 路径接入信令，因此通常**不需要**公网暴露 `7880/tcp`。
+浏览器客户端通过当前站点的同源 `/livekit` 路径接入 signaling，因此通常**不需要**公网暴露 `7880/tcp`。
 
-如果反向代理或域名配置导致 `/livekit` 路径不可达，需要在系统设置中配置自定义实时语音入口。
+但要注意：`/livekit` 只是浏览器入口，不等于全部媒体流量。如果你没有同时打通上表中的媒体端口，LiveKit 常常无法稳定传音频。
+
+::: warning FRP / 仅网页反代场景
+如果你只是把网站或 `/livekit` 路径转发到公网，而没有同时开放 LiveKit 的 TCP/UDP 媒体端口，建议在“系统设置 > 实时音频”里直接使用 `ws-compat`。这是更稳定也更符合实际网络约束的选择。
+:::
+
+如果反向代理或域名配置导致 `/livekit` 路径不可达，需要在系统设置中配置自定义实时语音入口。完整判断方法请参阅 [LiveKit 与实时语音配置](./livekit)。
 
 ## 更新
 
@@ -258,29 +293,10 @@ docker compose -f docker-compose.livekit.yml pull && docker compose -f docker-co
 ```
 
 ::: warning
-重新部署时**不要删除** `./data/` 目录，其中包含配置、管理员令牌、LiveKit 凭据和日志。
+更新前请确认宿主机上的 `./data` 目录保持不变。只要整个数据根目录持续挂载，配置、日志、SSL 证书、LiveKit 凭据和托管运行文件都会保留。
 :::
 
-## 故障排查
+## 后续阅读
 
-| 现象 | 原因 | 解决方法 |
-|------|------|---------|
-| `/api/radio/serial-ports` 返回 500 | 镜像缺少 `udevadm` | 升级到最新镜像 |
-| 串口 "Permission denied" | 进程缺少 `dialout` 组 | `group_add` 中添加 `dialout`，重建容器 |
-| 音频设备只显示 "Default" | 进程缺少 `audio` 组 | `group_add` 中添加 `audio`，重建容器 |
-| 容器不断重启 | `supervisord` 配置解析错误 | `docker compose build --no-cache` 或 `docker compose pull` |
-| 宿主机有 USB 但容器无 tty | 只映射了 `/dev/bus/usb` | 在 `devices` 中映射具体 `/dev/ttyUSB*` 或 `/dev/ttyACM*` |
-| 电台连接正常但无音频 | USB 声卡未映射 | 在 `volumes` 和 `devices` 中映射 `/dev/snd` |
-| 浏览器无法使用麦克风 | 非 HTTPS 访问 | 使用 `https://<IP>:8443` 访问，接受自签名证书警告 |
-| HTTPS 访问 ERR_CONNECTION_REFUSED | 未映射 443 端口 | `docker-compose.yml` 中添加 `"8443:443"` 端口映射 |
-
-## 进阶话题
-
-- **PVE / ESXi / VMware 虚拟机**：需要在虚拟机层面直通 USB 设备，然后在容器内映射对应的 tty 和音频节点
-- **`/dev/serial/by-id` 稳定设备命名**：可额外挂载 `- /dev/serial/by-id:/dev/serial/by-id:ro`，但仍需同时映射对应的 `/dev/ttyUSB*` 节点
-- **PulseAudio**：纯 USB 声卡场景通常不需要 PulseAudio，ALSA 直通即可。桌面 Linux 共享宿主机音频时才需要挂载 PulseAudio socket
-- **本地构建镜像**：`docker compose build --no-cache` 或使用仓库内的 `scripts/build-docker.sh`
-
-## 与其他形态的区别
-
-Docker 形态把运行环境、配置目录和设备映射交给容器编排处理。若部署环境不以容器为主，通常更适合使用 [桌面版安装](./desktop) 或 [Linux 服务器安装](./linux-server)。
+- [LiveKit 与实时语音配置](./livekit)
+- [部署建议与升级](./deployment)
