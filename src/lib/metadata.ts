@@ -19,7 +19,7 @@ const COUNTRY_LOOKUP_URLS = [
 ] as const;
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/boybook/tx-5dr/releases?per_page=20';
 const RAW_GITHUB_BASE = 'https://raw.githubusercontent.com/boybook/tx-5dr';
-const OSS_BASE_URL = 'https://tx5dr.oss-cn-hangzhou.aliyuncs.com';
+const OSS_BASE_URL = 'https://dl.tx5dr.com';
 const CATALOG_CACHE_MS = 15 * 60 * 1000;
 const baseVersionCache = new Map<string, Promise<string | null>>();
 
