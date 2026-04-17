@@ -39,12 +39,19 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
-  deploy:
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+  deploy-pages:
     runs-on: ubuntu-latest
     needs: build
     environment:
@@ -54,3 +61,47 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-aliyun:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      OSS_BUCKET: tx-5dr-site
+      OSS_REGION: oss-cn-hangzhou
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Install OSSUtil
+        run: |
+          curl -fL -o /tmp/ossutil64 https://gosspublic.alicdn.com/ossutil/1.7.8/ossutil64
+          chmod +x /tmp/ossutil64
+          sudo mv /tmp/ossutil64 /usr/local/bin/ossutil
+
+      - name: Upload to Aliyun OSS
+        env:
+          OSS_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        run: |
+          ossutil config -e ${OSS_REGION}.aliyuncs.com -i ${OSS_ACCESS_KEY_ID} -k ${OSS_ACCESS_KEY_SECRET}
+          ossutil cp -r ./dist oss://${OSS_BUCKET}/ --force
+
+      - name: Install Aliyun CLI
+        run: |
+          curl -fL -o /tmp/aliyun.tgz https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar -xzf /tmp/aliyun.tgz -C /tmp
+          sudo mv /tmp/aliyun /usr/local/bin
+
+      - name: Configure Aliyun CLI
+        env:
+          ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        run: |
+          aliyun configure set --region cn-hangzhou --access-key-id ${ACCESS_KEY_ID} --access-key-secret ${ACCESS_KEY_SECRET}
+
+      - name: Refresh Aliyun CDN Cache
+        run: |
+          aliyun cdn RefreshObjectCaches --ObjectPath "https://tx5dr.com/" --ObjectType "Directory" --Force "true"
