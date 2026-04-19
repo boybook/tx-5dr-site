@@ -13,6 +13,12 @@ export interface NormalizedAsset {
   platform: SystemPlatform | 'unknown';
   arch: string;
   packageType: string;
+  urlCn?: string;
+  urlGlobal?: string;
+  urlOss?: string;
+  urlGithub?: string;
+  resolvedUrl?: string;
+  resolvedSource?: ReleaseSource;
 }
 
 export interface NormalizedManifest {
@@ -21,6 +27,7 @@ export interface NormalizedManifest {
   tag: string;
   version: string | null;
   commit: string | null;
+  commitTitle: string | null;
   publishedAt: string | null;
   releaseNotes: string | null;
   source: ReleaseSource;

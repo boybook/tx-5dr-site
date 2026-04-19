@@ -45,7 +45,7 @@ export function useHomeData() {
   const windowsDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === 'windows'));
   const macosDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === 'macos'));
   const linuxDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === 'linux'));
-  const showCnDownloadTag = computed(() => [effectiveDesktopManifest.value, effectiveServerManifest.value].some((manifest) => manifest?.source === 'oss'));
+  const showCnDownloadTag = computed(() => catalog.value?.preferredSource === 'oss');
   const heroDownloadOptions = computed(() => buildHeroDownloadOptions(platformScopedDesktopAssets.value, system.value.platform, system.value.arch));
   const platformLabel = computed(() => getPlatformLabel(system.value.platform, t));
 

@@ -1,24 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildNightlyVersion,
   getRecommendedAsset,
   hasCatalogDataForTesting,
-  parseGithubBodyForTesting,
+  resolveAssetUrlForTesting,
 } from './metadata';
-import type { NormalizedManifest, ReleaseCatalog } from './types';
+import type { NormalizedAsset, NormalizedManifest, ReleaseCatalog } from './types';
 
-describe('buildNightlyVersion', () => {
-  it('builds nightly version from base version, build time, and commit', () => {
-    expect(buildNightlyVersion('1.2.3', '2026-04-03 10:01:09 UTC', '98be3ed')).toBe('1.2.3-nightly.202604031001+98be3ed');
+describe('resolveAssetUrlForTesting', () => {
+  const asset: NormalizedAsset = {
+    name: 'TX-5DR-nightly-macos-arm64.dmg',
+    url: 'https://cdn.example.com/TX-5DR-nightly-macos-arm64.dmg',
+    urlCn: 'https://cdn.example.com/TX-5DR-nightly-macos-arm64.dmg',
+    urlGlobal: 'https://github.com/example/TX-5DR-nightly-macos-arm64.dmg',
+    urlOss: 'https://cdn.example.com/TX-5DR-nightly-macos-arm64.dmg',
+    urlGithub: 'https://github.com/example/TX-5DR-nightly-macos-arm64.dmg',
+    platform: 'macos',
+    arch: 'arm64',
+    packageType: 'dmg',
+  };
+
+  it('prefers OSS links for mainland China', () => {
+    expect(resolveAssetUrlForTesting(asset, 'oss')).toEqual({
+      url: 'https://cdn.example.com/TX-5DR-nightly-macos-arm64.dmg',
+      source: 'oss',
+    });
   });
-});
 
-describe('parseGithubBodyForTesting', () => {
-  it('extracts commit and built time from release body', () => {
-    const parsed = parseGithubBodyForTesting(`**Built at** （构建时间）: 2026-04-03 09:55:45 UTC\n**Commit**: [65467de](https://github.com/boybook/tx-5dr/commit/65467de2c7a7af18d3a0dcd5995cf053ff08e73d)`);
-    expect(parsed.commitShort).toBe('65467de');
-    expect(parsed.commitFull).toBe('65467de2c7a7af18d3a0dcd5995cf053ff08e73d');
-    expect(parsed.builtAt).toBe('2026-04-03 09:55:45 UTC');
+  it('prefers GitHub links outside mainland China', () => {
+    expect(resolveAssetUrlForTesting(asset, 'github')).toEqual({
+      url: 'https://github.com/example/TX-5DR-nightly-macos-arm64.dmg',
+      source: 'github',
+    });
   });
 });
 
@@ -29,6 +41,7 @@ describe('getRecommendedAsset', () => {
     tag: 'nightly-app',
     version: '1.0.0-nightly.202604031001+98be3ed',
     commit: '98be3ed',
+    commitTitle: 'feat: ship unified release metadata',
     publishedAt: '2026-04-03 10:01:09 UTC',
     releaseNotes: null,
     source: 'oss',
@@ -79,6 +92,7 @@ describe('hasCatalogDataForTesting', () => {
           tag: 'nightly-app',
           version: '1.0.0-nightly.202604031001+98be3ed',
           commit: '98be3ed',
+          commitTitle: 'feat: ship unified release metadata',
           publishedAt: '2026-04-03 10:01:09 UTC',
           releaseNotes: null,
           source: 'oss',

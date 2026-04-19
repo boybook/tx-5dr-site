@@ -17,15 +17,16 @@ const COUNTRY_LOOKUP_URLS = [
   'https://ipapi.co/country/',
   'https://api.country.is/',
 ] as const;
-const GITHUB_RELEASES_API = 'https://api.github.com/repos/boybook/tx-5dr/releases?per_page=20';
-const RAW_GITHUB_BASE = 'https://raw.githubusercontent.com/boybook/tx-5dr';
 const OSS_BASE_URL = 'https://dl.tx5dr.com';
 const CATALOG_CACHE_MS = 15 * 60 * 1000;
-const baseVersionCache = new Map<string, Promise<string | null>>();
 
 type RawManifestAsset = {
   name?: string;
   url?: string;
+  url_cn?: string;
+  url_global?: string;
+  url_oss?: string;
+  url_github?: string;
   sha256?: string;
   size?: number;
   platform?: string;
@@ -39,41 +40,12 @@ type RawManifest = {
   tag?: string;
   version?: string;
   commit?: string;
+  commit_title?: string;
   published_at?: string;
   release_notes?: string;
   base_url?: string;
   assets?: RawManifestAsset[];
 };
-
-type GitHubReleaseAsset = {
-  name: string;
-  browser_download_url: string;
-  size?: number;
-};
-
-type GitHubRelease = {
-  tag_name: string;
-  draft: boolean;
-  prerelease: boolean;
-  published_at?: string;
-  body?: string;
-  assets?: GitHubReleaseAsset[];
-};
-
-type GitHubCatalog = ReleaseCatalog;
-
-type ParsedBody = {
-  commitShort: string | null;
-  commitFull: string | null;
-  builtAt: string | null;
-};
-
-const emptyCatalog = (): ReleaseCatalog => ({
-  app: { nightly: null, release: null },
-  server: { nightly: null, release: null },
-  countryCode: null,
-  preferredSource: 'github',
-});
 
 function hasCatalogData(catalog: ReleaseCatalog): boolean {
   return Boolean(
@@ -99,17 +71,13 @@ function normalizeArchKey(value: string | null | undefined): string {
   if (input === 'amd64') return 'x64';
   if (input === 'aarch64') return 'arm64';
   if (input === 'appimage') return 'appimage';
-  return input;
+  return input || 'unknown';
 }
 
 function normalizePackageType(value: string | null | undefined): string {
   const input = (value || '').trim();
   if (!input) return 'unknown';
   return input === 'AppImage' ? 'appimage' : input.toLowerCase();
-}
-
-function trimTagVersion(value: string): string {
-  return value.replace(/^v/i, '').replace(/-server$/, '');
 }
 
 function joinUrl(base: string, suffix: string): string {
@@ -169,6 +137,24 @@ function detectServerAssetMetadata(fileName: string): Pick<NormalizedAsset, 'pla
   };
 }
 
+function normalizeAssetPlatform(value: string | null | undefined, fallback: NormalizedAsset['platform']): NormalizedAsset['platform'] {
+  const normalized = (value || '').trim().toLowerCase();
+  if (normalized === 'windows' || normalized === 'macos' || normalized === 'linux' || normalized === 'android' || normalized === 'ios') {
+    return normalized;
+  }
+  return fallback;
+}
+
+function normalizeAssetArch(value: string | null | undefined, fallback: string): string {
+  const normalized = normalizeArchKey(value);
+  return normalized !== 'unknown' ? normalized : fallback;
+}
+
+function normalizeAssetPackageType(value: string | null | undefined, fallback: string): string {
+  const normalized = normalizePackageType(value);
+  return normalized !== 'unknown' ? normalized : fallback;
+}
+
 function toNormalizedAsset(asset: RawManifestAsset, product: ProductType): NormalizedAsset | null {
   if (!asset.name || !asset.url) {
     return null;
@@ -183,9 +169,13 @@ function toNormalizedAsset(asset: RawManifestAsset, product: ProductType): Norma
     url: asset.url,
     sha256: asset.sha256,
     size: asset.size,
-    platform: (asset.platform as SystemPlatform | 'unknown') || detected.platform,
-    arch: asset.arch || detected.arch,
-    packageType: normalizePackageType(asset.package_type) || detected.packageType,
+    platform: normalizeAssetPlatform(asset.platform, detected.platform),
+    arch: normalizeAssetArch(asset.arch, detected.arch),
+    packageType: normalizeAssetPackageType(asset.package_type, detected.packageType),
+    urlCn: asset.url_cn,
+    urlGlobal: asset.url_global,
+    urlOss: asset.url_oss || asset.url,
+    urlGithub: asset.url_github,
   };
 }
 
@@ -204,6 +194,7 @@ function normalizeManifest(raw: RawManifest, source: ReleaseSource): NormalizedM
     tag: raw.tag,
     version: raw.version || null,
     commit: raw.commit || null,
+    commitTitle: raw.commit_title || null,
     publishedAt: raw.published_at || null,
     releaseNotes: raw.release_notes || null,
     source,
@@ -237,142 +228,6 @@ async function resolvePreferredSource(policy: SourcePolicy): Promise<{ preferred
   };
 }
 
-function parseGithubBody(body: string | null | undefined): ParsedBody {
-  const content = body || '';
-  const commitFull = content.match(/\/commit\/([0-9a-f]{7,40})/i)?.[1] ?? null;
-  const commitShort = content.match(/\*\*Commit\*\*[^[]*\[([0-9a-f]{7,40})\]/i)?.[1] ?? commitFull?.slice(0, 7) ?? null;
-  const builtAt = content.match(/\*\*Built at\*\*[^:]*:\s*([^\n]+)/i)?.[1]?.trim() ?? null;
-
-  return {
-    commitShort,
-    commitFull,
-    builtAt,
-  };
-}
-
-function toNightlyStamp(value: string): string | null {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  const parts = [
-    date.getUTCFullYear(),
-    `${date.getUTCMonth() + 1}`.padStart(2, '0'),
-    `${date.getUTCDate()}`.padStart(2, '0'),
-    `${date.getUTCHours()}`.padStart(2, '0'),
-    `${date.getUTCMinutes()}`.padStart(2, '0'),
-  ];
-  return parts.join('');
-}
-
-export function buildNightlyVersion(baseVersion: string, builtAt: string | null, shortCommit: string | null): string | null {
-  const stamp = builtAt ? toNightlyStamp(builtAt) : null;
-  if (!baseVersion || !stamp || !shortCommit) {
-    return null;
-  }
-  return `${trimTagVersion(baseVersion)}-nightly.${stamp}+${shortCommit}`;
-}
-
-async function fetchBaseVersionForCommit(commit: string | null): Promise<string | null> {
-  if (!commit) {
-    return null;
-  }
-
-  if (!baseVersionCache.has(commit)) {
-    baseVersionCache.set(commit, (async () => {
-      try {
-        const data = await fetchJson<{ version?: string }>(`${RAW_GITHUB_BASE}/${commit}/package.json`, 8000);
-        return data.version ? trimTagVersion(data.version) : null;
-      } catch {
-        return null;
-      }
-    })());
-  }
-
-  return baseVersionCache.get(commit) ?? Promise.resolve(null);
-}
-
-async function buildGithubManifest(release: GitHubRelease, product: ProductType, channel: ReleaseChannel): Promise<NormalizedManifest> {
-  const parsedBody = parseGithubBody(release.body);
-  const releaseAssets = (release.assets || []).filter((asset) => asset.name !== 'latest.json');
-  const assets = releaseAssets
-    .map((asset) => toNormalizedAsset({
-      name: asset.name,
-      url: asset.browser_download_url,
-      size: asset.size,
-    }, product))
-    .filter((asset): asset is NormalizedAsset => Boolean(asset));
-
-  let version: string | null;
-  const publishedAt = parsedBody.builtAt || release.published_at || null;
-
-  if (channel === 'nightly') {
-    const baseVersion = await fetchBaseVersionForCommit(parsedBody.commitFull);
-    version = buildNightlyVersion(baseVersion || '', publishedAt, parsedBody.commitShort);
-  } else {
-    version = trimTagVersion(release.tag_name);
-  }
-
-  return {
-    product,
-    channel,
-    tag: release.tag_name,
-    version,
-    commit: parsedBody.commitShort,
-    publishedAt,
-    releaseNotes: release.body || null,
-    source: 'github',
-    assets,
-  };
-}
-
-function isNightlyAppRelease(release: GitHubRelease): boolean {
-  return release.tag_name === 'nightly-app' && !release.draft;
-}
-
-function isNightlyServerRelease(release: GitHubRelease): boolean {
-  return release.tag_name === 'nightly-server' && !release.draft;
-}
-
-function isStableAppRelease(release: GitHubRelease): boolean {
-  if (release.draft || release.prerelease) return false;
-  if (release.tag_name.startsWith('nightly-')) return false;
-  if (release.tag_name.endsWith('-server') || release.tag_name.endsWith('-docker')) return false;
-  return true;
-}
-
-function isStableServerRelease(release: GitHubRelease): boolean {
-  if (release.draft || release.prerelease) return false;
-  if (release.tag_name.startsWith('nightly-')) return false;
-  return release.tag_name.endsWith('-server');
-}
-
-async function fetchGithubCatalog(): Promise<GitHubCatalog> {
-  try {
-    const releases = await fetchJson<GitHubRelease[]>(GITHUB_RELEASES_API, 8000);
-    const appNightly = releases.find(isNightlyAppRelease);
-    const serverNightly = releases.find(isNightlyServerRelease);
-    const appRelease = releases.find(isStableAppRelease);
-    const serverRelease = releases.find(isStableServerRelease);
-
-    return {
-      app: {
-        nightly: appNightly ? await buildGithubManifest(appNightly, 'app', 'nightly') : null,
-        release: appRelease ? await buildGithubManifest(appRelease, 'app', 'release') : null,
-      },
-      server: {
-        nightly: serverNightly ? await buildGithubManifest(serverNightly, 'server', 'nightly') : null,
-        release: serverRelease ? await buildGithubManifest(serverRelease, 'server', 'release') : null,
-      },
-      countryCode: null,
-      preferredSource: 'github',
-    };
-  } catch {
-    return emptyCatalog();
-  }
-}
-
 async function fetchOssManifest(product: ProductType, channel: ReleaseChannel): Promise<NormalizedManifest | null> {
   try {
     const raw = await fetchJson<RawManifest>(getOssManifestUrl(product, channel), 8000);
@@ -404,13 +259,43 @@ async function fetchOssCatalog(): Promise<ReleaseCatalog> {
   };
 }
 
-function pickManifest(
-  primary: ReleaseCatalog,
-  secondary: ReleaseCatalog,
-  product: ProductType,
-  channel: ReleaseChannel,
-): NormalizedManifest | null {
-  return primary[product][channel] || secondary[product][channel] || null;
+function resolveAssetUrl(asset: NormalizedAsset, preferredSource: ReleaseSource): { url: string; source: ReleaseSource } {
+  const candidates: Array<{ source: ReleaseSource; url: string | null }> = preferredSource === 'oss'
+    ? [
+      { source: 'oss', url: asset.urlCn || asset.urlOss || asset.url || null },
+      { source: 'github', url: asset.urlGlobal || asset.urlGithub || null },
+      { source: 'oss', url: asset.url || null },
+    ]
+    : [
+      { source: 'github', url: asset.urlGlobal || asset.urlGithub || null },
+      { source: 'oss', url: asset.urlCn || asset.urlOss || asset.url || null },
+      { source: 'oss', url: asset.url || null },
+    ];
+
+  for (const candidate of candidates) {
+    if (candidate.url) {
+      return { url: candidate.url, source: candidate.source };
+    }
+  }
+
+  return { url: asset.url, source: 'oss' };
+}
+
+function resolveManifestAssets(manifest: NormalizedManifest | null, preferredSource: ReleaseSource): NormalizedManifest | null {
+  if (!manifest) return null;
+
+  return {
+    ...manifest,
+    assets: manifest.assets.map((asset) => {
+      const resolved = resolveAssetUrl(asset, preferredSource);
+      return {
+        ...asset,
+        url: resolved.url,
+        resolvedUrl: resolved.url,
+        resolvedSource: resolved.source,
+      };
+    }),
+  };
 }
 
 export async function fetchReleaseCatalog(policy: SourcePolicy): Promise<ReleaseCatalog> {
@@ -421,18 +306,16 @@ export async function fetchReleaseCatalog(policy: SourcePolicy): Promise<Release
   }
 
   const { preferredSource, countryCode } = await resolvePreferredSource(policy);
-  const [ossCatalog, githubCatalog] = await Promise.all([fetchOssCatalog(), fetchGithubCatalog()]);
-  const primary = preferredSource === 'oss' ? ossCatalog : githubCatalog;
-  const secondary = preferredSource === 'oss' ? githubCatalog : ossCatalog;
+  const ossCatalog = await fetchOssCatalog();
 
   const catalog: ReleaseCatalog = {
     app: {
-      nightly: pickManifest(primary, secondary, 'app', 'nightly'),
-      release: pickManifest(primary, secondary, 'app', 'release'),
+      nightly: resolveManifestAssets(ossCatalog.app.nightly, preferredSource),
+      release: resolveManifestAssets(ossCatalog.app.release, preferredSource),
     },
     server: {
-      nightly: pickManifest(primary, secondary, 'server', 'nightly'),
-      release: pickManifest(primary, secondary, 'server', 'release'),
+      nightly: resolveManifestAssets(ossCatalog.server.nightly, preferredSource),
+      release: resolveManifestAssets(ossCatalog.server.release, preferredSource),
     },
     countryCode,
     preferredSource,
@@ -522,8 +405,8 @@ export function getRecommendedAsset(
   })[0] ?? null;
 }
 
-export function parseGithubBodyForTesting(body: string): ParsedBody {
-  return parseGithubBody(body);
+export function resolveAssetUrlForTesting(asset: NormalizedAsset, preferredSource: ReleaseSource): { url: string; source: ReleaseSource } {
+  return resolveAssetUrl(asset, preferredSource);
 }
 
 export function hasCatalogDataForTesting(catalog: ReleaseCatalog): boolean {

@@ -24,8 +24,9 @@ const translations: Translations = {
       version: 'Version',
       commit: 'Commit',
       builtAt: 'Built at',
+      summary: 'Latest update',
       loading: 'Loading latest metadata…',
-      error: 'Unable to load release metadata right now. You can still open GitHub Releases directly.',
+      error: 'Unable to load release metadata right now. You can still open the project repository directly.',
       fallback: 'Open source project',
     },
     source: {
@@ -123,8 +124,9 @@ const translations: Translations = {
       version: '版本号',
       commit: 'Commit',
       builtAt: '构建时间',
+      summary: '本次更新',
       loading: '正在加载最新版本元数据…',
-      error: '暂时无法加载版本元数据。你仍然可以直接打开 GitHub Releases。',
+      error: '暂时无法加载版本元数据。你仍然可以直接打开项目仓库。',
       fallback: '开源项目',
     },
     source: {

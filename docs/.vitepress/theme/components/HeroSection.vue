@@ -146,6 +146,10 @@ const previewImageSet = computed(() => {
         <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ t('hero.builtAt') }}</p>
         <p class="mt-2 text-base font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{{ formatTime(manifest?.publishedAt || null) }}</p>
       </div>
+      <div class="sm:col-span-3 rounded-3xl border border-white/15 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-white/5">
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ t('hero.summary') }}</p>
+        <p class="mt-2 text-base font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{{ manifest?.commitTitle || '—' }}</p>
+      </div>
     </div>
 
     <p v-if="loading" class="mt-6 text-sm text-slate-500 dark:text-slate-400">{{ t('hero.loading') }}</p>
