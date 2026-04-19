@@ -21,6 +21,13 @@ export interface NormalizedAsset {
   resolvedSource?: ReleaseSource;
 }
 
+export interface NormalizedRecentCommit {
+  id: string;
+  shortId: string;
+  title: string;
+  publishedAt: string | null;
+}
+
 export interface NormalizedManifest {
   product: ProductType;
   channel: ReleaseChannel;
@@ -28,6 +35,7 @@ export interface NormalizedManifest {
   version: string | null;
   commit: string | null;
   commitTitle: string | null;
+  recentCommits: NormalizedRecentCommit[];
   publishedAt: string | null;
   releaseNotes: string | null;
   source: ReleaseSource;

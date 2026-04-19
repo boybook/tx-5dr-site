@@ -3,6 +3,7 @@ import type {
   DetectedSystem,
   NormalizedAsset,
   NormalizedManifest,
+  NormalizedRecentCommit,
   ProductType,
   ReleaseCatalog,
   ReleaseChannel,
@@ -34,6 +35,13 @@ type RawManifestAsset = {
   package_type?: string;
 };
 
+type RawManifestRecentCommit = {
+  id?: string;
+  short_id?: string;
+  title?: string;
+  published_at?: string;
+};
+
 type RawManifest = {
   product?: ProductType;
   channel?: ReleaseChannel;
@@ -44,6 +52,7 @@ type RawManifest = {
   published_at?: string;
   release_notes?: string;
   base_url?: string;
+  recent_commits?: RawManifestRecentCommit[];
   assets?: RawManifestAsset[];
 };
 
@@ -179,6 +188,49 @@ function toNormalizedAsset(asset: RawManifestAsset, product: ProductType): Norma
   };
 }
 
+function normalizeRecentCommit(commit: RawManifestRecentCommit): NormalizedRecentCommit | null {
+  const id = (commit.id || '').trim();
+  const shortId = (commit.short_id || id.slice(0, 7)).trim();
+  const title = (commit.title || '').trim();
+  const publishedAt = (commit.published_at || '').trim();
+
+  if (!id && !shortId && !title && !publishedAt) {
+    return null;
+  }
+
+  return {
+    id: id || shortId,
+    shortId,
+    title,
+    publishedAt: publishedAt || null,
+  };
+}
+
+function normalizeRecentCommits(raw: RawManifest): NormalizedRecentCommit[] {
+  const commits = (raw.recent_commits || [])
+    .map((commit) => normalizeRecentCommit(commit))
+    .filter((commit): commit is NormalizedRecentCommit => Boolean(commit))
+    .slice(0, 5);
+
+  if (commits.length > 0) {
+    return commits;
+  }
+
+  const commit = (raw.commit || '').trim();
+  const commitTitle = (raw.commit_title || '').trim();
+  const publishedAt = (raw.published_at || '').trim();
+  if (!commit && !commitTitle && !publishedAt) {
+    return [];
+  }
+
+  return [{
+    id: commit,
+    shortId: commit.slice(0, 7),
+    title: commitTitle,
+    publishedAt: publishedAt || null,
+  }];
+}
+
 function normalizeManifest(raw: RawManifest, source: ReleaseSource): NormalizedManifest | null {
   if (!raw.product || !raw.channel || !raw.tag) {
     return null;
@@ -195,6 +247,7 @@ function normalizeManifest(raw: RawManifest, source: ReleaseSource): NormalizedM
     version: raw.version || null,
     commit: raw.commit || null,
     commitTitle: raw.commit_title || null,
+    recentCommits: normalizeRecentCommits(raw),
     publishedAt: raw.published_at || null,
     releaseNotes: raw.release_notes || null,
     source,

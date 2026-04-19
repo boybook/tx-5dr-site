@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { withBase } from 'vitepress';
 import type { DetectedSystem, NormalizedAsset, NormalizedManifest } from '../../../../src/lib/types';
 
@@ -28,6 +28,9 @@ const previewImageSet = computed(() => {
     night: withBase(`/tx5dr-pic/${localePrefix}-night.png`),
   };
 });
+
+const commitsUrl = computed(() => `${props.repoUrl}/commits/main`);
+const recentUpdatesOpen = ref(false);
 </script>
 
 <template>
@@ -136,7 +139,7 @@ const previewImageSet = computed(() => {
     <div class="mx-auto mt-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
       <div class="rounded-3xl border border-white/15 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-white/5">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ t('hero.version') }}</p>
-        <p class="mt-2 text-base font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{{ manifest?.version || '—' }}</p>
+        <p class="mt-2 break-all text-base font-semibold text-slate-900 dark:text-white">{{ manifest?.version || '—' }}</p>
       </div>
       <div class="rounded-3xl border border-white/15 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-white/5">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ t('hero.commit') }}</p>
@@ -150,6 +153,72 @@ const previewImageSet = computed(() => {
         <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ t('hero.summary') }}</p>
         <p class="mt-2 text-base font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{{ manifest?.commitTitle || '—' }}</p>
       </div>
+    </div>
+
+    <div
+      v-if="manifest?.recentCommits?.length"
+      class="mx-auto mt-3 max-w-3xl"
+    >
+      <button
+        type="button"
+        class="mx-auto inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100/80 hover:text-rose-700 dark:text-slate-300 dark:hover:bg-white/8 dark:hover:text-rose-200"
+        :aria-expanded="recentUpdatesOpen"
+        @click="recentUpdatesOpen = !recentUpdatesOpen"
+      >
+        <span>{{ recentUpdatesOpen ? t('hero.recentUpdatesCollapse') : t('hero.recentUpdatesExpand') }}</span>
+        <svg viewBox="0 0 20 20" aria-hidden="true" class="size-4 transition duration-300" :class="recentUpdatesOpen ? 'rotate-180' : ''" fill="none">
+          <path d="M5 7.5 10 12.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="max-h-0 translate-y-2 opacity-0"
+        enter-to-class="max-h-[1200px] translate-y-0 opacity-100"
+        leave-active-class="overflow-hidden transition-all duration-250 ease-in"
+        leave-from-class="max-h-[1200px] translate-y-0 opacity-100"
+        leave-to-class="max-h-0 -translate-y-1 opacity-0"
+      >
+        <div v-if="recentUpdatesOpen" class="mt-4 overflow-hidden">
+          <div class="rounded-3xl border border-white/15 bg-white/70 p-4 text-left backdrop-blur dark:border-white/10 dark:bg-white/5">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ t('hero.recentUpdatesTitle') }}</p>
+            <div class="mt-4 space-y-3">
+              <article
+                v-for="commit in manifest.recentCommits"
+                :key="`${commit.id}-${commit.publishedAt || commit.shortId}`"
+                class="rounded-2xl border border-slate-200/80 bg-white/85 p-3 dark:border-white/10 dark:bg-white/5"
+              >
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ commit.title || '—' }}</p>
+                  <a
+                    :href="commit.id ? `${repoUrl}/commit/${commit.id}` : commitsUrl"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-rose-300 hover:text-rose-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-rose-200"
+                  >
+                    {{ commit.shortId || commit.id || '—' }}
+                  </a>
+                </div>
+                <div class="mt-2 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p>{{ t('hero.recentCommitTime') }} · {{ formatTime(commit.publishedAt || null) }}</p>
+                  <p class="break-all">{{ t('hero.recentCommitId') }} · {{ commit.id || commit.shortId || '—' }}</p>
+                </div>
+              </article>
+
+              <div class="flex justify-center pt-1">
+                <a
+                  :href="commitsUrl"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="inline-flex items-center justify-center rounded-full border border-slate-300/70 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-400 hover:text-rose-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-rose-200"
+                >
+                  {{ t('hero.viewAllUpdates') }}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
 
     <p v-if="loading" class="mt-6 text-sm text-slate-500 dark:text-slate-400">{{ t('hero.loading') }}</p>

@@ -44,6 +44,7 @@ describe('getRecommendedAsset', () => {
     commitTitle: 'feat: ship unified release metadata',
     publishedAt: '2026-04-03 10:01:09 UTC',
     releaseNotes: null,
+    recentCommits: [],
     source: 'oss',
     assets: [
       { name: 'TX-5DR-nightly-windows-x64.zip', url: '#', platform: 'windows', arch: 'x64', packageType: 'zip' },
@@ -95,6 +96,7 @@ describe('hasCatalogDataForTesting', () => {
           commitTitle: 'feat: ship unified release metadata',
           publishedAt: '2026-04-03 10:01:09 UTC',
           releaseNotes: null,
+          recentCommits: [],
           source: 'oss',
           assets: [],
         },
