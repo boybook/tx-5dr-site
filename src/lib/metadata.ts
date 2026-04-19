@@ -18,6 +18,7 @@ const COUNTRY_LOOKUP_URLS = [
   'https://ipapi.co/country/',
   'https://api.country.is/',
 ] as const;
+const RECENT_COMMITS_LIMIT = 10;
 const OSS_BASE_URL = 'https://dl.tx5dr.com';
 const CATALOG_CACHE_MS = 15 * 60 * 1000;
 
@@ -210,7 +211,7 @@ function normalizeRecentCommits(raw: RawManifest): NormalizedRecentCommit[] {
   const commits = (raw.recent_commits || [])
     .map((commit) => normalizeRecentCommit(commit))
     .filter((commit): commit is NormalizedRecentCommit => Boolean(commit))
-    .slice(0, 5);
+    .slice(0, RECENT_COMMITS_LIMIT);
 
   if (commits.length > 0) {
     return commits;
