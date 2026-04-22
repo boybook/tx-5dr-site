@@ -28,7 +28,7 @@
 
 ## 最小 iframe 面板
 
-先看一个最小可运行的 iframe 面板插件。
+先看一个最小可运行的 iframe 面板插件。这里先给 **drop-in 可直接运行版**，后文再讲 TypeScript / Vite / link / `.hotreload` 的开发者模式。
 
 ### 目录结构
 
@@ -44,10 +44,8 @@ my-iframe-plugin/
 
 ### 插件定义
 
-```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
-
-const plugin: PluginDefinition = {
+```js
+const plugin = {
   name: 'my-iframe-plugin',
   version: '1.0.0',
   type: 'utility',
@@ -98,6 +96,16 @@ export default plugin;
 - **bridge.js** —— Bridge SDK，挂载到 `window.tx5dr`
 
 你不需要自己引入它们，宿主会在 `</head>` 之前自动插入。
+
+### Drop-in 验证步骤
+
+1. 将 `plugin.js` 和 `ui/dashboard.html` 放到运行时插件目录下同一个插件文件夹。
+2. 在「设置 → 插件」点击「重载插件」。
+3. 在「设置 → 插件 → 插件运行日志」确认看到加载成功，或查看明确失败原因。
+
+如果页面没显示，先检查 `panels[].pageId`、`ui.pages[].id` 和 `ui.pages[].entry` 是否一致，且 HTML 文件确实存在于 `ui/` 目录。
+
+> 下面的 TypeScript 片段属于源码开发示例，需先构建后再部署，不能直接替代运行时 `plugin.js`。
 
 ## Bridge SDK
 

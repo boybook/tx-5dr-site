@@ -23,10 +23,8 @@ my-plugin/
 
 ## 第一个插件
 
-```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
-
-const plugin: PluginDefinition = {
+```js
+const plugin = {
   name: 'hello-plugin',
   version: '1.0.0',
   type: 'utility',
@@ -42,6 +40,8 @@ const plugin: PluginDefinition = {
 
 export default plugin;
 ```
+
+这段是 **drop-in 可直接运行版**，可以直接保存成 `<插件目录>/hello-plugin/plugin.js`。
 
 这段代码已经具备了一个可工作的最小插件形态：
 
@@ -64,10 +64,8 @@ export default plugin;
 
 接下来给插件加一个简单开关：
 
-```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
-
-const plugin: PluginDefinition = {
+```js
+const plugin = {
   name: 'hello-plugin',
   version: '1.0.0',
   type: 'utility',
@@ -95,6 +93,22 @@ const plugin: PluginDefinition = {
 export default plugin;
 ```
 
+## TypeScript 版本说明（源码示例）
+
+如果你在插件项目里用 TypeScript，可以写成：
+
+```ts
+import type { PluginDefinition } from '@tx5dr/plugin-api';
+
+const plugin: PluginDefinition = {
+  // ...
+};
+
+export default plugin;
+```
+
+但它属于**源码**，不能直接当运行时 `plugin.js` 使用，必须先构建。
+
 ## 配套本地化
 
 ```json
@@ -116,3 +130,14 @@ export default plugin;
 - 如何声明一个简单设置项
 
 下一章开始，我们会进入真正影响自动化行为的第一类能力：过滤和评分。
+
+## 故障排查：最小插件“毫无反应”
+
+如果你照着最小示例做了插件却没有任何动静，按这个顺序检查：
+
+1. 入口文件名是否正确：只支持 `plugin.js`、`plugin.mjs`、`index.js`、`index.mjs`。
+2. 是否把 TypeScript 源码直接当成 `plugin.js` 放进去了（需要先构建）。
+3. 是否在「设置 → 插件」点击了「重载插件」。
+4. 是否在「设置 → 插件 → 插件运行日志」看到加载尝试和失败原因。
+5. 默认导出是否为对象（`export default { ... }`），而不是函数或其它类型。
+6. 插件名是否与内置插件重名（例如 `standard-qso`）。
