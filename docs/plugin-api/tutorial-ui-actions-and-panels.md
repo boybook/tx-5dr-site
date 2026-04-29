@@ -139,6 +139,34 @@ export default plugin;
 - `width: 'full'` 表示“这个面板更重要，希望给它更宽的展示空间”
 - 当前操作员卡片 host 会把 `full` 解释为桌面端跨整行显示；但 `automation` 之类的 host 可以按自己的布局策略忽略它，所以它是声明式 hint，而不是绝对布局命令
 
+## 运行时动态面板
+
+上面的 `panels` 是静态声明，适合面板数量固定的插件。如果面板数量来自用户配置（例如语音页面右侧要显示 0 到 N 个网页 Tab），应使用 UI Contribution：
+
+```ts
+ctx.ui.setPanelContributions('voice-tabs', [
+  {
+    id: 'voice-tab:dx-cluster',
+    title: 'DX Cluster',
+    component: 'iframe',
+    pageId: 'voice-webview',
+    params: { tabId: 'dx-cluster' },
+    slot: 'voice-right-top',
+    width: 'full',
+  },
+]);
+
+ctx.ui.clearPanelContributions('voice-tabs');
+```
+
+几点约束：
+
+- `groupId` 是插件内稳定 ID，`setPanelContributions()` 每次替换整个 group
+- 静态 `panels` 会被宿主视为保留的 `manifest` group，动态 group 和它们进入同一套渲染管线
+- 同一插件实例内合并后的 `panel.id` 必须唯一
+- iframe 面板的 `pageId` 必须引用 `ui.pages` 里声明过的页面
+- `params` 只接受字符串键值，会作为 `tx5dr.params` 注入 iframe
+
 ## 两个内置案例
 
 ### heartbeat-demo
@@ -185,6 +213,7 @@ export default plugin;
 - 按钮是 `quickActions + onUserAction(...)`
 - 定时逻辑是 `timers + onTimer(...)`
 - 面板数据是 `ctx.ui.send(...)`
+- 动态宿主面板是 `ctx.ui.setPanelContributions(...)`
 - 需要自定义交互时，用 iframe 面板（第 6 章）
 
 下一章进入最复杂、也最强大的部分：自己写一个 `strategy` 插件。

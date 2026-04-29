@@ -7,6 +7,7 @@
 ## 导出
 
 - [ScoredCandidate](#scoredcandidate)
+- [QSOFailureInfo](#qsofailureinfo)
 - [StrategyDecision](#strategydecision)
 - [StrategyDecisionMeta](#strategydecisionmeta)
 - [LastMessageInfo](#lastmessageinfo)
@@ -18,7 +19,7 @@
 ## ScoredCandidate
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Candidate message plus an accumulated ranking score.
 
@@ -54,10 +55,78 @@ plugins.
 score: number;
 
 ```
+## QSOFailureInfo
+
+- Kind: `interface`
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+
+未提供额外注释。
+
+```ts
+export interface QSOFailureInfo {
+  targetCallsign: string;
+  reason: string;
+  stage?: string;
+  unansweredTransmissions?: number;
+  hadTargetReply?: boolean;
+}
+```
+
+## 成员
+
+### targetCallsign
+
+未提供额外注释。
+
+```ts
+
+targetCallsign: string;
+
+```
+
+### reason
+
+未提供额外注释。
+
+```ts
+
+reason: string;
+
+```
+
+### stage
+
+未提供额外注释。
+
+```ts
+
+stage?: string;
+
+```
+
+### unansweredTransmissions
+
+未提供额外注释。
+
+```ts
+
+unansweredTransmissions?: number;
+
+```
+
+### hadTargetReply
+
+未提供额外注释。
+
+```ts
+
+hadTargetReply?: boolean;
+
+```
 ## StrategyDecision
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Decision returned from {@link StrategyRuntime.decide}.
 
@@ -76,6 +145,7 @@ export interface StrategyDecision {
    * - interrupt the operator's current audio/PTT contribution right away.
    */
   stop?: boolean;
+  qsoFailure?: QSOFailureInfo;
 }
 ```
 
@@ -96,10 +166,20 @@ transmission. In other words, `stop: true` means both:
 stop?: boolean;
 
 ```
+
+### qsoFailure
+
+未提供额外注释。
+
+```ts
+
+qsoFailure?: QSOFailureInfo;
+
+```
 ## StrategyDecisionMeta
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Metadata describing why a strategy decision is being evaluated.
 
@@ -134,7 +214,7 @@ isReDecision?: boolean;
 ## LastMessageInfo
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Pairing of a received frame and its slot metadata.
 
@@ -174,7 +254,7 @@ slotInfo: SlotInfo;
 ## AutoCallProposal
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Declarative automatic-call request proposed by a utility plugin.
 
@@ -228,7 +308,7 @@ lastMessage?: LastMessageInfo;
 ## AutoCallExecutionRequest
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Immutable metadata about the automatic-call proposal that won arbitration.
 
@@ -311,7 +391,7 @@ lastMessage?: LastMessageInfo;
 ## AutoCallExecutionPlan
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Host-managed execution plan for an accepted automatic-call proposal.
 
@@ -342,7 +422,7 @@ audioFrequency?: number;
 ## PluginHooks
 
 - Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/hooks.ts)
+- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Hook collection implemented by a plugin.
 
@@ -433,7 +513,7 @@ export interface PluginHooks {
   /**
    * Broadcast when an in-progress QSO terminates unsuccessfully.
    */
-  onQSOFail?(info: { targetCallsign: string; reason: string }, ctx: PluginContext): void;
+  onQSOFail?(info: QSOFailureInfo, ctx: PluginContext): void;
 
   /**
    * Broadcast when a named timer created through {@link PluginContext.timers}
@@ -578,7 +658,7 @@ Broadcast when an in-progress QSO terminates unsuccessfully.
 
 ```ts
 
-onQSOFail?(info: { targetCallsign: string; reason: string }, ctx: PluginContext): void;
+onQSOFail?(info: QSOFailureInfo, ctx: PluginContext): void;
 
 ```
 

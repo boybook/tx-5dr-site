@@ -184,7 +184,7 @@ curl -X POST http://localhost:4000/api/plugins/my-plugin/reload
 
 ## Vite MPA 配置详解
 
-生成的 `ui/vite.config.ts` 使用 Vite 的多页面应用（MPA）模式。这是因为 TX-5DR 的 iframe 宿主期望**每个页面是一个独立的 HTML 文件**，不是一个 SPA 路由。
+生成的 `ui/vite.config.ts` 使用 Vite 的多页面应用（MPA）模式。这是因为 TX-5DR 的 iframe 宿主会按 `ui.pages[].entry` 加载入口 HTML；每个需要独立生命周期的页面通常对应一个独立 HTML 入口，而不是依赖 SPA 路由。
 
 ```ts
 import { defineConfig } from 'vite';
@@ -213,6 +213,7 @@ export default defineConfig({
 - `outDir: '../dist/ui'` —— Vite 的输出直接写到 `dist/ui/`，和 tsc 的输出 `dist/index.js` 合在同一个 `dist/` 下
 - `rollupOptions.input` —— 每个 HTML 入口一个条目。Vite 会为每个入口生成一个独立的 HTML 文件，其中 JS/CSS 会被分块或内联
 - 添加新页面时：创建新的 `.html` 入口，在 `input` 和插件定义的 `ui.pages` 中各加一条
+- 如果多个宿主面板只是上下文不同，可以复用同一个 `ui.pages` 页面，再通过 `panel.params` / `tx5dr.params` 区分；不需要为了每个动态 Tab 生成重复 HTML 文件
 
 ## Bridge SDK 类型提示
 

@@ -39,6 +39,9 @@
 - [PluginPanelDescriptor](#pluginpaneldescriptor)
 - [PluginPanelComponent](#pluginpanelcomponent)
 - [PluginPanelWidth](#pluginpanelwidth)
+- [PluginUIPanelContributionGroup](#pluginuipanelcontributiongroup)
+- [PluginUIPanelContributionTarget](#pluginuipanelcontributiontarget)
+- [PluginObjectArrayField](#pluginobjectarrayfield)
 - [PluginSettingOption](#pluginsettingoption)
 - [PluginStorageScope](#pluginstoragescope)
 - [PluginStorageConfig](#pluginstorageconfig)
@@ -53,7 +56,7 @@
 ## FT8Message
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageSchema`
 
 Union of every structured FT8 message variant recognized by TX-5DR.
@@ -82,7 +85,7 @@ export type FT8Message = z.infer<typeof FT8MessageSchema>;
 ## FT8MessageBase
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageBaseSchema`
 
 Base FT8 message type containing only the discriminant field.
@@ -103,7 +106,7 @@ export type FT8MessageBase = z.infer<typeof FT8MessageBaseSchema>;
 ## FT8MessageCQ
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageCQSchema`
 
 Structured CQ message with sender identity and optional grid/modifier metadata.
@@ -129,7 +132,7 @@ export type FT8MessageCQ = z.infer<typeof FT8MessageCQSchema>;
 ## FT8MessageCall
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageCallSchema`
 
 Structured directed-call message between a sender and a target station.
@@ -153,7 +156,7 @@ export type FT8MessageCall = z.infer<typeof FT8MessageCallSchema>;
 ## FT8MessageSignalReport
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageSignalReportSchema`
 
 Structured signal-report exchange message carrying a numeric report.
@@ -177,7 +180,7 @@ export type FT8MessageSignalReport = z.infer<typeof FT8MessageSignalReportSchema
 ## FT8MessageRogerReport
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageRogerReportSchema`
 
 Structured "roger + report" exchange message.
@@ -201,7 +204,7 @@ export type FT8MessageRogerReport = z.infer<typeof FT8MessageRogerReportSchema>;
 ## FT8MessageRRR
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageRRRSchema`
 
 Structured `RRR` completion/acknowledgement message.
@@ -224,7 +227,7 @@ export type FT8MessageRRR = z.infer<typeof FT8MessageRRRSchema>;
 ## FT8MessageSeventyThree
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageSeventyThreeSchema`
 
 Structured final `73` closing message.
@@ -247,7 +250,7 @@ export type FT8MessageSeventyThree = z.infer<typeof FT8MessageSeventyThreeSchema
 ## FT8MessageFoxRR73
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageFoxRR73Schema`
 
 Structured Fox/Hound `RR73` completion-and-invite message.
@@ -257,6 +260,7 @@ Structured Fox/Hound `RR73` completion-and-invite message.
 ```ts
 export const FT8MessageFoxRR73Schema = FT8MessageBaseSchema.extend({
   type: z.literal('fox_rr73'),
+  senderCallsign: z.string().optional(), // 可解析时填入真实 Fox 呼号；仅短哈希时留空
   completedCallsign: z.string(), // 已完成QSO的Hound呼号
   nextCallsign: z.string(),      // 下一个被邀请的Hound呼号
   foxHash: z.string().optional(), // Fox的哈希码（去掉尖括号后的值）
@@ -272,7 +276,7 @@ export type FT8MessageFoxRR73 = z.infer<typeof FT8MessageFoxRR73Schema>;
 ## FT8MessageCustom
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageCustomSchema`
 
 Structured custom FT8 message whose payload is intentionally not further
@@ -294,7 +298,7 @@ export type FT8MessageCustom = z.infer<typeof FT8MessageCustomSchema>;
 ## FT8MessageUnknown
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `FT8MessageUnknownSchema`
 
 Structured fallback FT8 message for unclassified decoder output.
@@ -315,7 +319,7 @@ export type FT8MessageUnknown = z.infer<typeof FT8MessageUnknownSchema>;
 ## ParsedFT8Message
 
 - Kind: `type`
-- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/ft8.schema.ts)
+- Source: [schema/ft8.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/ft8.schema.ts)
 - Related schema: `ParsedFT8MessageSchema`
 
 Primary plugin-facing FT8 decode model.
@@ -346,7 +350,7 @@ export type ParsedFT8Message = z.infer<typeof ParsedFT8MessageSchema>;
 ## LogbookAnalysis
 
 - Kind: `type`
-- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/slot-info.schema.ts)
+- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/slot-info.schema.ts)
 - Related schema: `LogbookAnalysisSchema`
 
 基于日志本的消息分析结果
@@ -371,6 +375,10 @@ export const LogbookAnalysisSchema = z.object({
   grid: z.string().optional(),
   /** 解析出的前缀（如果有） */
   prefix: z.string().optional(),
+  /** 美国 subdivision code（州/属地），仅在可解析时提供 */
+  state: z.string().optional(),
+  /** subdivision 置信度 */
+  stateConfidence: SubdivisionConfidenceSchema.optional(),
   /** DXCC 实体编号 */
   dxccId: z.number().int().positive().optional(),
   /** DXCC 实体名 */
@@ -388,7 +396,7 @@ export type LogbookAnalysis = z.infer<typeof LogbookAnalysisSchema>;
 ## SlotInfo
 
 - Kind: `type`
-- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/slot-info.schema.ts)
+- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/slot-info.schema.ts)
 - Related schema: `SlotInfoSchema`
 
 时隙周期（偶数奇数）
@@ -424,7 +432,7 @@ export type SlotInfo = z.infer<typeof SlotInfoSchema>;
 ## SlotPack
 
 - Kind: `type`
-- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/slot-info.schema.ts)
+- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/slot-info.schema.ts)
 - Related schema: `SlotPackSchema`
 
 时隙封装信息（去重和多次解码取优）
@@ -452,7 +460,9 @@ export const SlotPackSchema = z.object({
     /** 去重后的帧数 */
     totalFramesAfterDedup: z.number().default(0),
     /** 最后更新时间戳 */
-    lastUpdated: z.number().default(() => Date.now())
+    lastUpdated: z.number().default(() => Date.now()),
+    /** SlotPack 单调更新序号，用于客户端丢弃乱序旧包 */
+    updateSeq: z.number().int().nonnegative().optional()
   }).default({}),
   /** 解码历史（用于调试） */
   decodeHistory: z.array(z.object({
@@ -472,7 +482,7 @@ export type SlotPack = z.infer<typeof SlotPackSchema>;
 ## QSORecord
 
 - Kind: `type`
-- Source: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/qso.schema.ts)
+- Source: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
 - Related schema: `QSORecordSchema`
 
 Canonical persisted QSO record used by TX-5DR logbooks and plugin hooks.
@@ -494,7 +504,8 @@ export const QSORecordSchema = z.object({
   endTime: z.number().optional(), // 结束时间
   reportSent: z.string().optional(),     // 发送的信号报告
   reportReceived: z.string().optional(), // 接收的信号报告
-  messages: z.array(z.string()), // 消息历史
+  messageHistory: z.array(z.string()), // 内部消息历史（FT8 等数字模式）
+  comment: z.string().optional(), // 标准 ADIF COMMENT 字段
   myCallsign: z.string().optional(), // 我的呼号（操作员呼号）
   myGrid: z.string().optional(), // 我的网格定位（操作员网格）
   qth: z.string().optional(), // 对方 QTH（地点，语音通联常用）
@@ -529,8 +540,8 @@ export const QSORecordSchema = z.object({
   qrzQslSentDate: z.number().optional(),
   qrzQslReceivedDate: z.number().optional(),
 
-  // 备注（对应 ADIF NOTES 字段）
-  remarks: z.string().optional(),
+  // 附注（对应 ADIF NOTES 字段）
+  notes: z.string().optional(),
 });
 ```
 
@@ -542,7 +553,7 @@ export type QSORecord = z.infer<typeof QSORecordSchema>;
 ## FrameMessage
 
 - Kind: `type`
-- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/slot-info.schema.ts)
+- Source: [schema/slot-info.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/slot-info.schema.ts)
 - Related schema: `FrameMessageSchema`
 
 FT8 帧数据
@@ -576,7 +587,7 @@ export type FrameMessage = z.infer<typeof FrameMessageSchema>;
 ## ModeDescriptor
 
 - Kind: `type`
-- Source: [schema/mode.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/mode.schema.ts)
+- Source: [schema/mode.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/mode.schema.ts)
 - Related schema: `ModeDescriptorSchema`
 
 模式描述符 - 定义 FT8/FT4 等模式的时序参数
@@ -601,8 +612,9 @@ export const ModeDescriptorSchema = z.object({
   windowTiming: z.array(z.number()),
   /**
    * 发射时机（毫秒）- 从时隙开始的延迟
-   * FT8: 500ms (WSJT-X 标准：信号在时隙边界后 ~0.5s 开始，留 ~1.86s 给解码)
-   * FT4: 约550ms (使6.4秒的音频在7.5秒时隙中居中)
+   * 对齐 WSJT-X 标准：信号在时隙边界后 ~0.5s 开始
+   * FT8: 500ms（信号 T+0.5s 起，12.64s 长，T+13.14s 结束）
+   * FT4: 500ms（信号 T+0.5s 起，6.0s 长，T+6.5s 结束，留 1.0s 给末端解码）
    */
   transmitTiming: z.number().nonnegative(),
   /**
@@ -621,7 +633,7 @@ export type ModeDescriptor = z.infer<typeof ModeDescriptorSchema>;
 ## OperatorSlots
 
 - Kind: `type`
-- Source: [schema/transmission.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/transmission.schema.ts)
+- Source: [schema/transmission.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/transmission.schema.ts)
 - Related schema: `OperatorSlotsSchema`
 
 传输请求（已在 websocket.schema.ts 中定义）
@@ -650,7 +662,7 @@ export type OperatorSlots = z.infer<typeof OperatorSlotsSchema>;
 ## DxccStatus
 
 - Kind: `type`
-- Source: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/qso.schema.ts)
+- Source: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
 - Related schema: `DxccStatusSchema`
 
 Current work status of a resolved DXCC entity in local logbook context.
@@ -674,7 +686,7 @@ export type DxccStatus = z.infer<typeof DxccStatusSchema>;
 ## TargetSelectionPriorityMode
 
 - Kind: `type`
-- Source: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/qso.schema.ts)
+- Source: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
 - Related schema: `TargetSelectionPriorityModeSchema`
 
 Candidate-ranking policy used when choosing which station to answer first.
@@ -697,7 +709,7 @@ export type TargetSelectionPriorityMode = z.infer<typeof TargetSelectionPriority
 ## PluginType
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginTypeSchema`
 
 High-level plugin category used by manifests and runtime status objects.
@@ -716,7 +728,7 @@ export type PluginType = z.infer<typeof PluginTypeSchema>;
 ## PluginInstanceScope
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginInstanceScopeSchema`
 
 Runtime instance scope for a plugin.
@@ -735,7 +747,7 @@ export type PluginInstanceScope = z.infer<typeof PluginInstanceScopeSchema>;
 ## PluginPermission
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginPermissionSchema`
 
 Explicit permission declarations requested by a plugin.
@@ -754,7 +766,7 @@ export type PluginPermission = z.infer<typeof PluginPermissionSchema>;
 ## PluginSettingType
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginSettingTypeSchema`
 
 Supported generated-form field types for plugin settings.
@@ -762,7 +774,7 @@ Supported generated-form field types for plugin settings.
 ### 数据结构
 
 ```ts
-export const PluginSettingTypeSchema = z.enum(['boolean', 'number', 'string', 'string[]', 'info']);
+export const PluginSettingTypeSchema = z.enum(['boolean', 'number', 'string', 'string[]', 'object[]', 'info']);
 ```
 
 ### 类型导出
@@ -773,7 +785,7 @@ export type PluginSettingType = z.infer<typeof PluginSettingTypeSchema>;
 ## PluginSettingDescriptor
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginSettingDescriptorSchema`
 
 Declarative description of a persisted plugin setting.
@@ -794,6 +806,10 @@ export const PluginSettingDescriptorSchema = z.object({
   min: z.number().optional(),
   max: z.number().optional(),
   options: z.array(PluginSettingOptionSchema).optional(),
+  /** Field schema used by generated editors for `object[]` settings. */
+  itemFields: z.array(PluginObjectArrayFieldSchema).optional(),
+  /** Internal settings are persisted/injected but hidden from generated UIs. */
+  hidden: z.boolean().optional(),
   /** 设置作用域：global（所有操作员共享）或 operator（每操作员独立），默认 global */
   scope: PluginSettingScopeSchema.optional().default('global'),
 });
@@ -807,7 +823,7 @@ export type PluginSettingDescriptor = z.infer<typeof PluginSettingDescriptorSche
 ## PluginSettingScope
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginSettingScopeSchema`
 
 Persistence and UI scope for a plugin setting.
@@ -826,7 +842,7 @@ export type PluginSettingScope = z.infer<typeof PluginSettingScopeSchema>;
 ## PluginQuickAction
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginQuickActionSchema`
 
 Declarative quick-action button shown in operator-facing plugin UI.
@@ -849,7 +865,7 @@ export type PluginQuickAction = z.infer<typeof PluginQuickActionSchema>;
 ## PluginQuickSetting
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginQuickSettingSchema`
 
 Shortcut reference to an operator-scope setting that should be surfaced in a
@@ -871,7 +887,7 @@ export type PluginQuickSetting = z.infer<typeof PluginQuickSettingSchema>;
 ## PluginCapability
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginCapabilitySchema`
 
 Host-derived capability tags exposed to the frontend.
@@ -893,7 +909,7 @@ export type PluginCapability = z.infer<typeof PluginCapabilitySchema>;
 ## PluginPanelDescriptor
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginPanelDescriptorSchema`
 
 Declarative definition of a plugin-owned panel in the frontend.
@@ -907,6 +923,8 @@ export const PluginPanelDescriptorSchema = z.object({
   component: PluginPanelComponentSchema,
   /** Required when `component` is `'iframe'`. References a page id from `ui.pages`. */
   pageId: z.string().optional(),
+  /** Optional string params forwarded to iframe panels as URL/init params. */
+  params: z.record(z.string(), z.string()).optional(),
   /** Where the panel renders. Defaults to `'operator'` (operator card live-panel area). */
   slot: PluginPanelSlotSchema.optional(),
   /** Preferred width hint. Defaults to `'half'`. */
@@ -922,7 +940,7 @@ export type PluginPanelDescriptor = z.infer<typeof PluginPanelDescriptorSchema>;
 ## PluginPanelComponent
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginPanelComponentSchema`
 
 Built-in frontend renderer kinds supported by declarative plugin panels.
@@ -941,7 +959,7 @@ export type PluginPanelComponent = z.infer<typeof PluginPanelComponentSchema>;
 ## PluginPanelWidth
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginPanelWidthSchema`
 
 Preferred width hint for plugin-owned panels.
@@ -957,10 +975,88 @@ export const PluginPanelWidthSchema = z.enum(['half', 'full']);
 ```ts
 export type PluginPanelWidth = z.infer<typeof PluginPanelWidthSchema>;
 ```
+## PluginUIPanelContributionGroup
+
+- Kind: `type`
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
+- Related schema: `PluginUIPanelContributionGroupSchema`
+
+A normalized group of plugin UI panels.
+
+Static `PluginDefinition.panels` are emitted by the host as the reserved
+`manifest` group. Runtime groups are replaced by
+`ctx.ui.setPanelContributions(groupId, panels)` and cleared by publishing an
+empty panel list for the same group.
+
+### 数据结构
+
+```ts
+export const PluginUIPanelContributionGroupSchema = z.object({
+  pluginName: z.string(),
+  groupId: z.string(),
+  source: z.enum(['manifest', 'runtime']),
+  instanceTarget: PluginUIPanelContributionTargetSchema.optional(),
+  panels: z.array(PluginPanelDescriptorSchema),
+});
+```
+
+### 类型导出
+
+```ts
+export type PluginUIPanelContributionGroup = z.infer<typeof PluginUIPanelContributionGroupSchema>;
+```
+## PluginUIPanelContributionTarget
+
+- Kind: `type`
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
+- Related schema: `PluginUIPanelContributionTargetSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const PluginUIPanelContributionTargetSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('global') }),
+  z.object({ kind: z.literal('operator'), operatorId: z.string() }),
+]);
+```
+
+### 类型导出
+
+```ts
+export type PluginUIPanelContributionTarget = z.infer<typeof PluginUIPanelContributionTargetSchema>;
+```
+## PluginObjectArrayField
+
+- Kind: `type`
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
+- Related schema: `PluginObjectArrayFieldSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const PluginObjectArrayFieldSchema = z.object({
+  key: z.string(),
+  type: z.enum(['string', 'number', 'boolean']).optional().default('string'),
+  label: z.string(),
+  description: z.string().optional(),
+  placeholder: z.string().optional(),
+  required: z.boolean().optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type PluginObjectArrayField = z.infer<typeof PluginObjectArrayFieldSchema>;
+```
 ## PluginSettingOption
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginSettingOptionSchema`
 
 Label/value pair used by select-like plugin settings.
@@ -982,7 +1078,7 @@ export type PluginSettingOption = z.infer<typeof PluginSettingOptionSchema>;
 ## PluginStorageScope
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginStorageScopeSchema`
 
 Storage scope requested by a plugin.
@@ -1001,7 +1097,7 @@ export type PluginStorageScope = z.infer<typeof PluginStorageScopeSchema>;
 ## PluginStorageConfig
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginStorageConfigSchema`
 
 Declares which persistent storage scopes the host should provision.
@@ -1022,7 +1118,7 @@ export type PluginStorageConfig = z.infer<typeof PluginStorageConfigSchema>;
 ## PluginManifest
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginManifestSchema`
 
 Normalized manifest describing a plugin's static metadata and declarations.
@@ -1054,7 +1150,7 @@ export type PluginManifest = z.infer<typeof PluginManifestSchema>;
 ## PluginStatus
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginStatusSchema`
 
 Runtime-facing plugin status snapshot exposed to the frontend.
@@ -1084,7 +1180,8 @@ export const PluginStatusSchema = z.object({
   permissions: z.array(PluginPermissionSchema).optional(),
   capabilities: z.array(PluginCapabilitySchema).optional(),
   ui: PluginUIConfigSchema.optional(),
-  locales: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+  locales: PluginLocalesSchema.optional(),
+  source: PluginSourceSchema.optional(),
 });
 ```
 
@@ -1096,7 +1193,7 @@ export type PluginStatus = z.infer<typeof PluginStatusSchema>;
 ## PluginUIPageDescriptor
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginUIPageDescriptorSchema`
 
 Declarative descriptor for a custom UI page served from a plugin's static
@@ -1129,7 +1226,7 @@ export type PluginUIPageDescriptor = z.infer<typeof PluginUIPageDescriptorSchema
 ## PluginUIConfig
 
 - Kind: `type`
-- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/contracts/src/schema/plugin.schema.ts)
+- Source: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - Related schema: `PluginUIConfigSchema`
 
 Declares that a plugin provides custom UI pages hosted in an iframe.

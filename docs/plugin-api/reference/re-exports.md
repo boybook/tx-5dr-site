@@ -8,11 +8,16 @@
 
 - `./definition.js`: `PluginDefinition`
 - `./context.js`: `PluginContext`
-- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`
+- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`、`QSOFailureInfo`
 - `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`
-- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`CallsignLogbookAccess`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PluginUIHandler`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`
-- `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncTestResult`、`SyncUploadResult`、`SyncPreflightIssue`、`SyncUploadPreflightResult`、`SyncDownloadResult`、`SyncDownloadOptions`
+- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`LogbookAccess`、`CallsignLogbookAccess`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PanelMeta`、`PluginUIHandler`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`
+- `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncTestResult`、`SyncUploadOptions`、`SyncUploadResult`、`SyncPreflightIssue`、`SyncUploadPreflightResult`、`SyncDownloadResult`、`SyncDownloadOptions`
 - `./ft8-message-type.js`: `FT8MessageType`
+- `./utils/callsign.js`: `normalizeCallsign`
+- `./utils/adif.js`: `parseADIFContent`、`parseADIFRecord`、`parseADIFFields`、`convertQSOToADIF`、`generateADIFFile`、`formatADIFDate`、`formatADIFTime`、`parseADIFDateTime`
+- `./utils/page-scope.js`: `getPluginPageFileScopePath`、`getPluginPageScopePath`、`getPluginPageScopeSegments`、`getPluginPageStorePath`
+- `./utils/page-scope.js`: `PluginPageBoundResource`
+- `./utils/qso-text-fields.js`: `parseLegacyComment`、`resolveQsoComment`、`buildCommentFromMessageHistory`、`normalizeMessageHistory`
 
 ## 来自 @tx5dr/contracts 的类型导出
 
@@ -49,6 +54,9 @@
 - [`PluginPanelDescriptor`](./contracts#pluginpaneldescriptor)
 - [`PluginPanelComponent`](./contracts#pluginpanelcomponent)
 - [`PluginPanelWidth`](./contracts#pluginpanelwidth)
+- [`PluginUIPanelContributionGroup`](./contracts#pluginuipanelcontributiongroup)
+- [`PluginUIPanelContributionTarget`](./contracts#pluginuipanelcontributiontarget)
+- [`PluginObjectArrayField`](./contracts#pluginobjectarrayfield)
 - [`PluginSettingOption`](./contracts#pluginsettingoption)
 - [`PluginStorageScope`](./contracts#pluginstoragescope)
 - [`PluginStorageConfig`](./contracts#pluginstorageconfig)

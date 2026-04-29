@@ -11,7 +11,7 @@
 ## PluginContext
 
 - Kind: `interface`
-- Source: [context.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/context.ts)
+- Source: [context.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/context.ts)
 
 Runtime services exposed to a plugin instance.
 

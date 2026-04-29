@@ -11,7 +11,7 @@
 ## PluginDefinition
 
 - Kind: `interface`
-- Source: [definition.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/definition.ts)
+- Source: [definition.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/definition.ts)
 
 Describes a TX-5DR plugin module.
 
@@ -157,16 +157,23 @@ export interface PluginDefinition {
   quickSettings?: PluginQuickSetting[];
 
   /**
-   * Panel descriptors used to render plugin-owned UI sections.
+   * Static panel descriptors used to render plugin-owned UI sections.
    *
    * Structured panels (`key-value`, `table`, `log`, `chart`) receive live data
    * through {@link PluginContext.ui.send}. Iframe panels (`component: 'iframe'`)
    * render a custom HTML page and communicate via `invoke` / `onPush`.
+   * The host exposes these static descriptors as the reserved `manifest`
+   * contribution group. Plugins that need to add or remove panels at runtime
+   * should use {@link PluginContext.ui.setPanelContributions} instead of
+   * predeclaring placeholder panels.
    *
    * Each panel has a `slot` that controls where it renders: `'operator'` (the
-   * default, shown in the operator card) or `'automation'` (shown in the
-   * top-right automation popover). Panels may also declare a preferred
-   * `width`, such as `'full'`, so hosts can promote more important live panels.
+   * default, shown in the operator card), `'automation'` (shown in the
+   * top-right automation popover), `'main-right'` (the optional far-right main
+   * pane), `'voice-left-top'` (above the voice frequency card), or
+   * `'voice-right-top'` (the tabbed top area of the voice right panel). Panels
+   * may also declare a preferred `width`, such as `'full'`, so hosts can
+   * promote more important live panels.
    */
   panels?: PluginPanelDescriptor[];
 
@@ -363,16 +370,23 @@ quickSettings?: PluginQuickSetting[];
 
 ### panels
 
-Panel descriptors used to render plugin-owned UI sections.
+Static panel descriptors used to render plugin-owned UI sections.
 
 Structured panels (`key-value`, `table`, `log`, `chart`) receive live data
 through {@link PluginContext.ui.send}. Iframe panels (`component: 'iframe'`)
 render a custom HTML page and communicate via `invoke` / `onPush`.
+The host exposes these static descriptors as the reserved `manifest`
+contribution group. Plugins that need to add or remove panels at runtime
+should use {@link PluginContext.ui.setPanelContributions} instead of
+predeclaring placeholder panels.
 
 Each panel has a `slot` that controls where it renders: `'operator'` (the
-default, shown in the operator card) or `'automation'` (shown in the
-top-right automation popover). Panels may also declare a preferred
-`width`, such as `'full'`, so hosts can promote more important live panels.
+default, shown in the operator card), `'automation'` (shown in the
+top-right automation popover), `'main-right'` (the optional far-right main
+pane), `'voice-left-top'` (above the voice frequency card), or
+`'voice-right-top'` (the tabbed top area of the voice right panel). Panels
+may also declare a preferred `width`, such as `'full'`, so hosts can
+promote more important live panels.
 
 ```ts
 

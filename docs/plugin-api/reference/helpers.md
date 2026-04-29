@@ -18,6 +18,7 @@
 - [AutoTargetEligibilityReason](#autotargeteligibilityreason)
 - [AutoTargetEligibilityDecision](#autotargeteligibilitydecision)
 - [BandAccess](#bandaccess)
+- [PanelMeta](#panelmeta)
 - [UIBridge](#uibridge)
 - [PluginUIHandler](#pluginuihandler)
 - [PluginUIRequestUser](#pluginuirequestuser)
@@ -31,7 +32,7 @@
 ## KVStore
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Simple persistent key-value store exposed to plugins.
 
@@ -61,6 +62,15 @@ export interface KVStore {
    * Returns a shallow snapshot of all stored entries in this scope.
    */
   getAll(): Record<string, unknown>;
+
+  /**
+   * Flushes pending writes to persistent storage.
+   *
+   * In normal operation the host flushes automatically. Call this explicitly
+   * only when you need to guarantee that recently written data survives a
+   * crash or restart (e.g. during a migration sequence).
+   */
+  flush(): Promise<void>;
 }
 ```
 
@@ -107,10 +117,24 @@ Returns a shallow snapshot of all stored entries in this scope.
 getAll(): Record<string, unknown>;
 
 ```
+
+### flush
+
+Flushes pending writes to persistent storage.
+
+In normal operation the host flushes automatically. Call this explicitly
+only when you need to guarantee that recently written data survives a
+crash or restart (e.g. during a migration sequence).
+
+```ts
+
+flush(): Promise<void>;
+
+```
 ## PluginLogger
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Structured logger dedicated to a plugin instance.
 
@@ -174,7 +198,7 @@ error(message: string, error?: unknown): void;
 ## PluginTimers
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Host-managed named timers for plugin code.
 
@@ -233,7 +257,7 @@ clearAll(): void;
 ## OperatorControl
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Control surface for the active operator instance.
 
@@ -486,7 +510,7 @@ notifyStateChanged(state: string): void;
 ## RadioControl
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Read/write access to radio state that is safe for plugins.
 
@@ -556,7 +580,7 @@ setFrequency(freq: number): Promise<void>;
 ## QSOQueryFilter
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Filter criteria for querying QSO records from the logbook.
 
@@ -677,7 +701,7 @@ orderDirection?: 'asc' | 'desc';
 ## CallsignLogbookAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Callsign-bound view over a single logbook.
 
@@ -791,7 +815,7 @@ notifyUpdated(operatorId?: string): Promise<void>;
 ## LogbookAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Full logbook access for plugins.
 
@@ -928,7 +952,7 @@ notifyUpdated(): Promise<void>;
 ## IdleTransmitFrequencyOptions
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Optional constraints used when asking the host for a quieter transmit offset.
 
@@ -989,7 +1013,7 @@ guardHz?: number;
 ## AutoTargetEligibilityReason
 
 - Kind: `type`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Reason codes returned by the host when evaluating whether a decoded target
 should be eligible for automatic CQ-style replies.
@@ -1013,7 +1037,7 @@ export type AutoTargetEligibilityReason =
 ## AutoTargetEligibilityDecision
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Structured result returned by the host for automatic-target eligibility
 checks.
@@ -1063,7 +1087,7 @@ modifier?: string;
 ## BandAccess
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Read-only access to the current decode environment.
 
@@ -1150,10 +1174,83 @@ host applies to standard autocall and auto-reply flows.
 evaluateAutoTargetEligibility(message: ParsedFT8Message): AutoTargetEligibilityDecision;
 
 ```
+## PanelMeta
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Dynamic metadata for a plugin panel, sent via {@link UIBridge.setPanelMeta}.
+
+```ts
+export interface PanelMeta {
+  /**
+   * Overrides the panel title dynamically.
+   * - i18n key (e.g. `"statusActive"`): resolved from the plugin's locale namespace
+   * - literal string (e.g. `"Active: 5"`): displayed as-is
+   * - empty string `""`: hides the title bar entirely (immersive)
+   * - null / undefined: reverts to the statically declared title
+   */
+  title?: string | null;
+
+  /**
+   * Interpolation values for the title when it is an i18n key.
+   * For example, if the plugin locale defines `"statusActive": "Active: {{count}}"`,
+   * pass `{ count: 5 }` to render "Active: 5".
+   */
+  titleValues?: Record<string, unknown>;
+
+  /**
+   * Controls whether the panel is visible.
+   * - false: the host hides the panel entirely (it takes no layout space)
+   * - true / undefined: normal display
+   */
+  visible?: boolean;
+}
+```
+
+## 成员
+
+### title
+
+Overrides the panel title dynamically.
+- i18n key (e.g. `"statusActive"`): resolved from the plugin's locale namespace
+- literal string (e.g. `"Active: 5"`): displayed as-is
+- empty string `""`: hides the title bar entirely (immersive)
+- null / undefined: reverts to the statically declared title
+
+```ts
+
+title?: string | null;
+
+```
+
+### titleValues
+
+Interpolation values for the title when it is an i18n key.
+For example, if the plugin locale defines `"statusActive": "Active: {{count}}"`,
+pass `{ count: 5 }` to render "Active: 5".
+
+```ts
+
+titleValues?: Record<string, unknown>;
+
+```
+
+### visible
+
+Controls whether the panel is visible.
+- false: the host hides the panel entirely (it takes no layout space)
+- true / undefined: normal display
+
+```ts
+
+visible?: boolean;
+
+```
 ## UIBridge
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Minimal bridge for sending structured data to plugin panels in the frontend.
 
@@ -1163,6 +1260,25 @@ export interface UIBridge {
    * Publishes new panel data for the given declarative panel id.
    */
   send(panelId: string, data: unknown): void;
+
+  /**
+   * Updates the panel's display metadata at runtime. All fields are optional
+   * and use patch semantics. Subsequent calls overwrite previous values for the
+   * same keys.
+   */
+  setPanelMeta(panelId: string, meta: PanelMeta): void;
+
+  /**
+   * Replaces one runtime-owned group of plugin UI panels for this plugin
+   * instance. Static `PluginDefinition.panels` are exposed by the host as the
+   * reserved `manifest` group; plugins should use their own stable group ids.
+   */
+  setPanelContributions(groupId: string, panels: PluginPanelDescriptor[]): void;
+
+  /**
+   * Clears a runtime-owned panel contribution group for this plugin instance.
+   */
+  clearPanelContributions(groupId: string): void;
 
   /**
    * Registers a handler for custom messages sent from iframe UI pages via the
@@ -1211,6 +1327,40 @@ Publishes new panel data for the given declarative panel id.
 ```ts
 
 send(panelId: string, data: unknown): void;
+
+```
+
+### setPanelMeta
+
+Updates the panel's display metadata at runtime. All fields are optional
+and use patch semantics. Subsequent calls overwrite previous values for the
+same keys.
+
+```ts
+
+setPanelMeta(panelId: string, meta: PanelMeta): void;
+
+```
+
+### setPanelContributions
+
+Replaces one runtime-owned group of plugin UI panels for this plugin
+instance. Static `PluginDefinition.panels` are exposed by the host as the
+reserved `manifest` group; plugins should use their own stable group ids.
+
+```ts
+
+setPanelContributions(groupId: string, panels: PluginPanelDescriptor[]): void;
+
+```
+
+### clearPanelContributions
+
+Clears a runtime-owned panel contribution group for this plugin instance.
+
+```ts
+
+clearPanelContributions(groupId: string): void;
 
 ```
 
@@ -1272,7 +1422,7 @@ pushToPage(pageId: string, action: string, data?: unknown): void;
 ## PluginUIHandler
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Handler for custom messages sent from iframe UI pages.
 
@@ -1327,7 +1477,7 @@ onMessage(
 ## PluginUIRequestUser
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 未提供额外注释。
 
@@ -1384,7 +1534,7 @@ readonly permissionGrants?: PermissionGrant[];
 ## PluginUIBoundResource
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 未提供额外注释。
 
@@ -1419,7 +1569,7 @@ readonly value: string;
 ## PluginUIInstanceTarget
 
 - Kind: `type`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 未提供额外注释。
 
@@ -1431,7 +1581,7 @@ export type PluginUIInstanceTarget =
 ## PluginUIPageSessionInfo
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 未提供额外注释。
 
@@ -1477,7 +1627,7 @@ readonly resource?: PluginUIBoundResource;
 ## PluginUIPageContext
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 未提供额外注释。
 
@@ -1501,7 +1651,7 @@ push(action: string, data?: unknown): void;
 ## PluginUIRequestContext
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 未提供额外注释。
 
@@ -1512,6 +1662,14 @@ export interface PluginUIRequestContext {
   readonly resource?: PluginUIBoundResource;
   readonly instanceTarget: PluginUIInstanceTarget;
   readonly page: PluginUIPageContext;
+  /**
+   * Page-scoped file storage shared with iframe `tx5dr.file*()` calls.
+   *
+   * Use this in `registerPageHandler()` handlers to read files uploaded by the
+   * current iframe page session without reconstructing host-internal scope
+   * paths.
+   */
+  readonly files: PluginFileStore;
 }
 ```
 
@@ -1566,10 +1724,24 @@ readonly instanceTarget: PluginUIInstanceTarget;
 readonly page: PluginUIPageContext;
 
 ```
+
+### files
+
+Page-scoped file storage shared with iframe `tx5dr.file*()` calls.
+
+Use this in `registerPageHandler()` handlers to read files uploaded by the
+current iframe page session without reconstructing host-internal scope
+paths.
+
+```ts
+
+readonly files: PluginFileStore;
+
+```
 ## PluginFileStore
 
 - Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/feat/plugin-logbook-sync-migration/packages/plugin-api/src/helpers.ts)
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Persistent binary file storage for plugins.
 

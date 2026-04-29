@@ -74,6 +74,8 @@ export default plugin;
 2. `pageId` 引用 `ui.pages` 中的某个页面 id
 3. `ui.pages` 声明页面的入口 HTML 文件
 
+宿主按 `ui.pages[].entry` 解析页面入口。`pageId` 是稳定逻辑 ID，不要求磁盘上存在同名的 `pageId.html`，因此多个面板也可以复用同一个 HTML 入口。
+
 ### HTML 文件
 
 ```html
@@ -128,6 +130,8 @@ iframe 内可以通过 `window.tx5dr` 访问 Bridge SDK。它提供以下 API：
 | `tx5dr.fileUpload(path, file)` | 上传文件到当前页面 scope（按实例目标 + 绑定资源 + pageId 收口） |
 | `tx5dr.fileRead(path)` | 读取当前页面 scope 的文件 |
 | `tx5dr.fileDelete(path)` | 删除当前页面 scope 的文件 |
+
+iframe 面板会自动收到 `{ operatorId, panelId, ...panel.params }`。当多个动态面板复用同一个 `pageId` 时，推荐在 `panel.params` 中放一个稳定 ID，例如 `{ tabId: 'dx-cluster' }`，再在 iframe 内读取 `tx5dr.params.tabId`。
 | `tx5dr.fileList(prefix?)` | 列出当前页面 scope 下的文件 |
 
 其中最核心的是 `invoke` / `registerPageHandler` 这条请求-响应链，以及 `requestContext.page.push()` / `ctx.ui.pushToSession()` / `tx5dr.onPush()` 这条精确推送链；`pushToPage()` 只适合“当前插件实例下该 pageId 只有一个活跃 session”时的兼容场景。
@@ -368,6 +372,9 @@ tx5dr.onThemeChange(function(theme) {
 
 - `'operator'`（默认）—— 展开操作员卡片后的实时面板区域
 - `'automation'` —— 右上角自动化快捷操作弹出面板
+- `'main-right'` —— 主界面最右侧的可选插件分屏
+- `'voice-left-top'` —— 语音模式左侧频率控制卡片上方
+- `'voice-right-top'` —— 语音模式右侧顶部 Tab 区域
 
 ```ts
 panels: [
@@ -402,6 +409,58 @@ panels: [
 - 当前操作员卡片 host 会把 `full` 解释为桌面端跨整行显示；其他 host 可以忽略它
 
 同一个插件完全可以在两个位置各放一个面板。
+
+## 动态添加或删除宿主 Tab
+
+如果面板数量需要由用户配置决定，例如“语音页面右侧显示多个网页 Tab”，不要在 manifest 里预先声明固定数量的空 Tab。更统一的做法是声明一个可复用 iframe page，然后在运行时发布 UI Contribution：
+
+```ts
+const VOICE_PAGE_ID = 'voice-right-webview';
+const GROUP_ID = 'voice-right-web-tabs';
+
+function publishVoiceTabs(ctx: PluginContext) {
+  const tabs = ctx.config.voiceRightTabs as Array<{ id: string; title: string; url: string }>;
+
+  ctx.ui.setPanelContributions(
+    GROUP_ID,
+    tabs.map((tab) => ({
+      id: `voice-right-tab:${tab.id}`,
+      title: tab.title,
+      component: 'iframe',
+      pageId: VOICE_PAGE_ID,
+      params: { tabId: tab.id },
+      slot: 'voice-right-top',
+      width: 'full',
+    })),
+  );
+}
+```
+
+配套的 `ui.pages` 只需要一个页面：
+
+```ts
+ui: {
+  dir: 'ui',
+  pages: [
+    {
+      id: 'voice-right-webview',
+      title: 'Voice webview',
+      entry: 'voice-right-top-webview.html',
+      accessScope: 'operator',
+      resourceBinding: 'operator',
+    },
+  ],
+},
+```
+
+在 iframe 内读取当前 Tab：
+
+```ts
+const tabId = tx5dr.params.tabId;
+const config = await tx5dr.invoke('getConfig', { tabId });
+```
+
+删除 Tab 时，插件重新调用 `setPanelContributions(GROUP_ID, nextPanels)`；清空所有 Tab 时调用 `ctx.ui.clearPanelContributions(GROUP_ID)` 或传空数组。宿主会自动更新 snapshot 和 websocket 状态，并在当前选中的 Tab 被删除时回退到剩余可见 Tab。
 
 ## 跨页面同步
 

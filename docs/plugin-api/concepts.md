@@ -4,7 +4,7 @@
 
 ## 四个核心接口
 
-- `PluginDefinition`：声明插件名称、版本、类型、设置、面板和生命周期入口
+- `PluginDefinition`：声明插件名称、版本、类型、设置、静态面板和生命周期入口
 - `PluginContext`：提供配置、存储、日志、操作员控制和电台控制接口
 - `PluginHooks`：定义过滤、打分、广播监听和配置变更入口
 - `StrategyRuntime`：定义策略插件的自动化运行时接口
@@ -20,6 +20,8 @@
 - `hooks`
 - `createStrategyRuntime`
 
+设置字段支持 `boolean`、`number`、`string`、`string[]`、`object[]` 和 `info`。其中 `object[]` 用 `itemFields` 描述每一项的简单字段，适合由宿主生成列表编辑器；如果设置 UI 需要复杂交互，应改用 iframe 设置页。
+
 ## PluginContext
 
 `PluginContext` 由宿主在运行时注入。当前公共字段包括：
@@ -32,12 +34,25 @@
 - `radio`
 - `logbook`（查询 + 写入 + 通知）
 - `band`
-- `ui`（结构化面板推送 + iframe 页面通信）
+- `ui`（结构化面板推送 + 运行期面板 contribution + iframe 页面通信）
 - `files`（二进制文件持久化）
 - `logbookSync`（日志同步 Provider 注册）
 - `fetch`（声明 `network` 权限时可用）
 
 这些字段对应主项目中明确开放给插件的运行时表面。
+
+## 静态面板与运行期 UI Contribution
+
+`PluginDefinition.panels` 适合声明插件安装后固定存在的面板。宿主内部会把这些静态面板视为保留的 `manifest` contribution group，因此它们和运行期动态面板走同一套 slot 查询、iframe 渲染、权限、meta、snapshot 与 websocket 管线。
+
+如果插件需要由配置决定“现在有几个 Tab/面板”，不要预先声明多个空面板，也不要在 iframe 内部伪装宿主 Tab。应在运行时调用：
+
+```ts
+ctx.ui.setPanelContributions('my-runtime-group', panels);
+ctx.ui.clearPanelContributions('my-runtime-group');
+```
+
+`setPanelContributions()` 的语义是替换整个 group。`groupId` 需要是插件内稳定 ID；合并后的 `panel.id` 在同一插件实例内必须唯一。iframe 动态面板可以通过 `params` 复用同一个 `ui.pages` 页面，例如多个语音右侧 Tab 共享一个 `voice-right-webview`，再用 `tx5dr.params.tabId` 区分上下文。
 
 ## PluginHooks
 
