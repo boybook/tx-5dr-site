@@ -16,7 +16,7 @@ const guideSidebar = [
   {
     text: '实时语音',
     items: [
-      { text: 'LiveKit 与实时语音配置', link: '/guide/livekit' },
+      { text: '实时语音与 WebRTC UDP', link: '/guide/realtime-audio' },
     ],
   },
   {

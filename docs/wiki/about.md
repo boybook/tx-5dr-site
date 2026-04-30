@@ -32,6 +32,7 @@
 | `@fastify/jwt` | `MIT` |
 | `@fastify/multipart` | `MIT` |
 | `@fastify/websocket` | `MIT` |
+| `@discordjs/opus` | `MIT` |
 | `@fortawesome/fontawesome-svg-core` | `MIT` |
 | `@fortawesome/free-brands-svg-icons` | `CC-BY-4.0 AND MIT` |
 | `@fortawesome/free-solid-svg-icons` | `CC-BY-4.0 AND MIT` |
@@ -40,7 +41,6 @@
 | `@heroui/react` | `MIT` |
 | `@heroui/theme` | `MIT` |
 | `@heroui/toast` | `MIT` |
-| `@livekit/rtc-node` | `Apache-2.0` |
 | `@openwebrx-js/api` | `MIT` |
 | `@tanstack/react-virtual` | `MIT` |
 | `@types/wav` | `MIT` |
@@ -62,9 +62,8 @@
 | `i18next` | `MIT` |
 | `i18next-browser-languagedetector` | `MIT` |
 | `icom-wlan-node` | `MIT` |
-| `livekit-client` | `Apache-2.0` |
-| `livekit-server-sdk` | `Apache-2.0` |
 | `mic` | `MIT` |
+| `node-datachannel` | `MPL-2.0` |
 | `node-forge` | `BSD-3-Clause OR GPL-2.0` |
 | `node-wav` | `MIT` |
 | `postcss` | `MIT` |

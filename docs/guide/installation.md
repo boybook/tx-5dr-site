@@ -18,7 +18,7 @@
 
 ### Linux 服务器版
 
-Linux 服务器版适合把电台控制主机与操作终端分离。安装脚本会部署 `tx5dr`、`livekit-server` 和 `nginx`，自动配置 HTTPS（自签名证书），并通过浏览器入口提供访问地址和管理员令牌。
+Linux 服务器版适合把电台控制主机与操作终端分离。安装脚本会部署 `tx5dr` 和 `nginx`，自动配置 HTTPS（自签名证书），并通过浏览器入口提供访问地址和管理员令牌。`tx5dr` 后端内置 `rtc-data-audio` WebRTC DataChannel 语音端点，默认使用 UDP `50110`。
 
 ### Docker
 

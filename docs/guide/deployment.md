@@ -49,11 +49,11 @@ Docker 形态通常通过更新镜像标签并重新执行 `docker compose up -d
 - 插件目录
 - SSL 证书（`/etc/tx5dr/ssl/`，尤其是自定义证书）
 - 需要长期保留的日志和缓存
-- `/var/lib/tx5dr/realtime/livekit.resolved.yaml` 所对应的系统配置来源（真正建议备份的仍然是主配置和设置，而不是手改运行文件）
+- 实时语音设置来源（如外部 UDP 地址、传输策略；真正建议备份的仍然是主配置和设置）
 
 ### Docker
 
-建议重点备份映射到宿主机的 `./data` 目录。该目录通常包含配置、日志、缓存、SSL 证书、LiveKit 凭据和托管运行时文件。
+建议重点备份映射到宿主机的 `./data` 目录。该目录通常包含配置、日志、缓存、SSL 证书和实时语音运行时数据。
 
 ## 公网访问相关项
 
@@ -63,23 +63,23 @@ Docker 形态通常通过更新镜像标签并重新执行 `docker compose up -d
 - 公网部署时建议替换为正式 SSL 证书（Let's Encrypt 或其他 CA）
 - 域名与反向代理路径是否一致
 - `nginx` 或上层反向代理是否正确转发
-- LiveKit 对外端口或同源路径是否符合当前部署方式
+- `rtc-data-audio` UDP 端口（默认 `50110/udp`）或 `ws-compat` 兼容策略是否符合当前部署方式
 
 ::: tip 自签名证书与公网
 自签名证书适合局域网使用。如果需要公网访问，建议替换为受信任的 CA 证书，否则用户每次访问都需要手动接受安全警告。替换方式参见 [Linux 服务器 HTTPS 管理](./linux-server#https-与-ssl-证书) 或 [Docker HTTPS 配置](./docker#https-与-ssl-证书)。
 :::
 
-## 关于 LiveKit 运行配置的维护建议
+## 关于实时语音链路的维护建议
 
-当前版本已经把 Docker、Linux 服务器版和桌面版的 LiveKit 配置入口统一到了“系统设置 > 实时音频”。维护时建议遵循下面的边界：
+当前版本不再维护 LiveKit 运行配置。Docker、Linux 服务器版和桌面版都使用内置 `rtc-data-audio` + `ws-compat` 双路径：
 
-- 日常调整优先改系统设置，不手改生成后的 YAML
-- Docker 侧重点是保持整个 `./data` 根目录持久化
-- Linux 服务器侧重点是通过 `tx5dr restart` 或 systemd 管理服务重启
-- 桌面版侧重点是修改后重启应用
-- 如果部署约束决定你无法暴露 LiveKit 媒体端口，应直接改用 `ws-compat`
+- 日常调整优先改“系统设置 > 实时音频”，不要查找或手改旧的 LiveKit YAML
+- Docker 侧重点是保持整个 `./data` 根目录持久化，并正确映射 `50110/udp`
+- Linux 服务器侧重点是通过 `tx5dr status` / `tx5dr doctor` 检查 nginx、HTTPS 和 UDP 端口
+- 桌面版侧重点是确认本机防火墙允许需要的 UDP 端口
+- 如果部署约束决定你无法暴露 UDP，应直接改用 `ws-compat`
 
-完整判断方法请参阅 [LiveKit 与实时语音配置](./livekit)。
+完整判断方法请参阅 [实时语音与 WebRTC UDP](./realtime-audio)。
 
 ## 后续页面
 
