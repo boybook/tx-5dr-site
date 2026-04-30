@@ -41,6 +41,8 @@
 
 这些字段对应主项目中明确开放给插件的运行时表面。
 
+`ctx.radio` 包含基础只读状态、频率设置、电台能力协商和物理电源管理。能力快照、能力写入、开机请求与自动连接都只暴露在服务端插件上下文中；如果插件提供 iframe UI，应通过页面通信把用户动作交给服务端插件逻辑处理。详细权限与示例见 [电台能力与电源](./radio-capabilities-power)。
+
 ## 静态面板与运行期 UI Contribution
 
 `PluginDefinition.panels` 适合声明插件安装后固定存在的面板。宿主内部会把这些静态面板视为保留的 `manifest` contribution group，因此它们和运行期动态面板走同一套 slot 查询、iframe 渲染、权限、meta、snapshot 与 websocket 管线。

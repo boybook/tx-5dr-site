@@ -187,7 +187,7 @@ export default plugin;
 - `ctx.log`：写入日志
 - `ctx.store`：读写持久化数据
 - `ctx.ui.send()`：推送面板数据
-- `ctx.operator` / `ctx.radio`：访问操作员或电台控制接口
+- `ctx.operator` / `ctx.radio`：访问操作员或电台控制接口；能力协商与电源管理见 [电台能力与电源](./radio-capabilities-power)
 
 ### 第三步：查阅接口文档
 

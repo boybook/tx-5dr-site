@@ -11,6 +11,9 @@
 - [PluginTimers](#plugintimers)
 - [OperatorControl](#operatorcontrol)
 - [RadioControl](#radiocontrol)
+- [RadioCapabilitiesControl](#radiocapabilitiescontrol)
+- [RadioPowerSetOptions](#radiopowersetoptions)
+- [RadioPowerControl](#radiopowercontrol)
 - [QSOQueryFilter](#qsoqueryfilter)
 - [CallsignLogbookAccess](#callsignlogbookaccess)
 - [LogbookAccess](#logbookaccess)
@@ -523,6 +526,12 @@ export interface RadioControl {
   /** Whether the radio transport is currently connected. */
   readonly isConnected: boolean;
 
+  /** Negotiated radio capability controls. Requires radio plugin permissions. */
+  readonly capabilities: RadioCapabilitiesControl;
+
+  /** Physical radio power controls. Requires radio plugin permissions. */
+  readonly power: RadioPowerControl;
+
   /**
    * Requests a frequency change.
    *
@@ -565,6 +574,26 @@ readonly isConnected: boolean;
 
 ```
 
+### capabilities
+
+Negotiated radio capability controls. Requires radio plugin permissions.
+
+```ts
+
+readonly capabilities: RadioCapabilitiesControl;
+
+```
+
+### power
+
+Physical radio power controls. Requires radio plugin permissions.
+
+```ts
+
+readonly power: RadioPowerControl;
+
+```
+
 ### setFrequency
 
 Requests a frequency change.
@@ -575,6 +604,158 @@ any safety or capability constraints.
 ```ts
 
 setFrequency(freq: number): Promise<void>;
+
+```
+## RadioCapabilitiesControl
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Access to the host-managed radio capability negotiation system.
+
+```ts
+export interface RadioCapabilitiesControl {
+  /** Returns the current capability descriptor/state snapshot. Requires `radio:read`. */
+  getSnapshot(): CapabilityList;
+
+  /** Returns a single capability state from the current snapshot, or null. Requires `radio:read`. */
+  getState(id: string): CapabilityState | null;
+
+  /** Refreshes readable capability values and returns the updated snapshot. Requires `radio:read`. */
+  refresh(): Promise<CapabilityList>;
+
+  /** Writes a capability value or triggers an action capability. Requires `radio:control`. */
+  write(payload: WriteCapabilityPayload): Promise<void>;
+}
+```
+
+## 成员
+
+### getSnapshot
+
+Returns the current capability descriptor/state snapshot. Requires `radio:read`.
+
+```ts
+
+getSnapshot(): CapabilityList;
+
+```
+
+### getState
+
+Returns a single capability state from the current snapshot, or null. Requires `radio:read`.
+
+```ts
+
+getState(id: string): CapabilityState | null;
+
+```
+
+### refresh
+
+Refreshes readable capability values and returns the updated snapshot. Requires `radio:read`.
+
+```ts
+
+refresh(): Promise<CapabilityList>;
+
+```
+
+### write
+
+Writes a capability value or triggers an action capability. Requires `radio:control`.
+
+```ts
+
+write(payload: WriteCapabilityPayload): Promise<void>;
+
+```
+## RadioPowerSetOptions
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+未提供额外注释。
+
+```ts
+export interface RadioPowerSetOptions {
+  /** Profile to target. Defaults to the active profile. */
+  profileId?: string;
+  /** Start TX-5DR after physical power-on. Defaults to true. */
+  autoEngine?: boolean;
+}
+```
+
+## 成员
+
+### profileId
+
+Profile to target. Defaults to the active profile.
+
+```ts
+
+profileId?: string;
+
+```
+
+### autoEngine
+
+Start TX-5DR after physical power-on. Defaults to true.
+
+```ts
+
+autoEngine?: boolean;
+
+```
+## RadioPowerControl
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Access to physical radio power management.
+
+```ts
+export interface RadioPowerControl {
+  /** Returns power support information for the active or specified profile. Requires `radio:read`. */
+  getSupport(profileId?: string): Promise<RadioPowerSupportInfo>;
+
+  /** Returns the last known power transition state for the active or specified profile. Requires `radio:read`. */
+  getState(profileId?: string): RadioPowerStateEvent | null;
+
+  /** Requests a physical power transition. Requires `radio:power`. */
+  set(state: RadioPowerTarget, options?: RadioPowerSetOptions): Promise<RadioPowerResponse>;
+}
+```
+
+## 成员
+
+### getSupport
+
+Returns power support information for the active or specified profile. Requires `radio:read`.
+
+```ts
+
+getSupport(profileId?: string): Promise<RadioPowerSupportInfo>;
+
+```
+
+### getState
+
+Returns the last known power transition state for the active or specified profile. Requires `radio:read`.
+
+```ts
+
+getState(profileId?: string): RadioPowerStateEvent | null;
+
+```
+
+### set
+
+Requests a physical power transition. Requires `radio:power`.
+
+```ts
+
+set(state: RadioPowerTarget, options?: RadioPowerSetOptions): Promise<RadioPowerResponse>;
 
 ```
 ## QSOQueryFilter

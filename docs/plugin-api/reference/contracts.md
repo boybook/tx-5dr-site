@@ -49,6 +49,17 @@
 - [PluginStatus](#pluginstatus)
 - [PluginUIPageDescriptor](#pluginuipagedescriptor)
 - [PluginUIConfig](#pluginuiconfig)
+- [CapabilityList](#capabilitylist)
+- [CapabilityState](#capabilitystate)
+- [CapabilityDescriptor](#capabilitydescriptor)
+- [CapabilityValue](#capabilityvalue)
+- [WriteCapabilityPayload](#writecapabilitypayload)
+- [RadioPowerRequest](#radiopowerrequest)
+- [RadioPowerResponse](#radiopowerresponse)
+- [RadioPowerState](#radiopowerstate)
+- [RadioPowerStateEvent](#radiopowerstateevent)
+- [RadioPowerSupportInfo](#radiopowersupportinfo)
+- [RadioPowerTarget](#radiopowertarget)
 
 ## 值导出
 
@@ -755,7 +766,7 @@ Explicit permission declarations requested by a plugin.
 ### 数据结构
 
 ```ts
-export const PluginPermissionSchema = z.enum(['network']);
+export const PluginPermissionSchema = z.enum(['network', 'radio:read', 'radio:control', 'radio:power']);
 ```
 
 ### 类型导出
@@ -1246,5 +1257,386 @@ export const PluginUIConfigSchema = z.object({
 
 ```ts
 export type PluginUIConfig = z.infer<typeof PluginUIConfigSchema>;
+```
+## CapabilityList
+
+- Kind: `type`
+- Source: [schema/radio-capability.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-capability.schema.ts)
+- Related schema: `CapabilityListSchema`
+
+能力列表快照（radioCapabilityList WS 消息 / REST 响应的 data 部分）
+
+### 数据结构
+
+```ts
+export const CapabilityListSchema = z.object({
+  descriptors: z.array(CapabilityDescriptorSchema),
+  capabilities: z.array(CapabilityStateSchema),
+});
+```
+
+### 类型导出
+
+```ts
+export type CapabilityList = z.infer<typeof CapabilityListSchema>;
+```
+## CapabilityState
+
+- Kind: `type`
+- Source: [schema/radio-capability.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-capability.schema.ts)
+- Related schema: `CapabilityStateSchema`
+
+能力运行时状态
+动态数据，通过 WebSocket 实时同步到前端。
+
+### 数据结构
+
+```ts
+export const CapabilityStateSchema = z.object({
+  /** 能力 ID，与 CapabilityDescriptor.id 对应 */
+  id: z.string(),
+
+  /** 当前连接的电台型号/后端是否声明支持此能力 */
+  supported: z.boolean(),
+
+  /**
+   * 当前运行时是否可用。
+   * 兼容旧客户端：缺省时应按 supported=true 视为 available，supported=false 视为 unknown。
+   */
+  availability: CapabilityAvailabilitySchema.optional(),
+
+  /** 当前不可用的机器可读原因 */
+  availabilityReason: CapabilityAvailabilityReasonSchema.optional(),
+
+  /** 最近一次运行时读写错误摘要 */
+  lastError: z.string().optional(),
+
+  /**
+   * 当前值
+   * - boolean 类能力：true/false
+   * - number 类能力：数值（范围由 descriptor.range 定义）
+   * - enum 类能力：string/number（必须落在 descriptor.options 内）
+   * - action 类能力：始终为 null
+   */
+  value: CapabilityValueSchema.nullable(),
+
+  /**
+   * 附加元数据（能力特有信息）
+   * 例：tuner_switch 的 meta 可携带 { status: 'tuning' | 'idle' | 'success' | 'failed', swr?: number }
+   */
+  meta: z.record(z.unknown()).optional(),
+
+  /** 最后更新时间戳（ms） */
+  updatedAt: z.number(),
+});
+```
+
+### 类型导出
+
+```ts
+export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
+```
+## CapabilityDescriptor
+
+- Kind: `type`
+- Source: [schema/radio-capability.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-capability.schema.ts)
+- Related schema: `CapabilityDescriptorSchema`
+
+能力描述符
+由服务端在运行时下发，作为当前连接会话的真源。
+
+### 数据结构
+
+```ts
+export const CapabilityDescriptorSchema = z.object({
+  /** 全局唯一能力 ID，如 'tuner_switch', 'rf_power', 'lock_mode' */
+  id: z.string(),
+
+  /** 能力分类，用于前端面板分组渲染 */
+  category: CapabilityCategorySchema,
+
+  /** 能力值类型 */
+  valueType: CapabilityValueTypeSchema,
+
+  /**
+   * 数值范围（仅 valueType='number' 时有效）
+   * 值可以是归一化范围（如 0-1），也可以是实际范围（如 -9999~9999 Hz）
+   */
+  range: z.object({
+    min: z.number(),
+    max: z.number(),
+    step: z.number().optional(),
+  }).optional(),
+
+  /**
+   * 数值能力的离散候选项（仅 valueType='number' 时有效）
+   * 例：RF 功率只允许若干固定挡位，但仍希望保留 slider 交互。
+   */
+  discreteOptions: z.array(CapabilityOptionSchema).optional(),
+
+  /** 枚举项（仅 valueType='enum' 时有效） */
+  options: z.array(CapabilityOptionSchema).optional(),
+
+  /** 是否可读取当前值（false = 只写，UI 无初始值） */
+  readable: z.boolean(),
+
+  /** 是否可写入（false = 只读展示） */
+  writable: z.boolean(),
+
+  /** 服务端更新策略 */
+  updateMode: CapabilityUpdateModeSchema,
+
+  /**
+   * 轮询间隔（ms），仅 updateMode='polling' 时有效。
+   */
+  pollIntervalMs: z.number().optional(),
+
+  /**
+   * 复合能力分组 ID。
+   * 同一 group 的描述符在面板中合并为一张卡片（如天调开关和手动调谐按钮）
+   */
+  compoundGroup: z.string().optional(),
+
+  /**
+   * 在复合能力组中的角色
+   * - switch: 布尔开关（主控制）
+   * - action: 动作按钮
+   */
+  compoundRole: z.enum(['switch', 'action']).optional(),
+
+  /** 前端标签 i18n key，如 'radio:capability.tuner_switch.label' */
+  labelI18nKey: z.string(),
+
+  /** 前端描述文字 i18n key（可选） */
+  descriptionI18nKey: z.string().optional(),
+
+  /** 展示格式提示 */
+  display: CapabilityDisplaySchema.optional(),
+
+  /** 是否在 RadioControl 工具栏 surface 区域露出紧凑控件 */
+  hasSurfaceControl: z.boolean(),
+
+  /**
+   * surface 控件的分组 ID。
+   * 同一 surfaceGroup 的控件聚合为一个 Popover（如天调开关和调谐按钮）
+   */
+  surfaceGroup: z.string().optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type CapabilityDescriptor = z.infer<typeof CapabilityDescriptorSchema>;
+```
+## CapabilityValue
+
+- Kind: `type`
+- Source: [schema/radio-capability.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-capability.schema.ts)
+- Related schema: `CapabilityValueSchema`
+
+运行时能力值。
+
+### 数据结构
+
+```ts
+export const CapabilityValueSchema = z.union([z.boolean(), z.number(), z.string()]);
+```
+
+### 类型导出
+
+```ts
+export type CapabilityValue = z.infer<typeof CapabilityValueSchema>;
+```
+## WriteCapabilityPayload
+
+- Kind: `type`
+- Source: [schema/radio-capability.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-capability.schema.ts)
+- Related schema: `WriteCapabilityPayloadSchema`
+
+写命令负载（writeRadioCapability WS 命令的 data 部分）
+
+### 数据结构
+
+```ts
+export const WriteCapabilityPayloadSchema = z.object({
+  /** 能力 ID */
+  id: z.string(),
+  /** 写入值（boolean/number/enum 类能力） */
+  value: CapabilityValueSchema.optional(),
+  /** 触发动作（action 类能力，传 true） */
+  action: z.boolean().optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type WriteCapabilityPayload = z.infer<typeof WriteCapabilityPayloadSchema>;
+```
+## RadioPowerRequest
+
+- Kind: `type`
+- Source: [schema/radio-power.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-power.schema.ts)
+- Related schema: `RadioPowerRequestSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const RadioPowerRequestSchema = z.object({
+  profileId: z.string().min(1),
+  /** Physical radio power target. This is not the TX-5DR software engine state. */
+  state: RadioPowerTargetSchema,
+  /** Automatically start the TX-5DR engine after successful physical power-on. */
+  autoEngine: z.boolean().optional().default(true),
+});
+```
+
+### 类型导出
+
+```ts
+export type RadioPowerRequest = z.infer<typeof RadioPowerRequestSchema>;
+```
+## RadioPowerResponse
+
+- Kind: `type`
+- Source: [schema/radio-power.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-power.schema.ts)
+- Related schema: `RadioPowerResponseSchema`
+
+REST response: POST /api/radio/power
+
+### 数据结构
+
+```ts
+export const RadioPowerResponseSchema = z.object({
+  success: z.boolean(),
+  target: RadioPowerTargetSchema,
+  state: RadioPowerStateSchema,
+});
+```
+
+### 类型导出
+
+```ts
+export type RadioPowerResponse = z.infer<typeof RadioPowerResponseSchema>;
+```
+## RadioPowerState
+
+- Kind: `type`
+- Source: [schema/radio-power.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-power.schema.ts)
+- Related schema: `RadioPowerStateSchema`
+
+High-level runtime state tracked by the RadioPowerController.
+
+- `off`: radio is known to be off (or was never connected).
+- `waking`: physical power-on command sent, waiting for the radio to respond.
+- `awake`: radio is physically responding; software engine startup is optional.
+- `shutting_down`: physical power-off command is being applied.
+- `entering_standby`: physical standby command is being applied.
+- `failed`: last transition failed; UI should show an error + retry.
+
+### 数据结构
+
+```ts
+export const RadioPowerStateSchema = z.enum([
+  'off',
+  'waking',
+  'awake',
+  'shutting_down',
+  'entering_standby',
+  'failed',
+]);
+```
+
+### 类型导出
+
+```ts
+export type RadioPowerState = z.infer<typeof RadioPowerStateSchema>;
+```
+## RadioPowerStateEvent
+
+- Kind: `type`
+- Source: [schema/radio-power.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-power.schema.ts)
+- Related schema: `RadioPowerStateEventSchema`
+
+WS event payload: server → client.
+
+### 数据结构
+
+```ts
+export const RadioPowerStateEventSchema = z.object({
+  profileId: z.string().optional(),
+  state: RadioPowerStateSchema,
+  stage: RadioPowerStageSchema,
+  /** Translation key reference for an inline error, e.g. 'radio:power.error.timeout'. */
+  errorKey: z.string().optional(),
+  /** Free-form details for debugging; not user-facing. */
+  errorDetail: z.string().optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type RadioPowerStateEvent = z.infer<typeof RadioPowerStateEventSchema>;
+```
+## RadioPowerSupportInfo
+
+- Kind: `type`
+- Source: [schema/radio-power.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-power.schema.ts)
+- Related schema: `RadioPowerSupportInfoSchema`
+
+REST response: GET /api/radio/power/support?profileId=xxx
+The server resolves mfgName/modelName internally via HamLib.getSupportedRigs().
+
+### 数据结构
+
+```ts
+export const RadioPowerSupportInfoSchema = z.object({
+  profileId: z.string(),
+  canPowerOn: z.boolean(),
+  canPowerOff: z.boolean(),
+  /**
+   * States the user is allowed to switch *between* while the radio is connected.
+   * Empty when the radio is unsupported or not connected (UI then renders no dropdown).
+   */
+  supportedStates: z.array(z.enum(['operate', 'standby', 'off'])).default([]),
+  reason: z.enum(['model-unsupported', 'network-mode-no-wake', 'none-mode']).optional(),
+  rigInfo: z
+    .object({
+      mfgName: z.string(),
+      modelName: z.string(),
+    })
+    .optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type RadioPowerSupportInfo = z.infer<typeof RadioPowerSupportInfoSchema>;
+```
+## RadioPowerTarget
+
+- Kind: `type`
+- Source: [schema/radio-power.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-power.schema.ts)
+- Related schema: `RadioPowerTargetSchema`
+
+REST request body: POST /api/radio/power
+
+Allowed physical radio target states for a power request.
+
+### 数据结构
+
+```ts
+export const RadioPowerTargetSchema = z.enum(['on', 'off', 'standby', 'operate']);
+```
+
+### 类型导出
+
+```ts
+export type RadioPowerTarget = z.infer<typeof RadioPowerTargetSchema>;
 ```
 
