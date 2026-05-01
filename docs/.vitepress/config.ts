@@ -77,6 +77,7 @@ const pluginApiSidebar = [
     items: [
       { text: 'UI 开发实战', link: '/plugin-api/tutorial-ui-dev-workflow' },
       { text: '心智模型', link: '/plugin-api/concepts' },
+      { text: '插件权限模型', link: '/plugin-api/permissions' },
       { text: '示例与约定', link: '/plugin-api/examples' },
       { text: '电台能力与电源', link: '/plugin-api/radio-capabilities-power' },
       { text: '宿主设置能力', link: '/plugin-api/host-settings' },

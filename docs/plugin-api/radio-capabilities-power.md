@@ -14,7 +14,7 @@
 
 不建议在 iframe 内自行绕过插件服务端逻辑调用这些能力。自定义 UI 应把用户动作发送给 `ctx.ui.pages` 对应的服务端 handler，再由服务端插件根据权限和业务规则调用 `ctx.radio`。
 
-## Manifest 权限
+## 权限声明
 
 电台相关权限按用途拆分：
 
@@ -36,7 +36,7 @@ const plugin = {
 | `radio:power` | 请求开机、关机、待机、恢复工作等物理电源操作 |
 | `network` | 仍仅表示插件可使用 `ctx.fetch` 访问网络 |
 
-缺少权限时，Host 会在运行时抛出明确错误，例如插件需要在 manifest 声明 `radio:power` 才能调用 `ctx.radio.power.set(...)`。
+缺少权限时，Host 会在运行时抛出明确错误，例如插件需要声明 `radio:power` 才能调用 `ctx.radio.power.set(...)`。权限声明统一写在 `PluginDefinition.permissions`，更多设计背景见 [插件权限模型](./permissions)。
 
 ## 读取能力快照
 

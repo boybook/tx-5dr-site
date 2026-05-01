@@ -11,7 +11,7 @@
 
 ## 权限与命名空间
 
-每个命名空间都需要在插件 manifest / `PluginDefinition.permissions` 中声明对应权限。声明后，该命名空间的 `get()` 和 `update()` 都可用；未声明时会抛出权限错误。
+每个命名空间都需要在 `PluginDefinition.permissions` 中声明对应权限。声明后，该命名空间的 `get()` 和 `update()` 都可用；未声明时会抛出权限错误。权限系统的整体设计、配置位置和运行时要求见 [插件权限模型](./permissions)。
 
 | 命名空间 | 权限 | 能力 |
 | --- | --- | --- |

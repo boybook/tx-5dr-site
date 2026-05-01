@@ -255,7 +255,7 @@ async upload(callsign) {
 
 注意几个细节：
 
-- `ctx.fetch` 需要插件声明 `permissions: ['network']` 才可用
+- `ctx.fetch` 需要插件声明 `permissions: ['network']` 才可用，权限模型详见 [插件权限模型](./permissions)
 - 上传成功后用 `ctx.logbook.updateQSO()` 标记状态，避免重复上传
 - 返回的结果会被宿主展示给用户
 
