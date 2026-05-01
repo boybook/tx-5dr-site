@@ -37,11 +37,14 @@
 - `ui`（结构化面板推送 + 运行期面板 contribution + iframe 页面通信）
 - `files`（二进制文件持久化）
 - `logbookSync`（日志同步 Provider 注册）
+- `settings`（声明 `settings:*` 权限后访问安全白名单内的宿主设置）
 - `fetch`（声明 `network` 权限时可用）
 
 这些字段对应主项目中明确开放给插件的运行时表面。
 
 `ctx.radio` 包含基础只读状态、频率设置、电台能力协商和物理电源管理。能力快照、能力写入、开机请求与自动连接都只暴露在服务端插件上下文中；如果插件提供 iframe UI，应通过页面通信把用户动作交给服务端插件逻辑处理。详细权限与示例见 [电台能力与电源](./radio-capabilities-power)。
+
+`ctx.settings` 用于让受信任插件读取或调整安全白名单内的宿主设置，例如 FT8/FT4 自动化、解码窗口、实时音频传输、频率预设、站台信息、PSK Reporter 和 NTP 服务器。每个命名空间都需要单独权限；iframe 页面不能直接绕过宿主 REST API，应通过 `tx5dr.invoke()` 调用插件后端 handler。详细范围见 [宿主设置能力](./host-settings)。
 
 ## 静态面板与运行期 UI Contribution
 

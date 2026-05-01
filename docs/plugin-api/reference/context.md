@@ -121,6 +121,13 @@ export interface PluginContext {
   readonly logbookSync: LogbookSyncRegistrar;
 
   /**
+   * Permission-gated host settings control surface.
+   *
+   * Each namespace requires the matching `settings:*` manifest permission.
+   */
+  readonly settings: HostSettingsControl;
+
+  /**
    * Permission-gated HTTP client.
    *
    * This method is only available when the plugin declares the corresponding
@@ -277,6 +284,18 @@ sync provider. The host manages the provider lifecycle and UI integration.
 ```ts
 
 readonly logbookSync: LogbookSyncRegistrar;
+
+```
+
+### settings
+
+Permission-gated host settings control surface.
+
+Each namespace requires the matching `settings:*` manifest permission.
+
+```ts
+
+readonly settings: HostSettingsControl;
 
 ```
 

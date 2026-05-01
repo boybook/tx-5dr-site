@@ -10,6 +10,7 @@
 - `./context.js`: `PluginContext`
 - `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`、`QSOFailureInfo`
 - `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`
+- `./settings.js`: `HostSettingsControl`、`HostSettingsNamespace`、`HostFrequencyPresetsSettingsNamespace`、`HostFT8Settings`、`HostFT8SettingsPatch`、`HostFrequencyPresetsSettings`、`HostStationInfoPatch`、`HostPSKReporterSettingsPatch`
 - `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`RadioCapabilitiesControl`、`RadioPowerControl`、`RadioPowerSetOptions`、`LogbookAccess`、`CallsignLogbookAccess`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PanelMeta`、`PluginUIHandler`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`
 - `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncTestResult`、`SyncUploadOptions`、`SyncUploadResult`、`SyncPreflightIssue`、`SyncUploadPreflightResult`、`SyncDownloadResult`、`SyncDownloadOptions`
 - `./ft8-message-type.js`: `FT8MessageType`
@@ -75,6 +76,14 @@
 - [`RadioPowerStateEvent`](./contracts#radiopowerstateevent)
 - [`RadioPowerSupportInfo`](./contracts#radiopowersupportinfo)
 - [`RadioPowerTarget`](./contracts#radiopowertarget)
+- [`DecodeWindowSettings`](./contracts#decodewindowsettings)
+- [`RealtimeSettings`](./contracts#realtimesettings)
+- [`RealtimeSettingsResponseData`](./contracts#realtimesettingsresponsedata)
+- [`PresetFrequency`](./contracts#presetfrequency)
+- [`StationInfo`](./contracts#stationinfo)
+- [`PSKReporterConfig`](./contracts#pskreporterconfig)
+- [`NtpServerListSettings`](./contracts#ntpserverlistsettings)
+- [`UpdateNtpServerListRequest`](./contracts#updatentpserverlistrequest)
 
 ## 来自 @tx5dr/contracts 的值导出
 

@@ -60,6 +60,14 @@
 - [RadioPowerStateEvent](#radiopowerstateevent)
 - [RadioPowerSupportInfo](#radiopowersupportinfo)
 - [RadioPowerTarget](#radiopowertarget)
+- [DecodeWindowSettings](#decodewindowsettings)
+- [RealtimeSettings](#realtimesettings)
+- [RealtimeSettingsResponseData](#realtimesettingsresponsedata)
+- [PresetFrequency](#presetfrequency)
+- [StationInfo](#stationinfo)
+- [PSKReporterConfig](#pskreporterconfig)
+- [NtpServerListSettings](#ntpserverlistsettings)
+- [UpdateNtpServerListRequest](#updatentpserverlistrequest)
 
 ## 值导出
 
@@ -766,7 +774,19 @@ Explicit permission declarations requested by a plugin.
 ### 数据结构
 
 ```ts
-export const PluginPermissionSchema = z.enum(['network', 'radio:read', 'radio:control', 'radio:power']);
+export const PluginPermissionSchema = z.enum([
+  'network',
+  'radio:read',
+  'radio:control',
+  'radio:power',
+  'settings:ft8',
+  'settings:decode-windows',
+  'settings:realtime',
+  'settings:frequency-presets',
+  'settings:station',
+  'settings:psk-reporter',
+  'settings:ntp',
+]);
 ```
 
 ### 类型导出
@@ -1638,5 +1658,216 @@ export const RadioPowerTargetSchema = z.enum(['on', 'off', 'standby', 'operate']
 
 ```ts
 export type RadioPowerTarget = z.infer<typeof RadioPowerTargetSchema>;
+```
+## DecodeWindowSettings
+
+- Kind: `type`
+- Source: [schema/mode.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/mode.schema.ts)
+- Related schema: `DecodeWindowSettingsSchema`
+
+解码窗口设置 Schema
+
+### 数据结构
+
+```ts
+export const DecodeWindowSettingsSchema = z.object({
+  ft8: z.object({
+    preset: z.enum(['maximum', 'balanced', 'lightweight', 'minimum', 'custom']).default('balanced'),
+    customWindowTiming: z.array(z.number().int().min(-5000).max(1000)).optional(),
+  }).optional(),
+  ft4: z.object({
+    preset: z.enum(['maximum', 'balanced', 'lightweight', 'custom']).default('balanced'),
+    customWindowTiming: z.array(z.number().int().min(-5000).max(1000)).optional(),
+  }).optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type DecodeWindowSettings = z.infer<typeof DecodeWindowSettingsSchema>;
+```
+## RealtimeSettings
+
+- Kind: `type`
+- Source: [schema/realtime.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/realtime.schema.ts)
+- Related schema: `RealtimeSettingsSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const RealtimeSettingsSchema = z.object({
+  transportPolicy: RealtimeTransportPolicySchema.optional(),
+  rtcDataAudioPublicHost: RtcDataAudioPublicHostSchema.optional(),
+  rtcDataAudioPublicUdpPort: RtcDataAudioPublicUdpPortSchema.optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type RealtimeSettings = z.infer<typeof RealtimeSettingsSchema>;
+```
+## RealtimeSettingsResponseData
+
+- Kind: `type`
+- Source: [schema/realtime.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/realtime.schema.ts)
+- Related schema: `RealtimeSettingsResponseDataSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const RealtimeSettingsResponseDataSchema = RealtimeSettingsSchema.extend({
+  runtime: RealtimeSettingsRuntimeSchema.optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type RealtimeSettingsResponseData = z.infer<typeof RealtimeSettingsResponseDataSchema>;
+```
+## PresetFrequency
+
+- Kind: `type`
+- Source: [schema/radio.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio.schema.ts)
+- Related schema: `PresetFrequencySchema`
+
+预设频率Schema
+
+### 数据结构
+
+```ts
+export const PresetFrequencySchema = z.object({
+  band: z.string(),
+  mode: z.string(), // 协议模式，如 FT8, FT4
+  radioMode: z.string().optional(), // 电台调制模式，如 USB, LSB, AM, FM
+  frequency: z.number(),
+  description: z.string().optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type PresetFrequency = z.infer<typeof PresetFrequencySchema>;
+```
+## StationInfo
+
+- Kind: `type`
+- Source: [schema/station-info.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/station-info.schema.ts)
+- Related schema: `StationInfoSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const StationInfoSchema = z.object({
+  /** Station display name, e.g. "BG7XXX Remote Station" */
+  name: z.string().max(100).optional(),
+  /** Owner callsign, e.g. "BG7XXX" */
+  callsign: z.string().max(20).optional(),
+  /** Markdown-formatted description (antenna, power, radio model, etc.) */
+  description: z.string().max(2000).optional(),
+  /** Station QTH location */
+  qth: StationQthSchema.optional(),
+});
+```
+
+### 类型导出
+
+```ts
+export type StationInfo = z.infer<typeof StationInfoSchema>;
+```
+## PSKReporterConfig
+
+- Kind: `type`
+- Source: [schema/pskreporter.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/pskreporter.schema.ts)
+- Related schema: `PSKReporterConfigSchema`
+
+PSKReporter 配置 Schema
+
+### 数据结构
+
+```ts
+export const PSKReporterConfigSchema = z.object({
+  /** 是否启用 PSKReporter 上报 */
+  enabled: z.boolean().default(false),
+
+  /** 接收电台呼号 (可选，留空时使用第一个操作员的呼号) */
+  receiverCallsign: z.string().default(''),
+
+  /** 接收电台网格 (可选，留空时使用第一个操作员的网格) */
+  receiverLocator: z.string().default(''),
+
+  /** 解码软件名称 (自动填充) */
+  decodingSoftware: z.string().default('TX-5DR'),
+
+  /** 天线信息 (可选，会显示在 PSKReporter 地图上) */
+  antennaInformation: z.string().max(64, '天线信息不能超过64字符').default(''),
+
+  /** 上报间隔（秒），最小10秒，最大60秒，默认30秒 */
+  reportIntervalSeconds: z.number().min(10).max(60).default(30),
+
+  /** 是否使用测试服务器（仅用于开发调试） */
+  useTestServer: z.boolean().default(false),
+
+  /** 上报统计 */
+  stats: PSKReporterStatsSchema.default({}),
+});
+```
+
+### 类型导出
+
+```ts
+export type PSKReporterConfig = z.infer<typeof PSKReporterConfigSchema>;
+```
+## NtpServerListSettings
+
+- Kind: `type`
+- Source: [schema/system.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/system.schema.ts)
+- Related schema: `NtpServerListSettingsSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const NtpServerListSettingsSchema = z.object({
+  servers: NtpServerArraySchema,
+  defaultServers: NtpServerArraySchema,
+});
+```
+
+### 类型导出
+
+```ts
+export type NtpServerListSettings = z.infer<typeof NtpServerListSettingsSchema>;
+```
+## UpdateNtpServerListRequest
+
+- Kind: `type`
+- Source: [schema/system.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/system.schema.ts)
+- Related schema: `UpdateNtpServerListRequestSchema`
+
+未提供额外注释。
+
+### 数据结构
+
+```ts
+export const UpdateNtpServerListRequestSchema = z.object({
+  servers: NtpServerArraySchema,
+});
+```
+
+### 类型导出
+
+```ts
+export type UpdateNtpServerListRequest = z.infer<typeof UpdateNtpServerListRequestSchema>;
 ```
 

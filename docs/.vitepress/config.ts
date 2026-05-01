@@ -79,6 +79,7 @@ const pluginApiSidebar = [
       { text: '心智模型', link: '/plugin-api/concepts' },
       { text: '示例与约定', link: '/plugin-api/examples' },
       { text: '电台能力与电源', link: '/plugin-api/radio-capabilities-power' },
+      { text: '宿主设置能力', link: '/plugin-api/host-settings' },
     ],
   },
   {
@@ -90,6 +91,7 @@ const pluginApiSidebar = [
       { text: 'PluginHooks', link: '/plugin-api/reference/hooks' },
       { text: 'StrategyRuntime', link: '/plugin-api/reference/runtime' },
       { text: 'Helper Interfaces', link: '/plugin-api/reference/helpers' },
+      { text: 'Host Settings', link: '/plugin-api/reference/settings' },
       { text: 'Contracts Re-exports', link: '/plugin-api/reference/contracts' },
       { text: 'Re-exports', link: '/plugin-api/reference/re-exports' },
     ],

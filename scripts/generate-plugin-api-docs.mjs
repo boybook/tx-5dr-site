@@ -60,6 +60,13 @@ const PAGE_SPECS = [
     description: '该页列出 `KVStore`、日志、定时器、操作员控制等辅助接口。',
   },
   {
+    kind: 'declaration',
+    source: 'settings.ts',
+    output: 'settings.md',
+    title: 'Host Settings',
+    description: '该页列出 `ctx.settings` 可访问的宿主设置命名空间与类型。',
+  },
+  {
     kind: 're-exports',
     source: 'index.ts',
     output: 're-exports.md',

@@ -17,6 +17,7 @@
 - [第 7 章：日志同步 Provider](./tutorial-logbook-sync)
 - [心智模型](./concepts)：说明 `PluginDefinition`、`PluginContext`、`PluginHooks` 和 `StrategyRuntime` 的关系
 - [示例与约定](./examples)：说明常见插件类型与编写边界
+- [宿主设置能力](./host-settings)：说明 `ctx.settings` 权限、白名单范围和安全边界
 - [Reference](./reference/)：从 `packages/plugin-api/src` 与 `packages/contracts/src` 自动生成的接口文档
 
 ## 推荐阅读顺序

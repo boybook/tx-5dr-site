@@ -9,6 +9,7 @@
 - [PluginHooks](./hooks)
 - [StrategyRuntime](./runtime)
 - [Helper Interfaces](./helpers)
+- [Host Settings](./settings)
 - [Re-exports](./re-exports)
 - [Contracts Re-exports](./contracts)
 
