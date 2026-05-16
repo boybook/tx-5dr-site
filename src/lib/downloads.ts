@@ -33,12 +33,12 @@ function parseDisplayDate(value: string): Date | null {
 function getPackagePriorityForPlatform(platform: DetectedSystem['platform'], packageType: string): number {
   const normalized = packageType.toLowerCase();
   const order = platform === 'windows'
-    ? ['msi', '7z', 'zip']
+    ? ['exe', '7z', 'zip']
     : platform === 'macos'
       ? ['dmg', 'zip']
       : platform === 'linux'
         ? ['deb', 'rpm', 'zip', 'appimage']
-        : ['zip', '7z', 'msi', 'dmg', 'deb', 'rpm'];
+        : ['zip', '7z', 'exe', 'dmg', 'deb', 'rpm'];
   const index = order.indexOf(normalized);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
@@ -99,6 +99,7 @@ function sortHeroMenuAssets(
 export function getPackageLabel(packageType: string, t: Translate): string {
   const normalized = packageType.toLowerCase();
   switch (normalized) {
+    case 'exe':
     case 'msi':
     case 'dmg':
     case 'zip':

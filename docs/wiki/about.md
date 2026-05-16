@@ -91,13 +91,6 @@
 
 | 包名 | 许可证 |
 | --- | --- |
-| `@electron-forge/cli` | `MIT` |
-| `@electron-forge/maker-deb` | `MIT` |
-| `@electron-forge/maker-dmg` | `MIT` |
-| `@electron-forge/maker-rpm` | `MIT` |
-| `@electron-forge/maker-wix` | `MIT` |
-| `@electron-forge/maker-zip` | `MIT` |
-| `@electron-forge/plugin-auto-unpack-natives` | `MIT` |
 | `@electron/rebuild` | `MIT` |
 | `@statelyai/inspect` | `MIT` |
 | `@types/bcrypt` | `MIT` |
@@ -113,6 +106,8 @@
 | `autocannon` | `MIT` |
 | `clinic` | `MIT` |
 | `electron` | `MIT` |
+| `electron-builder` | `MIT` |
+| `electron-updater` | `MIT` |
 | `eslint` | `MIT` |
 | `globals` | `MIT` |
 | `png-to-ico` | `MIT` |

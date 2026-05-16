@@ -6,9 +6,9 @@
 
 桌面版面向图形桌面环境，当前常见文件类型包括：
 
-- Windows：`.msi`、`.7z`
+- Windows：`.exe`（NSIS 安装包）、`.7z`、`.zip`
 - macOS：`.dmg`
-- Linux 图形环境：`.deb`、`.rpm`
+- Linux 图形环境：`.deb`、`.rpm`、`.AppImage`
 
 这类发布物通常包含 Electron 宿主、本地服务端和 Web UI。
 

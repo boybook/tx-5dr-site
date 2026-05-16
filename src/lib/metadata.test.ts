@@ -48,14 +48,14 @@ describe('getRecommendedAsset', () => {
     source: 'oss',
     assets: [
       { name: 'TX-5DR-nightly-windows-x64.zip', url: '#', platform: 'windows', arch: 'x64', packageType: 'zip' },
-      { name: 'TX-5DR-nightly-windows-x64.msi', url: '#', platform: 'windows', arch: 'x64', packageType: 'msi' },
+      { name: 'TX-5DR-nightly-windows-x64-nsis.exe', url: '#', platform: 'windows', arch: 'x64', packageType: 'exe' },
       { name: 'TX-5DR-nightly-windows-x64.7z', url: '#', platform: 'windows', arch: 'x64', packageType: '7z' },
     ],
   };
 
   it('prefers installer for windows', () => {
     const recommended = getRecommendedAsset(manifest, { platform: 'windows', arch: 'x64', label: 'Windows x64' });
-    expect(recommended?.packageType).toBe('msi');
+    expect(recommended?.name).toBe('TX-5DR-nightly-windows-x64-nsis.exe');
   });
 
   it('returns null when browser cannot confirm architecture and multiple arches exist', () => {

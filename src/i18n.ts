@@ -50,6 +50,7 @@ const translations: Translations = {
       unknownArch: 'Unknown arch',
     },
     packageType: {
+      exe: 'Installer (EXE)',
       msi: 'Installer (MSI)',
       dmg: 'Installer (DMG)',
       zip: 'Archive (ZIP)',
@@ -156,6 +157,7 @@ const translations: Translations = {
       unknownArch: '未知架构',
     },
     packageType: {
+      exe: '安装包（EXE）',
       msi: '安装包（MSI）',
       dmg: '安装包（DMG）',
       zip: '压缩包（ZIP）',

@@ -12,9 +12,9 @@
 
 1. 打开桌面版发布页：<https://github.com/boybook/tx-5dr/releases/tag/nightly-app>
 2. 下载适合平台的安装包
-   - Windows：`.msi` 或 `.7z`
+   - Windows：`.exe` 安装包；`.7z` / `.zip` 为手动压缩包
    - macOS：`.dmg`
-   - Linux 图形环境：`.deb` / `.rpm`
+   - Linux 图形环境：`.deb` / `.rpm`，或免安装的 `.AppImage`
 3. 按操作系统的常规方式完成安装并启动应用
 4. 启动后继续阅读 [首次进入与基本使用](./first-steps)
 

@@ -386,12 +386,12 @@ function packagePriority(product: ProductType, platform: SystemPlatform | 'unkno
   const order = product === 'server'
     ? ['sh', 'deb', 'rpm']
     : platform === 'windows'
-      ? ['msi', '7z', 'zip']
+      ? ['exe', '7z', 'zip']
       : platform === 'macos'
         ? ['dmg', 'zip']
         : platform === 'linux'
           ? ['deb', 'rpm', 'zip', 'appimage']
-          : ['zip', '7z', 'msi', 'dmg', 'deb', 'rpm', 'sh'];
+          : ['zip', '7z', 'exe', 'dmg', 'deb', 'rpm', 'sh'];
   const index = order.indexOf(normalizedType);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
