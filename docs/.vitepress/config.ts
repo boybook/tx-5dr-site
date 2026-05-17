@@ -128,6 +128,12 @@ export default defineConfig({
       title: 'TX-5DR',
       description: 'TX-5DR website and docs hub',
     },
+    ja: {
+      lang: 'ja-JP',
+      label: '日本語',
+      title: 'TX-5DR',
+      description: 'TX-5DR 公式サイトとドキュメントハブ',
+    },
   },
   themeConfig: {
     logo: '/favicon.svg',
@@ -185,6 +191,31 @@ export default defineConfig({
         langMenuLabel: 'Change language',
         footer: {
           message: 'The homepage is available in English. Full docs are currently Chinese-first.',
+          copyright: 'TX-5DR © 2026',
+        },
+      },
+      ja: {
+        nav: [
+          { text: 'ホーム', link: '/ja/' },
+          { text: 'ガイド', link: '/guide/' },
+          { text: 'Wiki', link: '/wiki/' },
+          { text: 'プラグイン API', link: '/plugin-api/' },
+          { text: 'GitHub', link: REPO_URL },
+        ],
+        sidebar: {},
+        outlineTitle: 'このページ',
+        lastUpdatedText: '最終更新',
+        docFooter: {
+          prev: '前のページ',
+          next: '次のページ',
+        },
+        sidebarMenuLabel: 'メニュー',
+        returnToTopLabel: 'トップへ戻る',
+        darkModeSwitchTitle: 'ダークモードに切り替え',
+        lightModeSwitchTitle: 'ライトモードに切り替え',
+        langMenuLabel: '言語を切り替え',
+        footer: {
+          message: 'ホームページは日本語に対応しています。ドキュメント全体は現在中国語中心です。',
           copyright: 'TX-5DR © 2026',
         },
       },

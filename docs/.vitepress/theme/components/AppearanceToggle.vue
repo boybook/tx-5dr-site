@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useData } from 'vitepress';
+import type { SupportedLocale } from '../../../../src/i18n';
 
 type AppearanceMode = 'auto' | 'light' | 'dark';
 const APPEARANCE_STORAGE_KEY = 'vitepress-theme-appearance';
 
 const props = defineProps<{
-  locale: 'zh-CN' | 'en';
+  locale: SupportedLocale;
 }>();
 
 const { isDark } = useData();
@@ -23,6 +24,14 @@ const title = computed(() => {
     }
 
     return isDark.value ? '当前手动深色，点击切换为浅色' : '当前手动浅色，点击切换为深色';
+  }
+
+  if (props.locale === 'ja') {
+    if (activeMode.value === 'auto') {
+      return isDark.value ? 'システム連動（ダーク）。クリックでライトへ' : 'システム連動（ライト）。クリックでダークへ';
+    }
+
+    return isDark.value ? '手動ダーク。クリックでライトへ' : '手動ライト。クリックでダークへ';
   }
 
   if (activeMode.value === 'auto') {

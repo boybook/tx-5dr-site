@@ -160,7 +160,8 @@ export function formatTime(value: string | null, locale: Locale): string {
     return value;
   }
 
-  const formatter = new Intl.DateTimeFormat(locale, {
+  const dateLocale = locale === 'ja' ? 'ja-JP' : locale;
+  const formatter = new Intl.DateTimeFormat(dateLocale, {
     year: 'numeric',
     month: 'short',
     day: '2-digit',

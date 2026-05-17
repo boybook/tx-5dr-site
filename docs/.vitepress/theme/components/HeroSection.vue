@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { withBase } from 'vitepress';
+import type { SupportedLocale } from '../../../../src/i18n';
 import type { DetectedSystem, NormalizedAsset, NormalizedManifest } from '../../../../src/lib/types';
 
 const props = defineProps<{
@@ -13,7 +14,7 @@ const props = defineProps<{
   heroAlternateAssets: NormalizedAsset[];
   heroPrimaryAsset: NormalizedAsset | null;
   loading: boolean;
-  locale: 'zh-CN' | 'en';
+  locale: SupportedLocale;
   manifest: NormalizedManifest | null;
   platformLabel: string;
   repoUrl: string;

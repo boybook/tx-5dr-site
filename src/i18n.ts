@@ -1,4 +1,4 @@
-export type SupportedLocale = 'zh-CN' | 'en';
+export type SupportedLocale = 'zh-CN' | 'en' | 'ja';
 
 interface TranslationNode {
   [key: string]: string | TranslationNode;
@@ -111,6 +111,113 @@ const translations: Translations = {
       releases: 'Releases',
       readme: 'README',
       issues: 'Issues',
+      icp: 'Zhe ICP Bei 2022033471 Hao-2',
+    },
+  },
+  ja: {
+    nav: {
+      channelNightly: 'Nightly',
+      themeLight: 'ライト',
+      themeDark: 'ダーク',
+    },
+    hero: {
+      title: 'TX-5DR',
+      subtitle: 'FT8、FT4、リモート音声に対応したブラウザ中心のデジタル無線局。デスクトップ運用にも、遠隔局の常時運用にもフィットします。',
+      primaryCta: '{{platform}} をダウンロード',
+      previewAlt: 'TX-5DR インターフェースのプレビュー',
+      otherArchitectures: '他のアーキテクチャ',
+      allPlatforms: 'すべてのダウンロード',
+      unavailable: '現在の環境に合うデスクトップパッケージはまだありません',
+      version: 'バージョン',
+      commit: 'Commit',
+      builtAt: 'ビルド日時',
+      summary: '最新アップデート',
+      recentUpdatesTitle: '最近の更新',
+      recentUpdatesExpand: '最近の更新を表示',
+      recentUpdatesCollapse: '最近の更新を隠す',
+      recentCommitTime: 'コミット日時',
+      recentCommitId: 'Commit',
+      viewAllUpdates: 'すべての更新を見る',
+      loading: '最新メタデータを読み込み中…',
+      error: 'リリースメタデータを読み込めません。プロジェクトリポジトリは直接開けます。',
+      fallback: 'オープンソースプロジェクト',
+    },
+    source: {
+      auto: '自動',
+      oss: 'OSS ミラー',
+      github: 'GitHub',
+    },
+    system: {
+      windows: 'Windows',
+      macos: 'macOS',
+      linux: 'Linux',
+      unknown: '不明なシステム',
+      x64: 'x64',
+      arm64: 'ARM64',
+      unknownArch: '不明なアーキテクチャ',
+    },
+    packageType: {
+      exe: 'インストーラー（EXE）',
+      msi: 'インストーラー（MSI）',
+      dmg: 'インストーラー（DMG）',
+      zip: 'アーカイブ（ZIP）',
+      '7z': 'アーカイブ（7z）',
+      deb: 'パッケージ（DEB）',
+      rpm: 'パッケージ（RPM）',
+      appimage: 'AppImage',
+      sh: 'インストールスクリプト',
+      unknown: 'ダウンロード',
+    },
+    labels: {
+      recommended: '推奨',
+      desktop: 'デスクトップ版',
+      server: 'Linux サーバー',
+      allDownloads: 'すべてのダウンロード',
+      command: 'コマンド',
+      highlights: 'HAM オペレーターが TX-5DR を選ぶ理由',
+      deployments: '運用スタイルを選ぶ',
+      releaseNotes: 'リリースノート',
+      noNotes: 'リリースノートはありません。',
+      sha256: 'SHA256',
+      size: 'サイズ',
+      architecture: 'アーキテクチャ',
+    },
+    highlights: {
+      item1Title: 'ブラウザだけでどこからでも運用',
+      item1Body: '同じ無線局をノート PC、タブレット、スマートフォン、LAN、インターネット経由で操作できます。オペレーター側にクライアントのインストールは不要です。',
+      item2Title: 'デジタルモードと音声を一体化',
+      item2Body: 'FT8、FT4、リモート音声を 1 つの製品に統合。リアルタイム音声経路と操作面は、無線運用の現場に合わせて設計されています。',
+      item3Title: '1 台の無線機を複数オペレーターで',
+      item3Body: 'ロールベースのアクセス制御、独立したオペレーター設定、複数オペレーターの並行デジタルモード運用に対応します。',
+      item4Title: 'OpenWebRX フルデュプレックス運用',
+      item4Body: '遠隔 SDR を補助受信系として利用し、デュアルサイクルデコードと受信性能の向上を実現します。',
+      item5Title: '現代的な無線局ツールチェーン',
+      item5Body: 'ログブック同期、PSKReporter レポート、リアルタイムスペクトラムウォーターフォール、Linux サービス運用ツールを標準で備えます。',
+      item6Title: 'デスクトップ版とサーバー版が同じエコシステム',
+      item6Body: 'Electron デスクトップビルド、Linux パッケージ、ワンラインサーバーインストーラーは、同じリリースメタデータと配布ロジックで動作します。',
+    },
+    deployments: {
+      desktopTitle: 'デスクトップ版',
+      desktopBody: 'Windows、macOS、Linux 向けデスクトップパッケージ。ローカル組み込みサーバーと同じ Web UI 体験を提供します。',
+      desktopMeta: 'GUI のあるローカル局に最適。',
+      serverTitle: 'Linux サーバー',
+      serverBody: 'ヘッドレスサーバーを小型 PC や遠隔ホストに入れ、すべてをブラウザから運用できます。',
+      serverMeta: '常時稼働の遠隔局に最適。',
+      dockerTitle: 'Docker',
+      dockerBody: 'コンテナ運用、再現可能な環境、検証用ラボを重視する場合に使いやすい Compose ベースの構成です。',
+      dockerMeta: 'インフラ寄りのユーザーや実験に最適。',
+    },
+    server: {
+      title: 'Linux サーバーをワンラインでインストール',
+      description: 'このモードは Electron に依存しない純粋なフロントエンド/バックエンド Linux サービスとして動作します。低消費電力の組み込みホスト、小型遠隔ボックス、常時稼働の局サーバーに適しています。インストール後は tx5dr コマンドで日常管理、サービス制御、ワンコマンドアップグレードを行えます。',
+      copy: 'コマンドをコピー',
+      copied: 'コピーしました',
+    },
+    footer: {
+      github: 'GitHub リポジトリ',
+      releases: 'リリース',
+      readme: 'README',
+      issues: '不具合報告',
       icp: 'Zhe ICP Bei 2022033471 Hao-2',
     },
   },
@@ -238,7 +345,7 @@ function getTranslation(locale: SupportedLocale, key: string): string | null {
 }
 
 export function translateMessage(locale: SupportedLocale, key: string, vars?: Record<string, string>): string {
-  const template = getTranslation(locale, key) ?? getTranslation('en', key) ?? key;
+  const template = getTranslation(locale, key) ?? getTranslation('zh-CN', key) ?? getTranslation('en', key) ?? key;
   if (!vars) {
     return template;
   }

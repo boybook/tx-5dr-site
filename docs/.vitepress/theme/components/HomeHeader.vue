@@ -1,21 +1,34 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { withBase } from 'vitepress';
+import type { SupportedLocale } from '../../../../src/i18n';
 import AppearanceToggle from './AppearanceToggle.vue';
 
 const props = defineProps<{
-  locale: 'zh-CN' | 'en';
+  locale: SupportedLocale;
   repoUrl: string;
 }>();
 
-const languageLabel = computed(() => (props.locale === 'zh-CN' ? '中文' : 'EN'));
-const languageHref = computed(() => withBase(props.locale === 'zh-CN' ? '/en/' : '/'));
+const languageLinks = computed(() => [
+  { locale: 'zh-CN', label: '中文', href: withBase('/'), active: props.locale === 'zh-CN' },
+  { locale: 'en', label: 'EN', href: withBase('/en/'), active: props.locale === 'en' },
+  { locale: 'ja', label: '日本語', href: withBase('/ja/'), active: props.locale === 'ja' },
+]);
+
 const docNavItems = computed(() => {
   if (props.locale === 'zh-CN') {
     return [
       { text: '指南', href: withBase('/guide/') },
       { text: 'Wiki', href: withBase('/wiki/') },
       { text: '插件 API', href: withBase('/plugin-api/') },
+    ];
+  }
+
+  if (props.locale === 'ja') {
+    return [
+      { text: 'ガイド', href: withBase('/guide/') },
+      { text: 'Wiki', href: withBase('/wiki/') },
+      { text: 'プラグイン API', href: withBase('/plugin-api/') },
     ];
   }
 
@@ -50,12 +63,18 @@ const docNavItems = computed(() => {
       </nav>
     </div>
 
-    <div class="flex items-center justify-end gap-2 text-sm">
+    <div class="flex flex-wrap items-center justify-end gap-2 text-sm">
       <a
-        :href="languageHref"
-        class="tx-home-chip rounded-full border border-slate-300/70 bg-white/70 px-3 py-1.5 text-slate-700 transition hover:border-rose-400 hover:text-rose-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+        v-for="language in languageLinks"
+        :key="language.locale"
+        :href="language.href"
+        class="tx-home-chip rounded-full border px-3 py-1.5 transition"
+        :class="language.active
+          ? 'border-rose-400 bg-rose-500/10 text-rose-700 dark:border-rose-300/50 dark:bg-rose-300/12 dark:text-rose-100'
+          : 'border-slate-300/70 bg-white/70 text-slate-700 hover:border-rose-400 hover:text-rose-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200'"
+        :aria-current="language.active ? 'page' : undefined"
       >
-        {{ languageLabel }}
+        {{ language.label }}
       </a>
       <AppearanceToggle :locale="locale" />
     </div>
