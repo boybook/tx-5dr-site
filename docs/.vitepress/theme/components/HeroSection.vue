@@ -55,11 +55,12 @@ const recentUpdatesOpen = ref(false);
           :href="heroPrimaryAsset.url"
           target="_blank"
           rel="noreferrer"
-          class="tx-hero-primary-link inline-flex items-center justify-center rounded-l-full px-6 py-3 pr-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 dark:text-slate-950"
+          class="tx-hero-primary-link inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 dark:text-slate-950"
+          :class="heroAlternateAssets.length > 0 || system.platform !== 'android' ? 'rounded-l-full pr-5' : 'rounded-full'"
         >
           {{ getHeroAssetLabel(heroPrimaryAsset, system.platform === 'unknown' ? t('labels.desktop') : platformLabel) }}
         </a>
-        <details class="group relative">
+        <details v-if="heroAlternateAssets.length > 0 || system.platform !== 'android'" class="group relative">
           <summary class="flex h-full cursor-pointer list-none items-center justify-center rounded-r-full border-l border-white/15 px-4 text-white/85 transition hover:text-white dark:border-slate-200 dark:text-slate-700 dark:hover:text-slate-950 [&::-webkit-details-marker]:hidden">
             <span class="sr-only">{{ t('hero.otherArchitectures') }}</span>
             <svg viewBox="0 0 20 20" aria-hidden="true" class="size-4 transition group-open:rotate-180" fill="none">

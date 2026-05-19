@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
+import AndroidClientSection from './AndroidClientSection.vue';
 import ContentSection from './ContentSection.vue';
 import DownloadsSection from './DownloadsSection.vue';
 import HeroSection from './HeroSection.vue';
@@ -45,6 +46,13 @@ const home = reactive(useHomeData());
           :title="home.t('labels.deployments')"
           :items="home.deploymentItems"
           grid-class-name="lg:grid-cols-3"
+        />
+
+        <AndroidClientSection
+          :asset="home.androidBridgePrimaryAsset"
+          :format-bytes="home.formatBytes"
+          :manifest="home.effectiveAndroidBridgeManifest"
+          :t="home.t"
         />
 
         <InstallCommandSection :command="home.NIGHTLY_SERVER_INSTALL_COMMAND" :t="home.t" />

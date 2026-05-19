@@ -298,7 +298,18 @@ body.tx-page-home::before {
   color: var(--color-slate-300);
 }
 
-.tx-home .tx-card-body,
+.tx-home .tx-card-body {
+  margin-top: 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-slate-600);
+}
+
+.tx-home .tx-card-meta {
+  margin-top: 0.5rem;
+  line-height: 1.35;
+}
+
 .tx-home .tx-release-notes {
   font-size: 0.875rem;
   line-height: 1.75rem;
@@ -459,9 +470,24 @@ body.tx-page-home::before {
 }
 
 .tx-home .tx-install-description {
+  margin-top: 0.625rem;
   font-size: 0.875rem;
-  line-height: 1.75rem;
+  line-height: 1.45;
   color: var(--color-slate-300);
+}
+
+.tx-home .tx-android-description {
+  margin-top: 0.625rem;
+  line-height: 1.45;
+}
+
+.tx-home .tx-android-meta {
+  margin-top: 0.5rem;
+  line-height: 1.35;
+}
+
+.tx-home .tx-android-file {
+  line-height: 1.35;
 }
 
 .tx-home .tx-install-shell {

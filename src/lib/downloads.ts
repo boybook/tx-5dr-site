@@ -38,12 +38,15 @@ function getPackagePriorityForPlatform(platform: DetectedSystem['platform'], pac
       ? ['dmg', 'zip']
       : platform === 'linux'
         ? ['deb', 'rpm', 'zip', 'appimage']
-        : ['zip', '7z', 'exe', 'dmg', 'deb', 'rpm'];
+        : platform === 'android'
+          ? ['apk']
+          : ['zip', '7z', 'exe', 'dmg', 'deb', 'rpm', 'apk'];
   const index = order.indexOf(normalized);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
 function getDefaultArchForPlatform(platform: DetectedSystem['platform']): string {
+  if (platform === 'android') return 'arm64';
   return platform === 'macos' ? 'arm64' : 'x64';
 }
 
@@ -108,6 +111,7 @@ export function getPackageLabel(packageType: string, t: Translate): string {
     case 'rpm':
     case 'sh':
     case 'appimage':
+    case 'apk':
       return t(`packageType.${normalized}`);
     default:
       return t('packageType.unknown');
@@ -222,6 +226,10 @@ export function buildHeroDownloadOptions(
 }
 
 export function getHeroAssetLabel(asset: NormalizedAsset, platformLabel: string, t: Translate): string {
+  if (asset.platform === 'android' && asset.packageType.toLowerCase() === 'apk') {
+    return t('hero.androidCta');
+  }
+
   const parts = [t('hero.primaryCta', { platform: platformLabel })];
   parts.push(getArchLabel(asset.arch, t));
   if (asset.packageType.toLowerCase() !== 'unknown') {

@@ -1,7 +1,7 @@
 export type ReleaseChannel = 'release' | 'nightly';
 export type ReleaseSource = 'oss' | 'github';
 export type SourcePolicy = 'auto' | ReleaseSource;
-export type ProductType = 'app' | 'server';
+export type ProductType = 'app' | 'server' | 'android-bridge';
 export type SystemPlatform = 'windows' | 'macos' | 'linux' | 'android' | 'ios' | 'unknown';
 export type SystemArch = 'x64' | 'arm64' | 'unknown';
 
@@ -45,6 +45,7 @@ export interface NormalizedManifest {
 
 export interface ReleaseCatalog {
   app: Record<ReleaseChannel, NormalizedManifest | null>;
+  androidBridge: Record<ReleaseChannel, NormalizedManifest | null>;
   server: Record<ReleaseChannel, NormalizedManifest | null>;
   countryCode: string | null;
   preferredSource: ReleaseSource;

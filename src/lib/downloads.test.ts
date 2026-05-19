@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeroDownloadOptions, parseDisplayDateForTesting } from './downloads';
+import { buildHeroDownloadOptions, getHeroAssetLabel, parseDisplayDateForTesting } from './downloads';
 import type { NormalizedAsset } from './types';
 
 describe('buildHeroDownloadOptions', () => {
@@ -51,6 +51,40 @@ describe('buildHeroDownloadOptions', () => {
       'TX-5DR-nightly-linux-x64.zip',
       'TX-5DR-nightly-linux-x64.AppImage',
     ]);
+  });
+
+  it('uses Android APK as the Android hero download', () => {
+    const result = buildHeroDownloadOptions([
+      {
+        name: 'TX-5DR-Android-Bridge-0.1.0-nightly.202605190740.84b7ba2-arm64.apk',
+        url: '#',
+        platform: 'android',
+        arch: 'arm64',
+        packageType: 'apk',
+      },
+    ], 'android', 'unknown');
+
+    expect(result.primary?.packageType).toBe('apk');
+    expect(result.primary?.platform).toBe('android');
+    expect(result.alternates).toEqual([]);
+  });
+});
+
+describe('getHeroAssetLabel', () => {
+  it('uses dedicated Android client wording for APKs', () => {
+    const label = getHeroAssetLabel({
+      name: 'TX-5DR-Android-Bridge.apk',
+      url: '#',
+      platform: 'android',
+      arch: 'arm64',
+      packageType: 'apk',
+    }, 'Android', (key, vars) => {
+      if (key === 'hero.androidCta') return 'Download Android client';
+      if (key === 'hero.primaryCta') return `Download ${vars?.platform}`;
+      return key;
+    });
+
+    expect(label).toBe('Download Android client');
   });
 });
 

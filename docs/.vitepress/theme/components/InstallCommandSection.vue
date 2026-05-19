@@ -33,11 +33,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="tx-install-section mt-20 rounded-[2rem] border border-white/15 bg-slate-950 px-6 py-8 text-slate-100 shadow-[0_30px_90px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-slate-950/80 sm:px-8">
+  <section class="tx-install-section mt-8 rounded-[2rem] border border-white/15 bg-slate-950 px-6 py-8 text-slate-100 shadow-[0_30px_90px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-slate-950/80 sm:px-8">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <p class="tx-install-kicker text-sm uppercase tracking-[0.24em] text-rose-300">{{ t('server.title') }}</p>
-        <p class="tx-install-description mt-3 max-w-3xl text-sm leading-7 text-slate-300">{{ t('server.description') }}</p>
+        <p class="tx-install-kicker text-sm uppercase leading-none tracking-[0.24em] text-rose-300">{{ t('server.title') }}</p>
+        <p class="tx-install-description mt-5 max-w-3xl text-sm leading-[1.45] text-slate-300">{{ t('server.description') }}</p>
       </div>
     </div>
     <div class="tx-install-shell mt-6 flex items-center gap-3 rounded-2xl border border-white/12 bg-slate-950/70 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">

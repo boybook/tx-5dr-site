@@ -38,15 +38,23 @@ export function useHomeData() {
   });
 
   const effectiveDesktopManifest = computed(() => catalog.value?.app.nightly ?? null);
+  const effectiveAndroidBridgeManifest = computed(() => catalog.value?.androidBridge?.nightly ?? null);
   const effectiveServerManifest = computed(() => catalog.value?.server.nightly ?? null);
   const desktopAssets = computed(() => sortAssetsForDisplay(effectiveDesktopManifest.value, system.value));
+  const androidBridgeAssets = computed(() => sortAssetsForDisplay(effectiveAndroidBridgeManifest.value, system.value));
+  const androidBridgePrimaryAsset = computed(() => androidBridgeAssets.value[0] ?? null);
   const serverAssets = computed(() => sortAssetsForDisplay(effectiveServerManifest.value).filter((asset) => asset.packageType !== 'sh'));
   const platformScopedDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === system.value.platform));
   const windowsDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === 'windows'));
   const macosDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === 'macos'));
   const linuxDesktopAssets = computed(() => desktopAssets.value.filter((asset) => asset.platform === 'linux'));
   const showCnDownloadTag = computed(() => catalog.value?.preferredSource === 'oss');
-  const heroDownloadOptions = computed(() => buildHeroDownloadOptions(platformScopedDesktopAssets.value, system.value.platform, system.value.arch));
+  const heroDownloadOptions = computed(() => {
+    if (system.value.platform === 'android') {
+      return buildHeroDownloadOptions(androidBridgeAssets.value, 'android', system.value.arch);
+    }
+    return buildHeroDownloadOptions(platformScopedDesktopAssets.value, system.value.platform, system.value.arch);
+  });
   const platformLabel = computed(() => getPlatformLabel(system.value.platform, t));
 
   const highlightItems = computed(() => [
@@ -87,6 +95,13 @@ export function useHomeData() {
       manifest: effectiveDesktopManifest.value,
     },
     {
+      key: 'android-client',
+      title: t('labels.androidClient'),
+      assets: androidBridgeAssets.value,
+      recommended: androidBridgeAssets.value[0] ?? null,
+      manifest: effectiveAndroidBridgeManifest.value,
+    },
+    {
       key: 'linux-server',
       title: t('labels.server'),
       assets: serverAssets.value,
@@ -99,9 +114,11 @@ export function useHomeData() {
     NIGHTLY_APP_RELEASE_URL,
     NIGHTLY_SERVER_INSTALL_COMMAND,
     REPO_URL,
+    androidBridgePrimaryAsset,
     catalog,
     deploymentItems,
     downloadCards,
+    effectiveAndroidBridgeManifest,
     effectiveDesktopManifest,
     error,
     formatBytes,

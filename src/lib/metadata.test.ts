@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getRecommendedAsset,
   hasCatalogDataForTesting,
+  normalizeManifestForTesting,
   resolveAssetUrlForTesting,
 } from './metadata';
 import type { NormalizedAsset, NormalizedManifest, ReleaseCatalog } from './types';
@@ -72,10 +73,44 @@ describe('getRecommendedAsset', () => {
   });
 });
 
+describe('normalizeManifestForTesting', () => {
+  it('parses Android bridge APK manifests', () => {
+    const manifest = normalizeManifestForTesting({
+      product: 'android-bridge',
+      channel: 'nightly',
+      tag: 'nightly-android-bridge',
+      version: '0.1.0-nightly.202605190740+84b7ba2',
+      commit: '84b7ba2',
+      commit_title: 'Publish Android bridge nightly APK',
+      published_at: '2026-05-19T07:40:00Z',
+      assets: [
+        {
+          name: 'TX-5DR-Android-Bridge-0.1.0-nightly.202605190740.84b7ba2-arm64.apk',
+          url: 'https://dl.tx5dr.com/tx-5dr/android-bridge/nightly/TX-5DR-Android-Bridge.apk',
+          platform: 'android',
+          arch: 'arm64',
+          package_type: 'apk',
+          sha256: 'abc123',
+          size: 318082961,
+        },
+      ],
+    }, 'oss');
+
+    expect(manifest?.product).toBe('android-bridge');
+    expect(manifest?.assets[0]).toMatchObject({
+      platform: 'android',
+      arch: 'arm64',
+      packageType: 'apk',
+      size: 318082961,
+    });
+  });
+});
+
 describe('hasCatalogDataForTesting', () => {
   it('returns false for an empty catalog', () => {
     const catalog: ReleaseCatalog = {
       app: { nightly: null, release: null },
+      androidBridge: { nightly: null, release: null },
       server: { nightly: null, release: null },
       countryCode: null,
       preferredSource: 'github',
@@ -102,6 +137,7 @@ describe('hasCatalogDataForTesting', () => {
         },
         release: null,
       },
+      androidBridge: { nightly: null, release: null },
       server: { nightly: null, release: null },
       countryCode: 'CN',
       preferredSource: 'oss',

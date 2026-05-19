@@ -61,6 +61,8 @@ function hasCatalogData(catalog: ReleaseCatalog): boolean {
   return Boolean(
     catalog.app.nightly
     || catalog.app.release
+    || catalog.androidBridge?.nightly
+    || catalog.androidBridge?.release
     || catalog.server.nightly
     || catalog.server.release,
   );
@@ -147,6 +149,15 @@ function detectServerAssetMetadata(fileName: string): Pick<NormalizedAsset, 'pla
   };
 }
 
+function detectAndroidBridgeAssetMetadata(fileName: string): Pick<NormalizedAsset, 'platform' | 'arch' | 'packageType'> {
+  const lower = fileName.toLowerCase();
+  return {
+    platform: 'android',
+    arch: lower.includes('arm64') || lower.includes('aarch64') ? 'arm64' : 'unknown',
+    packageType: lower.endsWith('.apk') ? 'apk' : 'unknown',
+  };
+}
+
 function normalizeAssetPlatform(value: string | null | undefined, fallback: NormalizedAsset['platform']): NormalizedAsset['platform'] {
   const normalized = (value || '').trim().toLowerCase();
   if (normalized === 'windows' || normalized === 'macos' || normalized === 'linux' || normalized === 'android' || normalized === 'ios') {
@@ -172,7 +183,9 @@ function toNormalizedAsset(asset: RawManifestAsset, product: ProductType): Norma
 
   const detected = product === 'server'
     ? detectServerAssetMetadata(asset.name)
-    : detectAppAssetMetadata(asset.name);
+    : product === 'android-bridge'
+      ? detectAndroidBridgeAssetMetadata(asset.name)
+      : detectAppAssetMetadata(asset.name);
 
   return {
     name: asset.name,
@@ -292,9 +305,11 @@ async function fetchOssManifest(product: ProductType, channel: ReleaseChannel): 
 }
 
 async function fetchOssCatalog(): Promise<ReleaseCatalog> {
-  const [appNightly, appRelease, serverNightly, serverRelease] = await Promise.all([
+  const [appNightly, appRelease, androidBridgeNightly, androidBridgeRelease, serverNightly, serverRelease] = await Promise.all([
     fetchOssManifest('app', 'nightly'),
     fetchOssManifest('app', 'release'),
+    fetchOssManifest('android-bridge', 'nightly'),
+    fetchOssManifest('android-bridge', 'release'),
     fetchOssManifest('server', 'nightly'),
     fetchOssManifest('server', 'release'),
   ]);
@@ -303,6 +318,10 @@ async function fetchOssCatalog(): Promise<ReleaseCatalog> {
     app: {
       nightly: appNightly,
       release: appRelease,
+    },
+    androidBridge: {
+      nightly: androidBridgeNightly,
+      release: androidBridgeRelease,
     },
     server: {
       nightly: serverNightly,
@@ -367,6 +386,10 @@ export async function fetchReleaseCatalog(policy: SourcePolicy): Promise<Release
       nightly: resolveManifestAssets(ossCatalog.app.nightly, preferredSource),
       release: resolveManifestAssets(ossCatalog.app.release, preferredSource),
     },
+    androidBridge: {
+      nightly: resolveManifestAssets(ossCatalog.androidBridge.nightly, preferredSource),
+      release: resolveManifestAssets(ossCatalog.androidBridge.release, preferredSource),
+    },
     server: {
       nightly: resolveManifestAssets(ossCatalog.server.nightly, preferredSource),
       release: resolveManifestAssets(ossCatalog.server.release, preferredSource),
@@ -385,13 +408,15 @@ function packagePriority(product: ProductType, platform: SystemPlatform | 'unkno
   const normalizedType = normalizePackageType(packageType);
   const order = product === 'server'
     ? ['sh', 'deb', 'rpm']
-    : platform === 'windows'
-      ? ['exe', '7z', 'zip']
-      : platform === 'macos'
-        ? ['dmg', 'zip']
-        : platform === 'linux'
-          ? ['deb', 'rpm', 'zip', 'appimage']
-          : ['zip', '7z', 'exe', 'dmg', 'deb', 'rpm', 'sh'];
+    : product === 'android-bridge' || platform === 'android'
+      ? ['apk']
+      : platform === 'windows'
+        ? ['exe', '7z', 'zip']
+        : platform === 'macos'
+          ? ['dmg', 'zip']
+          : platform === 'linux'
+            ? ['deb', 'rpm', 'zip', 'appimage']
+            : ['zip', '7z', 'exe', 'dmg', 'deb', 'rpm', 'sh', 'apk'];
   const index = order.indexOf(normalizedType);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
@@ -461,6 +486,10 @@ export function getRecommendedAsset(
 
 export function resolveAssetUrlForTesting(asset: NormalizedAsset, preferredSource: ReleaseSource): { url: string; source: ReleaseSource } {
   return resolveAssetUrl(asset, preferredSource);
+}
+
+export function normalizeManifestForTesting(raw: RawManifest, source: ReleaseSource): NormalizedManifest | null {
+  return normalizeManifest(raw, source);
 }
 
 export function hasCatalogDataForTesting(catalog: ReleaseCatalog): boolean {
