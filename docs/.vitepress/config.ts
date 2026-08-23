@@ -51,53 +51,140 @@ const wikiSidebar = [
   },
 ];
 
+const pluginApiReferencePages = [
+  { text: 'PluginDefinition', page: 'definition' },
+  { text: 'Capabilities', page: 'capabilities' },
+  { text: 'PluginContext', page: 'context' },
+  { text: 'PluginHooks', page: 'hooks' },
+  { text: 'StrategyRuntime', page: 'runtime' },
+  { text: 'Helper Interfaces', page: 'helpers' },
+  { text: 'Host Settings', page: 'settings' },
+  { text: 'Logbook Sync', page: 'sync' },
+  { text: 'Host Dependencies', page: 'host-dependencies' },
+  { text: 'Contracts Re-exports', page: 'contracts' },
+  { text: 'Re-exports', page: 're-exports' },
+];
+
+function pluginApiReferenceItems(prefix: string, overview: string) {
+  return [
+    { text: overview, link: `${prefix}/` },
+    ...pluginApiReferencePages.map(({ text, page }) => ({
+      text,
+      link: `${prefix}/${page}`,
+    })),
+  ];
+}
+
 const pluginApiSidebar = [
   {
-    text: '总览',
+    text: '开始使用',
     items: [
       { text: '插件 API 入口', link: '/plugin-api/' },
-      { text: '学习路径', link: '/plugin-api/learning-path' },
       { text: '快速开始', link: '/plugin-api/getting-started' },
+      { text: '插件如何运行', link: '/plugin-api/concepts' },
+      { text: 'API v2 与兼容性', link: '/plugin-api/api-v2' },
     ],
   },
   {
-    text: '教程',
+    text: '基础',
     items: [
-      { text: '第 1 章：Hello Utility', link: '/plugin-api/tutorial-hello-utility' },
-      { text: '第 2 章：过滤与评分', link: '/plugin-api/tutorial-filter-and-score' },
-      { text: '第 3 章：守候与自动起呼', link: '/plugin-api/tutorial-watcher-autocall' },
-      { text: '第 4 章：面板、按钮与定时器', link: '/plugin-api/tutorial-ui-actions-and-panels' },
-      { text: '第 5 章：StrategyRuntime', link: '/plugin-api/tutorial-strategy-runtime' },
-      { text: '第 6 章：自定义 UI 与 iframe', link: '/plugin-api/tutorial-custom-ui' },
-      { text: '第 7 章：日志同步 Provider', link: '/plugin-api/tutorial-logbook-sync' },
+      { text: '编写 Utility 插件', link: '/plugin-api/tutorial-hello-utility' },
+      { text: '权限与能力', link: '/plugin-api/permissions' },
+      { text: '按钮、定时器与面板', link: '/plugin-api/tutorial-ui-actions-and-panels' },
     ],
   },
   {
-    text: '补充资料',
+    text: '开发指南',
     items: [
+      { text: '过滤与评分', link: '/plugin-api/tutorial-filter-and-score' },
+      { text: '自动起呼提议', link: '/plugin-api/tutorial-watcher-autocall' },
+      { text: 'StrategyRuntime', link: '/plugin-api/tutorial-strategy-runtime' },
+      { text: '自定义 UI', link: '/plugin-api/tutorial-custom-ui' },
       { text: 'UI 开发实战', link: '/plugin-api/tutorial-ui-dev-workflow' },
-      { text: '心智模型', link: '/plugin-api/concepts' },
-      { text: '插件权限模型', link: '/plugin-api/permissions' },
-      { text: '示例与约定', link: '/plugin-api/examples' },
-      { text: '电台能力与电源', link: '/plugin-api/radio-capabilities-power' },
-      { text: '宿主设置能力', link: '/plugin-api/host-settings' },
+      { text: '日志同步 Provider', link: '/plugin-api/tutorial-logbook-sync' },
+      { text: '电台控制', link: '/plugin-api/radio-capabilities-power' },
+      { text: '宿主设置', link: '/plugin-api/host-settings' },
+      { text: '测试插件', link: '/plugin-api/testing' },
     ],
   },
   {
-    text: 'Reference',
+    text: 'API Reference',
+    items: pluginApiReferenceItems('/plugin-api/reference', '总览'),
+  },
+  {
+    text: '更多',
     items: [
-      { text: '总览', link: '/plugin-api/reference/' },
-      { text: 'PluginDefinition', link: '/plugin-api/reference/definition' },
-      { text: 'PluginContext', link: '/plugin-api/reference/context' },
-      { text: 'PluginHooks', link: '/plugin-api/reference/hooks' },
-      { text: 'StrategyRuntime', link: '/plugin-api/reference/runtime' },
-      { text: 'Helper Interfaces', link: '/plugin-api/reference/helpers' },
-      { text: 'Host Settings', link: '/plugin-api/reference/settings' },
-      { text: 'Contracts Re-exports', link: '/plugin-api/reference/contracts' },
-      { text: 'Re-exports', link: '/plugin-api/reference/re-exports' },
+      { text: '按需求选择指南', link: '/plugin-api/learning-path' },
+      { text: '示例与约定', link: '/plugin-api/examples' },
     ],
   },
 ];
+
+const enPluginApiReferenceSidebar = [{
+  text: 'API Reference',
+  items: pluginApiReferenceItems('/en/plugin-api/reference', 'Overview'),
+}];
+
+const jaPluginApiReferenceSidebar = [{
+  text: 'API リファレンス',
+  items: pluginApiReferenceItems('/ja/plugin-api/reference', '概要'),
+}];
+
+const enThemeConfig = {
+  nav: [
+    { text: 'Home', link: '/en/' },
+    { text: 'Guide', link: '/guide/' },
+    { text: 'Wiki', link: '/wiki/' },
+    { text: 'Plugin API Reference', link: '/en/plugin-api/reference/' },
+    { text: 'GitHub', link: REPO_URL },
+  ],
+  sidebar: {
+    '/en/plugin-api/reference/': enPluginApiReferenceSidebar,
+  },
+  outlineTitle: 'On this page',
+  lastUpdatedText: 'Last updated',
+  docFooter: {
+    prev: 'Previous page',
+    next: 'Next page',
+  },
+  sidebarMenuLabel: 'Menu',
+  returnToTopLabel: 'Back to top',
+  darkModeSwitchTitle: 'Switch to dark mode',
+  lightModeSwitchTitle: 'Switch to light mode',
+  langMenuLabel: 'Change language',
+  footer: {
+    message: 'English Plugin API Reference. Development guides are currently Chinese-first.',
+    copyright: 'TX-5DR © 2026',
+  },
+};
+
+const jaThemeConfig = {
+  nav: [
+    { text: 'ホーム', link: '/ja/' },
+    { text: 'ガイド', link: '/guide/' },
+    { text: 'Wiki', link: '/wiki/' },
+    { text: 'プラグイン API リファレンス', link: '/ja/plugin-api/reference/' },
+    { text: 'GitHub', link: REPO_URL },
+  ],
+  sidebar: {
+    '/ja/plugin-api/reference/': jaPluginApiReferenceSidebar,
+  },
+  outlineTitle: 'このページ',
+  lastUpdatedText: '最終更新',
+  docFooter: {
+    prev: '前のページ',
+    next: '次のページ',
+  },
+  sidebarMenuLabel: 'メニュー',
+  returnToTopLabel: 'トップへ戻る',
+  darkModeSwitchTitle: 'ダークモードに切り替え',
+  lightModeSwitchTitle: 'ライトモードに切り替え',
+  langMenuLabel: '言語を切り替え',
+  footer: {
+    message: '日本語版プラグイン API リファレンスです。開発ガイド本文は現在中国語中心です。',
+    copyright: 'TX-5DR © 2026',
+  },
+};
 
 export default defineConfig({
   title: 'TX-5DR',
@@ -127,12 +214,14 @@ export default defineConfig({
       label: 'English',
       title: 'TX-5DR',
       description: 'TX-5DR website and docs hub',
+      themeConfig: enThemeConfig,
     },
     ja: {
       lang: 'ja-JP',
       label: '日本語',
       title: 'TX-5DR',
       description: 'TX-5DR 公式サイトとドキュメントハブ',
+      themeConfig: jaThemeConfig,
     },
   },
   themeConfig: {
@@ -168,57 +257,5 @@ export default defineConfig({
       provider: 'local',
     },
     socialLinks: [{ icon: 'github', link: REPO_URL }],
-    locales: {
-      en: {
-        nav: [
-          { text: 'Home', link: '/en/' },
-          { text: 'Guide', link: '/guide/' },
-          { text: 'Wiki', link: '/wiki/' },
-          { text: 'Plugin API', link: '/plugin-api/' },
-          { text: 'GitHub', link: REPO_URL },
-        ],
-        sidebar: {},
-        outlineTitle: 'On this page',
-        lastUpdatedText: 'Last updated',
-        docFooter: {
-          prev: 'Previous page',
-          next: 'Next page',
-        },
-        sidebarMenuLabel: 'Menu',
-        returnToTopLabel: 'Back to top',
-        darkModeSwitchTitle: 'Switch to dark mode',
-        lightModeSwitchTitle: 'Switch to light mode',
-        langMenuLabel: 'Change language',
-        footer: {
-          message: 'The homepage is available in English. Full docs are currently Chinese-first.',
-          copyright: 'TX-5DR © 2026',
-        },
-      },
-      ja: {
-        nav: [
-          { text: 'ホーム', link: '/ja/' },
-          { text: 'ガイド', link: '/guide/' },
-          { text: 'Wiki', link: '/wiki/' },
-          { text: 'プラグイン API', link: '/plugin-api/' },
-          { text: 'GitHub', link: REPO_URL },
-        ],
-        sidebar: {},
-        outlineTitle: 'このページ',
-        lastUpdatedText: '最終更新',
-        docFooter: {
-          prev: '前のページ',
-          next: '次のページ',
-        },
-        sidebarMenuLabel: 'メニュー',
-        returnToTopLabel: 'トップへ戻る',
-        darkModeSwitchTitle: 'ダークモードに切り替え',
-        lightModeSwitchTitle: 'ライトモードに切り替え',
-        langMenuLabel: '言語を切り替え',
-        footer: {
-          message: 'ホームページは日本語に対応しています。ドキュメント全体は現在中国語中心です。',
-          copyright: 'TX-5DR © 2026',
-        },
-      },
-    },
   },
 });

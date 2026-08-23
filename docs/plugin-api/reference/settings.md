@@ -1,8 +1,6 @@
 # Host Settings
 
-该页列出 `ctx.settings` 可访问的宿主设置命名空间与类型。
-
-> 自动生成自 `../tx-5dr/packages/plugin-api/src/settings.ts`
+`ctx.settings` 可以访问的 Host 设置命名空间和类型。
 
 ## 导出
 
@@ -17,32 +15,29 @@
 
 ## HostFT8Settings
 
-- Kind: `interface`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `interface`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
 Host-level FT8/FT4 settings that plugins may inspect or adjust when granted
 the `settings:ft8` permission.
 
 ```ts
 export interface HostFT8Settings {
-  myCallsign: string;
-  myGrid: string;
-  frequency: number;
-  transmitPower: number;
-  autoReply: boolean;
-  maxQSOTimeout: number;
-  /** Set to 0 to disable the host repeated-transmission guard. */
-  maxSameTransmissionCount: number;
-  decodeWhileTransmitting: boolean;
-  spectrumWhileTransmitting: boolean;
+    myCallsign: string;
+    myGrid: string;
+    frequency: number;
+    transmitPower: number;
+    autoReply: boolean;
+    maxQSOTimeout: number;
+    maxSameTransmissionCount: number;
+    decodeWhileTransmitting: boolean;
+    spectrumWhileTransmitting: boolean;
 }
 ```
 
-## 成员
+### HostFT8Settings.myCallsign
 
-### myCallsign
-
-未提供额外注释。
+Station callsign used by the digital-mode engine.
 
 ```ts
 
@@ -50,9 +45,9 @@ myCallsign: string;
 
 ```
 
-### myGrid
+### HostFT8Settings.myGrid
 
-未提供额外注释。
+Station Maidenhead grid locator.
 
 ```ts
 
@@ -60,9 +55,9 @@ myGrid: string;
 
 ```
 
-### frequency
+### HostFT8Settings.frequency
 
-未提供额外注释。
+Current digital-mode dial frequency in hertz.
 
 ```ts
 
@@ -70,9 +65,9 @@ frequency: number;
 
 ```
 
-### transmitPower
+### HostFT8Settings.transmitPower
 
-未提供额外注释。
+Configured transmit power in watts.
 
 ```ts
 
@@ -80,9 +75,9 @@ transmitPower: number;
 
 ```
 
-### autoReply
+### HostFT8Settings.autoReply
 
-未提供额外注释。
+Whether the Host automatically answers eligible decoded calls.
 
 ```ts
 
@@ -90,9 +85,9 @@ autoReply: boolean;
 
 ```
 
-### maxQSOTimeout
+### HostFT8Settings.maxQSOTimeout
 
-未提供额外注释。
+No-progress receive/transmit cycles before the active QSO times out.
 
 ```ts
 
@@ -100,7 +95,7 @@ maxQSOTimeout: number;
 
 ```
 
-### maxSameTransmissionCount
+### HostFT8Settings.maxSameTransmissionCount
 
 Set to 0 to disable the host repeated-transmission guard.
 
@@ -110,9 +105,9 @@ maxSameTransmissionCount: number;
 
 ```
 
-### decodeWhileTransmitting
+### HostFT8Settings.decodeWhileTransmitting
 
-未提供额外注释。
+Whether decoding continues while any operator is transmitting.
 
 ```ts
 
@@ -120,9 +115,9 @@ decodeWhileTransmitting: boolean;
 
 ```
 
-### spectrumWhileTransmitting
+### HostFT8Settings.spectrumWhileTransmitting
 
-未提供额外注释。
+Whether spectrum analysis continues while transmitting.
 
 ```ts
 
@@ -131,33 +126,31 @@ spectrumWhileTransmitting: boolean;
 ```
 ## HostFT8SettingsPatch
 
-- Kind: `type`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `type`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
-未提供额外注释。
+Partial update accepted by `ctx.settings.ft8.update()`.
 
 ```ts
 export type HostFT8SettingsPatch = Partial<HostFT8Settings>;
 ```
 ## HostFrequencyPresetsSettings
 
-- Kind: `interface`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `interface`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
-未提供额外注释。
+Current frequency preset list and whether it differs from Host defaults.
 
 ```ts
 export interface HostFrequencyPresetsSettings {
-  presets: PresetFrequency[];
-  isCustomized: boolean;
+    presets: PresetFrequency[];
+    isCustomized: boolean;
 }
 ```
 
-## 成员
+### HostFrequencyPresetsSettings.presets
 
-### presets
-
-未提供额外注释。
+Presets currently exposed by the Host.
 
 ```ts
 
@@ -165,9 +158,9 @@ presets: PresetFrequency[];
 
 ```
 
-### isCustomized
+### HostFrequencyPresetsSettings.isCustomized
 
-未提供额外注释。
+`true` when the current list is user- or plugin-customized.
 
 ```ts
 
@@ -176,43 +169,42 @@ isCustomized: boolean;
 ```
 ## HostStationInfoPatch
 
-- Kind: `type`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `type`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
-未提供额外注释。
+Partial station metadata update accepted by the station namespace.
 
 ```ts
 export type HostStationInfoPatch = Partial<StationInfo>;
 ```
 ## HostPSKReporterSettingsPatch
 
-- Kind: `type`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `type`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
-未提供额外注释。
+Partial PSK Reporter update accepted by the PSK Reporter namespace.
 
 ```ts
 export type HostPSKReporterSettingsPatch = Partial<PSKReporterConfig>;
 ```
 ## HostSettingsNamespace
 
-- Kind: `interface`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `interface`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
-未提供额外注释。
+Read/update pair shared by patch- or replacement-based settings namespaces.
+The concrete namespace type determines whether `update` is a partial patch or
+complete replacement. Host schema validation, normalization or persistence
+failures reject the returned Promise.
 
 ```ts
 export interface HostSettingsNamespace<TValue, TPatch> {
-  /** Returns the current host setting value for this namespace. */
-  get(): Promise<TValue>;
-  /** Applies a patch or replacement value and returns the updated value. */
-  update(patch: TPatch): Promise<TValue>;
+    get(): Promise<TValue>;
+    update(patch: TPatch): Promise<TValue>;
 }
 ```
 
-## 成员
-
-### get
+### HostSettingsNamespace.get
 
 Returns the current host setting value for this namespace.
 
@@ -222,7 +214,7 @@ get(): Promise<TValue>;
 
 ```
 
-### update
+### HostSettingsNamespace.update
 
 Applies a patch or replacement value and returns the updated value.
 
@@ -233,24 +225,22 @@ update(patch: TPatch): Promise<TValue>;
 ```
 ## HostFrequencyPresetsSettingsNamespace
 
-- Kind: `interface`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `interface`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
-未提供额外注释。
+Frequency preset namespace with explicit update and reset operations.
 
 ```ts
 export interface HostFrequencyPresetsSettingsNamespace {
-  get(): Promise<HostFrequencyPresetsSettings>;
-  update(presets: PresetFrequency[]): Promise<HostFrequencyPresetsSettings>;
-  reset(): Promise<HostFrequencyPresetsSettings>;
+    get(): Promise<HostFrequencyPresetsSettings>;
+    update(presets: PresetFrequency[]): Promise<HostFrequencyPresetsSettings>;
+    reset(): Promise<HostFrequencyPresetsSettings>;
 }
 ```
 
-## 成员
+### HostFrequencyPresetsSettingsNamespace.get
 
-### get
-
-未提供额外注释。
+Returns the current preset list and customization flag.
 
 ```ts
 
@@ -258,9 +248,9 @@ get(): Promise<HostFrequencyPresetsSettings>;
 
 ```
 
-### update
+### HostFrequencyPresetsSettingsNamespace.update
 
-未提供额外注释。
+Replaces all presets and returns the normalized Host value.
 
 ```ts
 
@@ -268,9 +258,9 @@ update(presets: PresetFrequency[]): Promise<HostFrequencyPresetsSettings>;
 
 ```
 
-### reset
+### HostFrequencyPresetsSettingsNamespace.reset
 
-未提供额外注释。
+Restores Host defaults and returns the resulting value.
 
 ```ts
 
@@ -279,8 +269,8 @@ reset(): Promise<HostFrequencyPresetsSettings>;
 ```
 ## HostSettingsControl
 
-- Kind: `interface`
-- Source: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
+- 类型: `interface`
+- 源码: [settings.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/settings.ts)
 
 Permission-gated host settings surface exposed as `ctx.settings`.
 
@@ -289,21 +279,19 @@ Each namespace requires its matching plugin manifest permission, for example
 
 ```ts
 export interface HostSettingsControl {
-  readonly ft8: HostSettingsNamespace<HostFT8Settings, HostFT8SettingsPatch>;
-  readonly decodeWindows: HostSettingsNamespace<DecodeWindowSettings, DecodeWindowSettings>;
-  readonly realtime: HostSettingsNamespace<RealtimeSettings, RealtimeSettings>;
-  readonly frequencyPresets: HostFrequencyPresetsSettingsNamespace;
-  readonly station: HostSettingsNamespace<StationInfo, HostStationInfoPatch>;
-  readonly pskReporter: HostSettingsNamespace<PSKReporterConfig, HostPSKReporterSettingsPatch>;
-  readonly ntp: HostSettingsNamespace<NtpServerListSettings, UpdateNtpServerListRequest>;
+    readonly ft8: HostSettingsNamespace<HostFT8Settings, HostFT8SettingsPatch>;
+    readonly decodeWindows: HostSettingsNamespace<DecodeWindowSettings, DecodeWindowSettings>;
+    readonly realtime: HostSettingsNamespace<RealtimeSettings, RealtimeSettings>;
+    readonly frequencyPresets: HostFrequencyPresetsSettingsNamespace;
+    readonly station: HostSettingsNamespace<StationInfo, HostStationInfoPatch>;
+    readonly pskReporter: HostSettingsNamespace<PSKReporterConfig, HostPSKReporterSettingsPatch>;
+    readonly ntp: HostSettingsNamespace<NtpServerListSettings, UpdateNtpServerListRequest>;
 }
 ```
 
-## 成员
+### HostSettingsControl.ft8
 
-### ft8
-
-未提供额外注释。
+FT8/FT4 engine settings. Requires `settings:ft8`.
 
 ```ts
 
@@ -311,9 +299,9 @@ readonly ft8: HostSettingsNamespace<HostFT8Settings, HostFT8SettingsPatch>;
 
 ```
 
-### decodeWindows
+### HostSettingsControl.decodeWindows
 
-未提供额外注释。
+Decode window configuration. Requires `settings:decode-windows`.
 
 ```ts
 
@@ -321,9 +309,9 @@ readonly decodeWindows: HostSettingsNamespace<DecodeWindowSettings, DecodeWindow
 
 ```
 
-### realtime
+### HostSettingsControl.realtime
 
-未提供额外注释。
+Realtime audio transport configuration. Requires `settings:realtime`.
 
 ```ts
 
@@ -331,9 +319,9 @@ readonly realtime: HostSettingsNamespace<RealtimeSettings, RealtimeSettings>;
 
 ```
 
-### frequencyPresets
+### HostSettingsControl.frequencyPresets
 
-未提供额外注释。
+Frequency preset list. Requires `settings:frequency-presets`.
 
 ```ts
 
@@ -341,9 +329,9 @@ readonly frequencyPresets: HostFrequencyPresetsSettingsNamespace;
 
 ```
 
-### station
+### HostSettingsControl.station
 
-未提供额外注释。
+Public station metadata. Requires `settings:station`.
 
 ```ts
 
@@ -351,9 +339,9 @@ readonly station: HostSettingsNamespace<StationInfo, HostStationInfoPatch>;
 
 ```
 
-### pskReporter
+### HostSettingsControl.pskReporter
 
-未提供额外注释。
+PSK Reporter configuration. Requires `settings:psk-reporter`.
 
 ```ts
 
@@ -361,9 +349,9 @@ readonly pskReporter: HostSettingsNamespace<PSKReporterConfig, HostPSKReporterSe
 
 ```
 
-### ntp
+### HostSettingsControl.ntp
 
-未提供额外注释。
+NTP server list. Requires `settings:ntp`.
 
 ```ts
 

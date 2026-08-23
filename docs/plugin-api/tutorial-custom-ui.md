@@ -1,6 +1,6 @@
-# 第 6 章：自定义 UI 与 iframe 面板
+# 自定义 UI
 
-第 4 章展示了结构化面板 —— `key-value`、`table`、`log`、`chart` 四种组件，配合 `ctx.ui.send(...)` 就能把数据推到前端。它们适合展示简单数据，但如果你需要表单输入、图表交互、或者完全定制的界面，就需要 iframe 面板。
+[按钮、定时器与面板](./tutorial-ui-actions-and-panels) 展示了 `key-value`、`table`、`log`、`chart` 等结构化组件。它们适合展示简单数据；需要表单、复杂交互或完全自定义布局时，再使用 iframe 页面。
 
 ## 结构化面板 vs iframe 面板
 
@@ -46,9 +46,11 @@ my-iframe-plugin/
 
 ```js
 const plugin = {
+  apiVersion: 2,
   name: 'my-iframe-plugin',
   version: '1.0.0',
   type: 'utility',
+  permissions: [],
   panels: [
     {
       id: 'dashboard',
@@ -60,7 +62,13 @@ const plugin = {
   ui: {
     dir: 'ui',
     pages: [
-      { id: 'dashboard', title: 'Dashboard', entry: 'dashboard.html' },
+      {
+        id: 'dashboard',
+        title: 'Dashboard',
+        entry: 'dashboard.html',
+        accessScope: 'operator',
+        resourceBinding: 'operator',
+      },
     ],
   },
 };
@@ -73,6 +81,8 @@ export default plugin;
 1. `panels` 里的 `component` 设为 `'iframe'`
 2. `pageId` 引用 `ui.pages` 中的某个页面 id
 3. `ui.pages` 声明页面的入口 HTML 文件
+
+`accessScope` 默认是 `admin`，`resourceBinding` 默认是 `none`。面向操作员或特定资源的页面应像上例一样显式声明，避免把默认值误当成当前 panel 的授权范围。
 
 宿主按 `ui.pages[].entry` 解析页面入口。`pageId` 是稳定逻辑 ID，不要求磁盘上存在同名的 `pageId.html`，因此多个面板也可以复用同一个 HTML 入口。
 
@@ -118,6 +128,11 @@ iframe 内可以通过 `window.tx5dr` 访问 Bridge SDK。它提供以下 API：
 | `tx5dr.params` | 只读，宿主传入的初始化参数 |
 | `tx5dr.theme` | 当前主题，`'dark'` 或 `'light'` |
 | `tx5dr.locale` | 当前语言，如 `'zh'`、`'en'` |
+| `tx5dr.pageSessionId` | 当前 iframe session 的稳定 ID |
+| `tx5dr.ready` | 初始 Host 状态就绪后 resolve 的 Promise |
+| `tx5dr.getState()` | 返回当前 Bridge 状态快照 |
+| `tx5dr.onStateChange(callback)` | 监听全部 Bridge 状态变化 |
+| `tx5dr.onLocaleChange(callback)` | 监听语言变化 |
 | `tx5dr.invoke(action, data)` | 发送请求到服务端，返回 Promise |
 | `tx5dr.onPush(action, callback)` | 监听服务端主动推送 |
 | `tx5dr.offPush(action, callback)` | 取消推送监听 |
@@ -130,11 +145,15 @@ iframe 内可以通过 `window.tx5dr` 访问 Bridge SDK。它提供以下 API：
 | `tx5dr.fileUpload(path, file)` | 上传文件到当前页面 scope（按实例目标 + 绑定资源 + pageId 收口） |
 | `tx5dr.fileRead(path)` | 读取当前页面 scope 的文件 |
 | `tx5dr.fileDelete(path)` | 删除当前页面 scope 的文件 |
-
-iframe 面板会自动收到 `{ operatorId, panelId, ...panel.params }`。当多个动态面板复用同一个 `pageId` 时，推荐在 `panel.params` 中放一个稳定 ID，例如 `{ tabId: 'dx-cluster' }`，再在 iframe 内读取 `tx5dr.params.tabId`。
 | `tx5dr.fileList(prefix?)` | 列出当前页面 scope 下的文件 |
 
+iframe 面板会自动收到 `{ operatorId, panelId, ...panel.params }`。当多个动态面板复用同一个 `pageId` 时，推荐在 `panel.params` 中放一个稳定 ID，例如 `{ tabId: 'dx-cluster' }`，再在 iframe 内读取 `tx5dr.params.tabId`。
+
+页面初始化时先 `await tx5dr.ready`，再读取 params、locale 或调用依赖 session 的 API。
+
 其中最核心的是 `invoke` / `registerPageHandler` 这条请求-响应链，以及 `requestContext.page.push()` / `ctx.ui.pushToSession()` / `tx5dr.onPush()` 这条精确推送链；`pushToPage()` 只适合“当前插件实例下该 pageId 只有一个活跃 session”时的兼容场景。
+
+`invoke` 参数、handler 返回值和 push 数据都使用 JSON 兼容快照。修改发送后的对象不会改变另一侧已经收到的值；函数、循环对象、Host context 和类实例不能作为消息传递。
 
 ## invoke：从 iframe 请求服务端
 
@@ -217,7 +236,7 @@ hooks: {
 
 1. `pageId` —— 目标页面 id
 2. `action` —— 推送事件名
-3. `data` —— 任意数据
+3. `data` —— JSON 兼容数据快照
 
 但要注意：`pushToPage(pageId, ...)` 现在只在“当前插件实例下这个 `pageId` 恰好只有一个活跃 session”时才安全。只要同一页面可能同时打开多个实例，应该改用 `pushToSession()`。
 
@@ -375,6 +394,9 @@ tx5dr.onThemeChange(function(theme) {
 - `'main-right'` —— 主界面最右侧的可选插件分屏
 - `'voice-left-top'` —— 语音模式左侧频率控制卡片上方
 - `'voice-right-top'` —— 语音模式右侧顶部 Tab 区域
+- `'cw-left-top'` —— CW 模式左侧频率卡片上方
+- `'cw-right-top'` —— CW 模式右侧顶部 Tab 区域
+- `'radio-control-toolbar'` —— RadioControl 工具栏中的全局 iframe 按钮
 
 ```ts
 panels: [
@@ -409,6 +431,8 @@ panels: [
 - 当前操作员卡片 host 会把 `full` 解释为桌面端跨整行显示；其他 host 可以忽略它
 
 同一个插件完全可以在两个位置各放一个面板。
+
+`radio-control-toolbar` 只接受 global utility 的 iframe panel，引用的 `ui.pages` 页面必须声明 `resourceBinding: 'none'`。
 
 ## 动态添加或删除宿主 Tab
 
@@ -549,30 +573,7 @@ await tx5dr.fileDelete('certificates/my-cert.p12');
 
 这些页面能力和插件运行时共用同一个插件数据目录，但作用域更窄：宿主始终按 `instanceTarget + resourceBinding + pageId` 进行收口，路径也不能逃逸到页面沙盒外。对于运行时逻辑本身，仍优先使用 `ctx.store.*` 和 `ctx.files`。
 
-## 内置参考
-
-### iframe-panel-demo
-
-这是内置的 iframe 面板演示插件，完整展示了本章涉及的所有模式：
-
-- 两个 iframe 面板分别在 `operator` 和 `automation` slot
-- `live-monitor`：接收服务端定时推送，展示信号条和实时日志
-- `quick-controls`：表单输入 + 按钮交互，通过 `invoke` 修改服务端状态
-- 跨页面同步：quick-controls 操作后，live-monitor 实时反映变化
-- 同时有一个结构化 `key-value` 面板做对比
-
-代码在 `packages/server/src/plugin/builtins/iframe-panel-demo/`，建议按这个顺序阅读：
-
-1. `index.ts` —— 插件定义 + handler 注册
-2. `ui/quick-controls.html` / `quick-controls.js` —— 交互面板
-3. `ui/live-monitor.html` / `live-monitor.js` —— 数据展示面板
-4. `ui/quick-controls.css` —— CSS 变量用法示例
-
-## 开发工具链
-
-到这里你已经知道 iframe 面板怎么写了。但实际开发中，你可能不想每次改一行 HTML 就手动复制文件、手动点重载。
-
-### 脚手架
+## 项目模板
 
 `create-tx5dr-plugin` 可以直接生成带 UI 的完整项目：
 
@@ -589,35 +590,9 @@ npx create-tx5dr-plugin my-plugin --template ui-vue
 
 React/Vue 模板会自动配置 Vite 多页面构建，将 `.tsx` / `.vue` 编译成 TX-5DR 能加载的独立 HTML 文件。
 
-### TypeScript 类型提示
+TypeScript、Bridge 类型、CSS token、link 和热重载步骤统一放在 [UI 开发实战](./tutorial-ui-dev-workflow)，本页不再重复。
 
-Bridge SDK 是运行时注入的全局变量，但你仍然可以获得完整的类型提示。安装 `@tx5dr/plugin-api` 后，在 `tsconfig.json` 或 `jsconfig.json` 中加入：
-
-```json
-{
-  "compilerOptions": {
-    "types": ["@tx5dr/plugin-api/bridge"]
-  }
-}
-```
-
-之后 `tx5dr.invoke()`、`tx5dr.onPush()` 等方法就都有自动补全了。原生 JS 文件也可以在顶部加 `/// <reference types="@tx5dr/plugin-api/bridge" />` 获得同样效果。
-
-### CSS 变量补全
-
-`@tx5dr/plugin-api` 包里附带了一个 `tokens.css` 参考文件。复制到项目中后，VS Code 在你输入 `var(--tx5dr-` 时会自动补全所有变量名：
-
-```bash
-cp node_modules/@tx5dr/plugin-api/tokens.css ./ui/
-```
-
-### 链接与自动重载
-
-开发时不需要每次手动复制 dist 到 TX-5DR 的 plugins 目录。脚手架生成的项目自带一个 `npm run link` 命令，它会创建一个符号链接，把你的 `dist/` 直接映射到 TX-5DR 的插件目录，并创建 `.hotreload` 标记文件。之后每次编译的结果 TX-5DR 都能直接读取，开发模式下还会自动检测文件变化并重载插件。
-
-完整的开发工作流详见 [插件 UI 开发实战](./tutorial-ui-dev-workflow)。
-
-## 这一章你应该学会什么
+## 要点
 
 - iframe 面板通过 `component: 'iframe'` + `pageId` + `ui.pages` 声明
 - `tx5dr.invoke()` 和 `registerPageHandler` 实现请求-响应通信
@@ -631,5 +606,3 @@ cp node_modules/@tx5dr/plugin-api/tokens.css ./ui/
 - `create-tx5dr-plugin --template ui-react` 可生成完整的 React + Vite 项目
 - `@tx5dr/plugin-api/bridge` 提供 Bridge SDK 的 TypeScript 类型定义
 - `npm run link` + `.hotreload` 实现开发时的自动链接和热重载
-
-下一章将进入日志同步插件的开发，那是独立页面和 Bridge SDK 的一个完整实战应用。

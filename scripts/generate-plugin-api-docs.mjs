@@ -9,7 +9,6 @@ const DEFAULT_SOURCE_DIR = path.resolve(process.cwd(), '../tx-5dr');
 const SOURCE_DIR = path.resolve(process.env[SOURCE_ENV_NAME] || DEFAULT_SOURCE_DIR);
 const PLUGIN_API_SRC_DIR = path.join(SOURCE_DIR, 'packages/plugin-api/src');
 const CONTRACTS_SRC_DIR = path.join(SOURCE_DIR, 'packages/contracts/src');
-const OUTPUT_DIR = path.resolve(process.cwd(), 'docs/plugin-api/reference');
 
 function detectSourceBranch() {
   try {
@@ -29,61 +28,216 @@ const PAGE_SPECS = [
     source: 'definition.ts',
     output: 'definition.md',
     title: 'PluginDefinition',
-    description: '该页对应插件入口文件的默认导出结构。',
+    description: {
+      zh: '插件入口文件的默认导出结构。',
+      en: 'The default export shape for a plugin entry module.',
+      ja: 'プラグインエントリーモジュールのデフォルトエクスポート構造です。',
+    },
+  },
+  {
+    kind: 'declaration',
+    source: 'capabilities.ts',
+    output: 'capabilities.md',
+    title: 'Capabilities',
+    description: {
+      zh: '权限到 runtime context capability 的公开映射。',
+      en: 'Public mapping from permissions to runtime context capabilities.',
+      ja: '権限から runtime context capability への公開マッピングです。',
+    },
   },
   {
     kind: 'declaration',
     source: 'context.ts',
     output: 'context.md',
     title: 'PluginContext',
-    description: '该页对应宿主在运行时注入给插件的上下文对象。',
+    description: {
+      zh: 'Host 在运行时提供给插件的 context。',
+      en: 'Runtime contexts provided to plugins by the Host.',
+      ja: 'Host が実行時にプラグインへ提供する context です。',
+    },
   },
   {
     kind: 'declaration',
     source: 'hooks.ts',
     output: 'hooks.md',
     title: 'PluginHooks',
-    description: '该页列出插件可注册的 Hook 入口。',
+    description: {
+      zh: '插件可以实现的 Hook 和相关数据类型。',
+      en: 'Hooks a plugin can implement and their related data types.',
+      ja: 'プラグインが実装できる Hook と関連データ型です。',
+    },
   },
   {
     kind: 'declaration',
     source: 'runtime.ts',
     output: 'runtime.md',
     title: 'StrategyRuntime',
-    description: '该页对应 `strategy` 类型插件的运行时接口。',
+    description: {
+      zh: '`strategy` 插件的运行时接口。',
+      en: 'Runtime interfaces for `strategy` plugins.',
+      ja: '`strategy` プラグイン向けのランタイムインターフェースです。',
+    },
   },
   {
     kind: 'declaration',
     source: 'helpers.ts',
     output: 'helpers.md',
     title: 'Helper Interfaces',
-    description: '该页列出 `KVStore`、日志、定时器、操作员控制等辅助接口。',
+    description: {
+      zh: '存储、日志、定时器、网络、操作员、电台、日志本和 UI 接口。',
+      en: 'Storage, logging, timers, network, operator, radio, logbook, and UI interfaces.',
+      ja: 'ストレージ、ログ、タイマー、ネットワーク、オペレーター、無線機、ログブック、UI の各インターフェースです。',
+    },
   },
   {
     kind: 'declaration',
     source: 'settings.ts',
     output: 'settings.md',
     title: 'Host Settings',
-    description: '该页列出 `ctx.settings` 可访问的宿主设置命名空间与类型。',
+    description: {
+      zh: '`ctx.settings` 可以访问的 Host 设置命名空间和类型。',
+      en: 'Host settings namespaces and values available through `ctx.settings`.',
+      ja: '`ctx.settings` から利用できる Host 設定の名前空間と値です。',
+    },
+  },
+  {
+    kind: 'declaration',
+    source: 'sync.ts',
+    output: 'sync.md',
+    title: 'Logbook Sync',
+    description: {
+      zh: '日志同步 Provider、结果、进度和失败类型。',
+      en: 'Logbook sync providers, results, progress events, and failure types.',
+      ja: 'ログブック同期 Provider、結果、進捗イベント、失敗型です。',
+    },
+  },
+  {
+    kind: 'declaration',
+    source: 'host-dependencies.ts',
+    output: 'host-dependencies.md',
+    title: 'Host Dependencies',
+    description: {
+      zh: '由 Host 加载并通过权限提供的 native 依赖接口。',
+      en: 'Native dependencies loaded by the Host and exposed through permissions.',
+      ja: 'Host がロードし、権限を通じて公開する native 依存インターフェースです。',
+    },
   },
   {
     kind: 're-exports',
     source: 'index.ts',
     output: 're-exports.md',
     title: 'Re-exports',
-    description: '该页列出 `index.ts` 对外转出的本包接口和 contracts 类型。',
+    description: {
+      zh: '`@tx5dr/plugin-api` 包的公开导出。',
+      en: 'Public exports from the `@tx5dr/plugin-api` package.',
+      ja: '`@tx5dr/plugin-api` パッケージの公開エクスポートです。',
+    },
   },
   {
     kind: 'contracts',
     output: 'contracts.md',
     title: 'Contracts Re-exports',
-    description: '该页列出 `@tx5dr/plugin-api` 转出的 `@tx5dr/contracts` 类型和值定义。',
+    description: {
+      zh: '`@tx5dr/plugin-api` 重新导出的 contracts 类型和值。',
+      en: 'Contract types and values re-exported by `@tx5dr/plugin-api`.',
+      ja: '`@tx5dr/plugin-api` が再エクスポートする contract の型と値です。',
+    },
+  },
+];
+
+const REFERENCE_LOCALES = [
+  {
+    id: 'zh',
+    outputDir: path.resolve(process.cwd(), 'docs/plugin-api/reference'),
+    strings: {
+      exports: '导出',
+      kind: '类型',
+      source: '源码',
+      relatedSchema: '相关 schema',
+      noDocs: '暂无补充说明。',
+      unresolvedExport: '无法在 `packages/contracts/src` 中解析这个导出。',
+      dataStructure: '数据结构',
+      typeDeclaration: '类型定义',
+      localExports: 'plugin-api 本地导出',
+      contractTypeExports: '来自 @tx5dr/contracts 的类型导出',
+      contractValueExports: '来自 @tx5dr/contracts 的值导出',
+      typeExports: '类型导出',
+      valueExports: '值导出',
+      indexTitle: '插件 API Reference',
+      indexIntro: '这些页面由公开 TypeScript 源码生成，用于查阅插件 API 签名和共享类型。',
+      pageList: '页面目录',
+      update: '更新方式',
+      updateLead: '在站点仓库根目录执行：',
+      branchLead: '当前默认读取的主仓库分支是',
+      sourceDirLead: '如果 TX-5DR 主仓库不在默认的 `../tx-5dr`，请设置环境变量',
+      sentenceEnd: '。',
+    },
+  },
+  {
+    id: 'en',
+    outputDir: path.resolve(process.cwd(), 'docs/en/plugin-api/reference'),
+    strings: {
+      exports: 'Exports',
+      kind: 'Kind',
+      source: 'Source',
+      relatedSchema: 'Related schema',
+      noDocs: 'No additional documentation is available.',
+      unresolvedExport: 'This export could not be resolved in `packages/contracts/src`.',
+      dataStructure: 'Data structure',
+      typeDeclaration: 'Type declaration',
+      localExports: 'Local plugin-api exports',
+      contractTypeExports: 'Type exports from @tx5dr/contracts',
+      contractValueExports: 'Value exports from @tx5dr/contracts',
+      typeExports: 'Type exports',
+      valueExports: 'Value exports',
+      indexTitle: 'Plugin API Reference',
+      indexIntro: 'These pages are generated from the public TypeScript sources and document Plugin API signatures and shared types.',
+      pageList: 'Pages',
+      update: 'Updating the reference',
+      updateLead: 'Run this command from the site repository root:',
+      branchLead: 'The source repository branch used by default is',
+      sourceDirLead: 'If the TX-5DR repository is not available at `../tx-5dr`, set',
+      sentenceEnd: '.',
+    },
+  },
+  {
+    id: 'ja',
+    outputDir: path.resolve(process.cwd(), 'docs/ja/plugin-api/reference'),
+    strings: {
+      exports: 'エクスポート',
+      kind: '種別',
+      source: 'ソース',
+      relatedSchema: '関連 schema',
+      noDocs: '追加の説明はありません。',
+      unresolvedExport: 'このエクスポートを `packages/contracts/src` 内で解決できませんでした。',
+      dataStructure: 'データ構造',
+      typeDeclaration: '型定義',
+      localExports: 'plugin-api のローカルエクスポート',
+      contractTypeExports: '@tx5dr/contracts からの型エクスポート',
+      contractValueExports: '@tx5dr/contracts からの値エクスポート',
+      typeExports: '型エクスポート',
+      valueExports: '値エクスポート',
+      indexTitle: 'プラグイン API リファレンス',
+      indexIntro: '公開 TypeScript ソースから生成された、プラグイン API のシグネチャと共有型のリファレンスです。JSDoc 本文は英語で掲載します。',
+      pageList: 'ページ一覧',
+      update: 'リファレンスの更新',
+      updateLead: 'サイトリポジトリのルートで次のコマンドを実行します。',
+      branchLead: 'デフォルトで参照するソースリポジトリのブランチは',
+      sourceDirLead: 'TX-5DR リポジトリが `../tx-5dr` にない場合は、次の環境変数を設定してください:',
+      sentenceEnd: '。',
+    },
   },
 ];
 
 const sourceFileCache = new Map();
 const contractsExportMap = new Map();
 const declarationCache = new Map();
+const referenceLinks = new Map();
+const referenceMemberLinks = new Map();
+const signaturePrinter = ts.createPrinter({
+  removeComments: true,
+  newLine: ts.NewLineKind.LineFeed,
+});
 
 function assertSourceAvailable() {
   const packageJsonPath = path.join(SOURCE_DIR, 'package.json');
@@ -138,6 +292,70 @@ function cleanDocBlock(text) {
     .trim();
 }
 
+function renderInlineDocLinks(text) {
+  return text.replace(/\{@link\s+([^\s}|]+)(?:\s*\|\s*([^}]+))?\}/g, (_match, target, label) => {
+    const display = (label || target).trim();
+    if (/^https?:\/\//.test(target)) {
+      return `[${display}](${target})`;
+    }
+
+    const [root, member] = target.split(/[.#]/, 2);
+    const direct = referenceLinks.get(target);
+    const rootLink = referenceLinks.get(root);
+    const memberCandidates = member ? referenceMemberLinks.get(member) : undefined;
+    const resolved = direct
+      || (memberCandidates?.length === 1 ? memberCandidates[0] : undefined)
+      || rootLink;
+    return resolved ? `[\`${display}\`](${resolved})` : `\`${display}\``;
+  });
+}
+
+function renderDocBlock(text) {
+  const description = [];
+  const tags = [];
+  let currentTag = null;
+
+  for (const line of text.split('\n')) {
+    const tagMatch = line.match(/^@(\S+)\s*(.*)$/);
+    if (tagMatch) {
+      currentTag = { name: tagMatch[1], lines: [tagMatch[2]] };
+      tags.push(currentTag);
+    } else if (currentTag) {
+      currentTag.lines.push(line);
+    } else {
+      description.push(line);
+    }
+  }
+
+  const sections = [];
+  const renderedDescription = renderInlineDocLinks(description.join('\n').trim());
+  if (renderedDescription) sections.push(renderedDescription);
+
+  const params = tags.filter((tag) => tag.name === 'param').map((tag) => {
+    const value = tag.lines.join('\n').trim();
+    const match = value.match(/^(\S+)\s*(?:-\s*)?([\s\S]*)$/);
+    if (!match) return `- ${renderInlineDocLinks(value)}`;
+    return `- \`${match[1]}\`: ${renderInlineDocLinks(match[2].trim())}`;
+  });
+  if (params.length > 0) sections.push(['**Parameters**', '', ...params].join('\n'));
+
+  for (const tag of tags) {
+    const value = renderInlineDocLinks(tag.lines.join('\n').trim());
+    if (tag.name === 'param') continue;
+    if (tag.name === 'returns' || tag.name === 'return') {
+      sections.push(`**Returns:** ${value}`);
+    } else if (tag.name === 'deprecated') {
+      sections.push(`> **Deprecated:** ${value}`);
+    } else if (tag.name === 'example') {
+      sections.push(['**Example**', '', value].join('\n'));
+    } else {
+      sections.push(`**@${tag.name}:** ${value}`);
+    }
+  }
+
+  return sections.filter(Boolean).join('\n\n');
+}
+
 function renderJsDocText(node, content) {
   if (!node.jsDoc || node.jsDoc.length === 0) {
     return '';
@@ -146,6 +364,7 @@ function renderJsDocText(node, content) {
   return node.jsDoc
     .map((doc) => cleanDocBlock(content.slice(doc.pos, doc.end)))
     .filter(Boolean)
+    .map(renderDocBlock)
     .join('\n\n');
 }
 
@@ -183,7 +402,7 @@ function getNodeKind(node) {
 }
 
 function getSignature(node, sourceFile) {
-  return node.getText(sourceFile).trim();
+  return signaturePrinter.printNode(ts.EmitHint.Unspecified, node, sourceFile).trim();
 }
 
 function getMemberName(member, sourceFile) {
@@ -199,20 +418,21 @@ function renderMemberSections(node, content, sourceFile) {
   }
 
   const sections = node.members.map((member) => {
+    const parent = getNodeHeading(node, sourceFile);
     const title = getMemberName(member, sourceFile);
     const doc = renderJsDocText(member, content);
-    const signature = member.getText(sourceFile).trim();
+    const signature = getSignature(member, sourceFile);
 
     return [
-      `### ${title}`,
-      doc || '未提供额外注释。',
+      `### ${parent}.${title}`,
+      ...(doc ? [doc] : []),
       '```ts',
       signature,
       '```',
     ].join('\n\n');
   });
 
-  return ['## 成员', ...sections].join('\n\n');
+  return sections.join('\n\n');
 }
 
 function getRelatedSchemaName(node, sourceFile) {
@@ -226,6 +446,49 @@ function getRelatedSchemaName(node, sourceFile) {
 
 function toAnchor(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function buildReferenceLinks() {
+  for (const spec of PAGE_SPECS.filter((entry) => entry.kind === 'declaration')) {
+    const { sourceFile } = getPluginApiSourceFile(spec.source);
+    const page = `./${spec.output.replace(/\.md$/, '')}`;
+    for (const declaration of getExportedDeclarationsFromFile(sourceFile.fileName)) {
+      for (const name of getDeclarationNames(declaration, sourceFile)) {
+        referenceLinks.set(name, `${page}#${toAnchor(name)}`);
+        if (!('members' in declaration) || !declaration.members) continue;
+        for (const member of declaration.members) {
+          const memberName = getMemberName(member, sourceFile);
+          const href = `${page}#${toAnchor(`${name}-${memberName}`)}`;
+          referenceLinks.set(`${name}.${memberName}`, href);
+          const candidates = referenceMemberLinks.get(memberName) ?? [];
+          candidates.push(href);
+          referenceMemberLinks.set(memberName, candidates);
+        }
+      }
+    }
+  }
+}
+
+function assertPluginApiJsDocCoverage() {
+  const missing = [];
+  for (const spec of PAGE_SPECS.filter((entry) => entry.kind === 'declaration')) {
+    const { content, sourceFile } = getPluginApiSourceFile(spec.source);
+    for (const declaration of getExportedDeclarationsFromFile(sourceFile.fileName)) {
+      const declarationName = getNodeHeading(declaration, sourceFile);
+      if (!renderJsDocText(declaration, content)) {
+        missing.push(`${spec.source}:${declarationName}`);
+      }
+      if (!('members' in declaration) || !declaration.members) continue;
+      for (const member of declaration.members) {
+        if (!renderJsDocText(member, content)) {
+          missing.push(`${spec.source}:${declarationName}.${getMemberName(member, sourceFile)}`);
+        }
+      }
+    }
+  }
+  if (missing.length > 0) {
+    throw new Error(`Public Plugin API declarations require JSDoc:\n${missing.map((item) => `- ${item}`).join('\n')}`);
+  }
 }
 
 function getSourceInfo(filePath) {
@@ -373,8 +636,9 @@ function collectPluginApiReExports() {
   return { filePath, localExports, contractsTypeExports, contractsValueExports };
 }
 
-function renderExportedDeclarationPage(spec) {
+function renderExportedDeclarationPage(spec, locale) {
   const { filePath, content, sourceFile } = getPluginApiSourceFile(spec.source);
+  const { strings } = locale;
   const declarations = sourceFile.statements.filter(
     (statement) => hasExportModifier(statement)
       && (
@@ -389,9 +653,7 @@ function renderExportedDeclarationPage(spec) {
   const intro = [
     `# ${spec.title}`,
     '',
-    spec.description,
-    '',
-    `> 自动生成自 \`${sourceInfo.relativePath}\``,
+    spec.description[locale.id],
     '',
   ];
 
@@ -410,10 +672,10 @@ function renderExportedDeclarationPage(spec) {
     const body = [
       `## ${name}`,
       '',
-      `- Kind: \`${kind}\``,
-      `- Source: [${path.basename(filePath)}](${sourceInfo.sourceUrl})`,
+      `- ${strings.kind}: \`${kind}\``,
+      `- ${strings.source}: [${path.basename(filePath)}](${sourceInfo.sourceUrl})`,
       '',
-      doc || '未提供额外注释。',
+      doc || strings.noDocs,
       '',
       '```ts',
       signature,
@@ -427,46 +689,46 @@ function renderExportedDeclarationPage(spec) {
     return body.join('\n');
   });
 
-  return [...intro, '## 导出', '', ...toc, '', ...sections, ''].join('\n');
+  return [...intro, `## ${strings.exports}`, '', ...toc, '', ...sections, ''].join('\n');
 }
 
-function renderReExportsPage(spec) {
-  const { filePath, localExports, contractsTypeExports, contractsValueExports } = collectPluginApiReExports();
-  const sourceInfo = getSourceInfo(filePath);
+function renderReExportsPage(spec, locale) {
+  const { localExports, contractsTypeExports, contractsValueExports } = collectPluginApiReExports();
+  const { strings } = locale;
+  const separator = locale.id === 'en' ? ', ' : '、';
 
   return [
     `# ${spec.title}`,
     '',
-    spec.description,
+    spec.description[locale.id],
     '',
-    `> 自动生成自 \`${sourceInfo.relativePath}\``,
+    `## ${strings.localExports}`,
     '',
-    '## plugin-api 本地导出',
+    ...localExports.map((entry) => `- \`${entry.moduleName}\`: ${entry.namedExports.map((name) => `\`${name}\``).join(separator)}`),
     '',
-    ...localExports.map((entry) => `- \`${entry.moduleName}\`: ${entry.namedExports.map((name) => `\`${name}\``).join('、')}`),
-    '',
-    '## 来自 @tx5dr/contracts 的类型导出',
+    `## ${strings.contractTypeExports}`,
     '',
     ...contractsTypeExports.map((name) => `- [\`${name}\`](./contracts#${toAnchor(name)})`),
     '',
-    '## 来自 @tx5dr/contracts 的值导出',
+    `## ${strings.contractValueExports}`,
     '',
     ...contractsValueExports.map((name) => `- [\`${name}\`](./contracts#${toAnchor(name)})`),
     '',
   ].join('\n');
 }
 
-function renderContractsExportSection(exportName) {
+function renderContractsExportSection(exportName, locale) {
   const detail = getContractsDeclaration(exportName);
+  const { strings } = locale;
 
   if (!detail) {
     return [
       `## ${exportName}`,
       '',
-      '- Kind: `unresolved`',
-      '- Source: `@tx5dr/contracts`',
+      `- ${strings.kind}: \`unresolved\``,
+      `- ${strings.source}: \`@tx5dr/contracts\``,
       '',
-      '未能解析该导出在 `packages/contracts/src` 中的源定义。',
+      strings.unresolvedExport,
     ].join('\n');
   }
 
@@ -486,21 +748,21 @@ function renderContractsExportSection(exportName) {
   const body = [
     `## ${exportName}`,
     '',
-    `- Kind: \`${kind}\``,
-    `- Source: [${path.relative(CONTRACTS_SRC_DIR, filePath).replace(/\\/g, '/')}](${sourceInfo.sourceUrl})`,
-    ...(relatedSchemaName ? [`- Related schema: \`${relatedSchemaName}\``] : []),
+    `- ${strings.kind}: \`${kind}\``,
+    `- ${strings.source}: [${path.relative(CONTRACTS_SRC_DIR, filePath).replace(/\\/g, '/')}](${sourceInfo.sourceUrl})`,
+    ...(relatedSchemaName ? [`- ${strings.relatedSchema}: \`${relatedSchemaName}\``] : []),
     '',
-    doc || '未提供额外注释。',
+    doc || strings.noDocs,
     '',
     ...(schemaSignature
       ? [
-        '### 数据结构',
+        `### ${strings.dataStructure}`,
         '',
         '```ts',
         schemaSignature,
         '```',
         '',
-        '### 类型导出',
+        `### ${strings.typeDeclaration}`,
         '',
         '```ts',
         signature,
@@ -520,60 +782,59 @@ function renderContractsExportSection(exportName) {
   return body.join('\n');
 }
 
-function renderContractsExportsPage(spec) {
-  const { filePath, contractsTypeExports, contractsValueExports } = collectPluginApiReExports();
-  const contractsIndexPath = path.join(CONTRACTS_SRC_DIR, 'index.ts');
+function renderContractsExportsPage(spec, locale) {
+  const { contractsTypeExports, contractsValueExports } = collectPluginApiReExports();
+  const { strings } = locale;
 
   return [
     `# ${spec.title}`,
     '',
-    spec.description,
+    spec.description[locale.id],
     '',
-    `> 自动生成自 \`${getSourceInfo(filePath).relativePath}\` 与 \`${path.relative(process.cwd(), contractsIndexPath)}\``,
-    '',
-    '## 类型导出',
+    `## ${strings.typeExports}`,
     '',
     ...contractsTypeExports.map((name) => `- [${name}](#${toAnchor(name)})`),
     '',
-    '## 值导出',
+    `## ${strings.valueExports}`,
     '',
     ...contractsValueExports.map((name) => `- [${name}](#${toAnchor(name)})`),
     '',
-    ...contractsTypeExports.map((name) => renderContractsExportSection(name)),
+    ...contractsTypeExports.map((name) => renderContractsExportSection(name, locale)),
     '',
-    ...contractsValueExports.map((name) => renderContractsExportSection(name)),
+    ...contractsValueExports.map((name) => renderContractsExportSection(name, locale)),
     '',
   ].join('\n');
 }
 
-function writeOutput(relativePath, content) {
-  const outputPath = path.join(OUTPUT_DIR, relativePath);
+function writeOutput(outputDir, relativePath, content) {
+  const outputPath = path.join(outputDir, relativePath);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, content);
+  fs.writeFileSync(outputPath, `${content.trimEnd()}\n`);
 }
 
-function renderReferenceIndex() {
+function renderReferenceIndex(locale) {
+  const { strings } = locale;
   const links = PAGE_SPECS.map((spec) => `- [${spec.title}](./${spec.output.replace(/\.md$/, '')})`);
   return [
-    '# 插件 API Reference',
+    `# ${strings.indexTitle}`,
     '',
-    '这一组页面由脚本自动从 `packages/plugin-api/src` 与 `packages/contracts/src` 生成，用于查阅插件公开接口及其转出的共享类型。',
+    strings.indexIntro,
     '',
-    '## 页面目录',
+    `## ${strings.pageList}`,
     '',
     ...links,
     '',
-    '## 更新方式',
+    `## ${strings.update}`,
     '',
-    '在站点仓库根目录执行：',
+    strings.updateLead,
     '',
     '```bash',
     'npm run docs:sync-plugin-api',
     '```',
     '',
-    `当前默认读取的主仓库分支是 \`${SOURCE_BRANCH}\`。`,
+    `${strings.branchLead} \`${SOURCE_BRANCH}\`${strings.sentenceEnd}`,
     '',
-    `如果 TX-5DR 主仓库不在默认的 \`../tx-5dr\`，请先设置环境变量 \`${SOURCE_ENV_NAME}\`。`,
+    `${strings.sourceDirLead} \`${SOURCE_ENV_NAME}\`${strings.sentenceEnd}`,
     '',
   ].join('\n');
 }
@@ -581,20 +842,25 @@ function renderReferenceIndex() {
 function main() {
   assertSourceAvailable();
   buildContractsExportMap();
-  fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  buildReferenceLinks();
+  assertPluginApiJsDocCoverage();
 
-  for (const spec of PAGE_SPECS) {
-    const content = spec.kind === 're-exports'
-      ? renderReExportsPage(spec)
-      : spec.kind === 'contracts'
-        ? renderContractsExportsPage(spec)
-        : renderExportedDeclarationPage(spec);
-    writeOutput(spec.output, content);
+  for (const locale of REFERENCE_LOCALES) {
+    fs.rmSync(locale.outputDir, { recursive: true, force: true });
+    fs.mkdirSync(locale.outputDir, { recursive: true });
+
+    for (const spec of PAGE_SPECS) {
+      const content = spec.kind === 're-exports'
+        ? renderReExportsPage(spec, locale)
+        : spec.kind === 'contracts'
+          ? renderContractsExportsPage(spec, locale)
+          : renderExportedDeclarationPage(spec, locale);
+      writeOutput(locale.outputDir, spec.output, content);
+    }
+
+    writeOutput(locale.outputDir, 'index.md', renderReferenceIndex(locale));
   }
-
-  writeOutput('index.md', renderReferenceIndex());
-  process.stdout.write(`Generated plugin API docs from ${SOURCE_DIR}\n`);
+  process.stdout.write(`Generated ${REFERENCE_LOCALES.length} Plugin API reference locales from ${SOURCE_DIR}\n`);
 }
 
 main();

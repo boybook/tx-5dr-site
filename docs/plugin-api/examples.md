@@ -1,118 +1,78 @@
 # 示例与约定
 
-本页说明插件编写时的常见分类和约束。示例来源包括 `packages/server/src/plugin/builtins/` 中的内置插件。
+内置插件位于主仓库 `packages/builtin-plugins/src/`。阅读真实插件时，优先选择与目标最接近、规模最小的实现。
 
-## utility 插件的常见场景
+## 按目标找示例
 
-以下场景通常适合使用 `utility` 插件：
+| 目标 | 内置参考 |
+| --- | --- |
+| 按信噪比或呼号过滤 | `snr-filter`、`callsign-filter` |
+| 调整候选偏好 | `worked-station-bias` |
+| 守候呼号、网格或新实体 | `watched-callsign-autocall`、`watched-grid-autocall`、`watched-novelty-autocall` |
+| 为已接受的自动起呼选空闲频率 | `autocall-idle-frequency` |
+| 定时启动自动化 | `scheduled-cq-autocall` |
+| 全站切换波段和调谐 | `scheduled-band-switcher` |
+| 接入 WSJT-X UDP | `qso-udp-broadcast` |
+| 记忆无回复目标并提供自定义 UI | `no-reply-memory-filter` |
+| 同步外部日志 | `qrz-sync`、`wavelog-sync`、`clublog-sync`、`lotw-sync` |
+| 实现完整 strategy | `standard-qso`、`assisted-qso-queue` |
 
-- 过滤候选目标
-- 调整候选打分
-- 监听广播事件
-- 推送面板数据
-- 调用外部服务并回写结果
+## 保持插件职责单一
 
-对应的内置参考包括：
+- “绝不考虑”使用 `onFilterCandidates()`。
+- “可以考虑但更偏好”使用 `onScoreCandidates()`。
+- “发现后建议起呼”使用 `onAutoCallCandidate()`。
+- “接管整个 QSO 流程”才使用 strategy。
 
-- `snr-filter`
-- `worked-station-bias`
-- `qso-session-inspector`
-- `heartbeat-demo`
-- `watched-callsign-autocall`
-- `watched-novelty-autocall`
+不要在解码广播 Hook 中直接提交起呼命令，也不要用极端分数伪装硬过滤。
 
-### 守候型自动起呼插件
+## 返回新数据
 
-如果插件的目标是“发现目标后自动起呼”，当前推荐使用 `onAutoCallCandidate(...)`：
+普通 Hook 参数是插件拥有的快照，但推荐显式返回新数组和新对象，便于测试和组合：
 
-- 返回 proposal，而不是在广播 Hook 中直接 `ctx.operator.call(...)`
-- `priority` 用于表达插件意图强弱
-- `lastMessage` 建议始终带上，方便 Host 在同优先级下按命中消息顺序稳定仲裁，并据此推导正确的回复时隙
-- 插件内部仍应自己判断 trigger mode、是否纯待机、是否被其他操作员占用、是否满足自己的黑白名单规则
+```ts
+onScoreCandidates(candidates) {
+  return candidates.map((candidate) => ({
+    ...candidate,
+    score: candidate.score + 10,
+  }));
+}
+```
 
-当前内置参考：
+修改输入不会写回 Host 的原始对象；持久化变化仍需调用 `store.set()`、`updateConfig()` 或对应 command port。
 
-- `watched-callsign-autocall`：显式 watch list，默认优先级更高
-- `watched-novelty-autocall`：守候新 DXCC / 新网格 / 新呼号，适合和其他守候插件一起启用
+## 自动起呼优先级
 
-### 偏好排序型插件
+priority 表达不同 proposal 的相对意图强度：
 
-如果插件的目标是“影响候选排序”，推荐实现 `onScoreCandidates(...)`，而不是直接控制发射：
+- `100+`：明确 watch list 或 sked
+- `60-99`：新 DXCC、新网格等高价值机会
+- `1-59`：弱偏好补充
+- `0`：默认层级
 
-- 输入是 `ScoredCandidate[]`
-- 插件通过给每个候选增加或减少 `score` 表达偏好
-- 多个评分插件会自然叠加
-- 最终是否选中某个目标，仍由 Host 和当前活跃策略共同决定
+只有持有真实 `FrameMessage` 和 `SlotInfo` 时才填写 `lastMessage`；拿不到时省略，不要从解析结果伪造 frame。
 
-当前内置 `worked-station-bias` 就是标准示例：它查询目标是否已通联，再给新台加分、已通联台减分，而不是直接起呼。
+## 配置和实例
 
-## strategy 插件的常见场景
+- operator 行为使用 operator-scope setting。
+- 全站服务使用 `instanceScope: 'global'` 和 global setting/store。
+- global utility 不声明 operator setting、quickSettings 或 operator panel。
+- settings key 发布后应保持稳定，并提供本地化 label/description。
 
-以下场景通常需要 `strategy` 插件：
+## 日志和错误
 
-- 替换默认自动化流程
-- 维护独立的 QSO 状态推进逻辑
-- 生成自定义 TX 文本
-- 根据特定竞赛或活动规则组织流程
+日志至少包含 action、关键输入和结果，不要记录密码、API key、Token、证书或完整授权响应。对外同步失败使用稳定 code 和结构化 `failures`，让 UI 能区分远端、网络和本地日志本问题。
 
-对应的内置参考是 `standard-qso`。
+## 分发目录
 
-## 编写顺序
+构建后的插件目录通常包含：
 
-1. 先确定插件属于 `utility` 还是 `strategy`
-2. 再确定需要的 `hooks`、`settings`、`panels` 和存储范围
-3. 最后补充日志、README 和本地化文件
+```text
+my-plugin/
+├── index.js
+├── locales/
+├── ui/       # 可选
+└── README.md
+```
 
-## 实现约定
-
-### 逻辑拆分
-
-建议把 Hook 中的业务逻辑拆分到独立函数，避免把过滤、状态更新和 UI 推送全部写在单个回调中。
-
-### 配置命名
-
-`settings` 中的键名会直接影响配置结构与界面显示，建议保持与实际用途一致，并配套提供本地化字段。
-
-### 日志内容
-
-插件日志建议至少包含以下信息：
-
-- 当前 Hook 名称
-- 触发条件
-- 关键判断参数
-- 最终动作
-
-这些字段便于在 `pluginLog` 或主日志中定位问题。
-
-### 自动起呼优先级建议
-
-如果你的插件暴露 `autocallPriority` 之类的设置，建议把它理解为“跨插件仲裁优先级”，而不是插件内部列表排序：
-
-- `100+`：强指令型守候，例如显式 watch list、sked、朋友台
-- `60~99`：高价值机会型守候，例如新 DXCC / 新网格 / 新呼号
-- `1~59`：弱偏好型补充
-- `0`：未显式设置优先级时的默认层级
-
-通常建议把这类优先级做成 `operator` scope 设置，让不同操作员可以独立调整。
-
-### 评分插件与过滤插件的边界
-
-这两个类型建议明确分工：
-
-- `onFilterCandidates`：用于“绝不考虑”的硬过滤
-- `onScoreCandidates`：用于“更倾向于考虑”的软偏置
-
-例如：
-
-- “只允许某些前缀”适合 `onFilterCandidates`
-- “已通联过的台降低优先级”适合 `onScoreCandidates`
-
-### 分发文件
-
-可分发的插件目录通常至少包含以下文件：
-
-- 入口文件，如 `plugin.js` 或 `index.js`
-- `locales/` 目录
-- `README.md`
-
-该结构与主项目 `docs/plugin-system.md` 中的目录约定一致。
+插件只依赖 `@tx5dr/plugin-api` 的公开导出，不要从 server、core 或 contracts 内部路径导入实现。

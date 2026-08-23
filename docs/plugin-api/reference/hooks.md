@@ -1,8 +1,6 @@
 # PluginHooks
 
-该页列出插件可注册的 Hook 入口。
-
-> 自动生成自 `../tx-5dr/packages/plugin-api/src/hooks.ts`
+插件可以实现的 Hook 和相关数据类型。
 
 ## 导出
 
@@ -14,35 +12,28 @@
 - [AutoCallProposal](#autocallproposal)
 - [AutoCallExecutionRequest](#autocallexecutionrequest)
 - [AutoCallExecutionPlan](#autocallexecutionplan)
+- [SlotActivityEvent](#slotactivityevent)
+- [FrequencyChangeState](#frequencychangestate)
 - [PluginHooks](#pluginhooks)
 
 ## ScoredCandidate
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Candidate message plus an accumulated ranking score.
 
 The host constructs this shape before invoking
-{@link PluginHooks.onScoreCandidates}. Each scoring plugin may adjust the
+[`PluginHooks.onScoreCandidates`](./hooks#pluginhooks-onscorecandidates). Each scoring plugin may adjust the
 numeric `score`, then the host uses the final values to rank target stations.
 
 ```ts
 export interface ScoredCandidate extends ParsedFT8Message {
-  /**
-   * Relative desirability assigned by the scoring pipeline.
-   *
-   * Higher values are preferred. Plugins may add or subtract from the incoming
-   * score, which means scoring logic composes naturally across multiple utility
-   * plugins.
-   */
-  score: number;
+    score: number;
 }
 ```
 
-## 成员
-
-### score
+### ScoredCandidate.score
 
 Relative desirability assigned by the scoring pipeline.
 
@@ -57,26 +48,24 @@ score: number;
 ```
 ## QSOFailureInfo
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
-未提供额外注释。
+Structured explanation emitted when an active QSO lifecycle fails.
 
 ```ts
 export interface QSOFailureInfo {
-  targetCallsign: string;
-  reason: string;
-  stage?: string;
-  unansweredTransmissions?: number;
-  hadTargetReply?: boolean;
+    targetCallsign: string;
+    reason: string;
+    stage?: string;
+    unansweredTransmissions?: number;
+    hadTargetReply?: boolean;
 }
 ```
 
-## 成员
+### QSOFailureInfo.targetCallsign
 
-### targetCallsign
-
-未提供额外注释。
+Callsign of the station being worked when the failure occurred.
 
 ```ts
 
@@ -84,9 +73,9 @@ targetCallsign: string;
 
 ```
 
-### reason
+### QSOFailureInfo.reason
 
-未提供额外注释。
+Human-readable failure summary suitable for diagnostics.
 
 ```ts
 
@@ -94,9 +83,9 @@ reason: string;
 
 ```
 
-### stage
+### QSOFailureInfo.stage
 
-未提供额外注释。
+Optional protocol/runtime stage identifier, such as `TX2`.
 
 ```ts
 
@@ -104,9 +93,9 @@ stage?: string;
 
 ```
 
-### unansweredTransmissions
+### QSOFailureInfo.unansweredTransmissions
 
-未提供额外注释。
+Number of transmissions that received no response, when applicable.
 
 ```ts
 
@@ -114,9 +103,9 @@ unansweredTransmissions?: number;
 
 ```
 
-### hadTargetReply
+### QSOFailureInfo.hadTargetReply
 
-未提供额外注释。
+Whether the target replied at least once before the failure.
 
 ```ts
 
@@ -125,41 +114,32 @@ hadTargetReply?: boolean;
 ```
 ## StrategyDecision
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
-Decision returned from {@link StrategyRuntime.decide}.
+Decision returned from [`StrategyRuntime.decide`](./runtime#strategyruntime-decide).
 
 The shape is intentionally extensible so future API revisions can add new
 control signals without breaking existing plugins.
 
 ```ts
 export interface StrategyDecision {
-  /**
-   * Requests that the host stop transmitting and leave the active QSO flow.
-   *
-   * During a late re-decision (`meta.isReDecision === true`), the host treats
-   * this as an immediate abort request for the operator's in-flight
-   * transmission. In other words, `stop: true` means both:
-   * - stop the operator's automation/runtime state; and
-   * - interrupt the operator's current audio/PTT contribution right away.
-   */
-  stop?: boolean;
-  qsoFailure?: QSOFailureInfo;
+    stop?: boolean;
+    silentListen?: {
+        reason: 'qso-success';
+        acceptDirectedCalls: boolean;
+        graceSlots?: number;
+        excludeCallsigns?: string[];
+    };
+    qsoFailure?: QSOFailureInfo;
 }
 ```
 
-## 成员
+### StrategyDecision.stop
 
-### stop
-
-Requests that the host stop transmitting and leave the active QSO flow.
-
-During a late re-decision (`meta.isReDecision === true`), the host treats
-this as an immediate abort request for the operator's in-flight
-transmission. In other words, `stop: true` means both:
-- stop the operator's automation/runtime state; and
-- interrupt the operator's current audio/PTT contribution right away.
+Requests that the host stop this operator's automation and leave the
+active QSO flow. This is a policy stop, not a physical RF interrupt: any
+committed/on-air frame is allowed to finish.
 
 ```ts
 
@@ -167,9 +147,26 @@ stop?: boolean;
 
 ```
 
-### qsoFailure
+### StrategyDecision.silentListen
 
-未提供额外注释。
+Requests that the host keep a short receive-only gate after a successful
+QSO stop. This lets a strategy turn off CQ/transmit UI while still
+accepting direct protocol calls that arrive in the completion window.
+
+```ts
+
+silentListen?: {
+    reason: 'qso-success';
+    acceptDirectedCalls: boolean;
+    graceSlots?: number;
+    excludeCallsigns?: string[];
+};
+
+```
+
+### StrategyDecision.qsoFailure
+
+Optional structured reason for a strategy-requested QSO failure stop.
 
 ```ts
 
@@ -178,27 +175,21 @@ qsoFailure?: QSOFailureInfo;
 ```
 ## StrategyDecisionMeta
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Metadata describing why a strategy decision is being evaluated.
 
+> **Deprecated:** API v2 strategy runtimes receive `StrategyDecisionMetaV2` from
+`runtime.ts`; this legacy shape is retained for source compatibility only.
+
 ```ts
 export interface StrategyDecisionMeta {
-  /**
-   * Indicates that the host is re-processing a late decode during the same TX
-   * window rather than advancing to a brand-new decision cycle.
-   *
-   * Strategy runtimes can use this to avoid double-counting timeouts or other
-   * one-shot transitions.
-   */
-  isReDecision?: boolean;
+    isReDecision?: boolean;
 }
 ```
 
-## 成员
-
-### isReDecision
+### StrategyDecisionMeta.isReDecision
 
 Indicates that the host is re-processing a late decode during the same TX
 window rather than advancing to a brand-new decision cycle.
@@ -213,8 +204,8 @@ isReDecision?: boolean;
 ```
 ## LastMessageInfo
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Pairing of a received frame and its slot metadata.
 
@@ -223,16 +214,12 @@ to remember which exact message triggered a target selection.
 
 ```ts
 export interface LastMessageInfo {
-  /** Original frame as received from the decoder or playback pipeline. */
-  message: FrameMessage;
-  /** Slot timing metadata for the frame. */
-  slotInfo: SlotInfo;
+    message: FrameMessage;
+    slotInfo: SlotInfo;
 }
 ```
 
-## 成员
-
-### message
+### LastMessageInfo.message
 
 Original frame as received from the decoder or playback pipeline.
 
@@ -242,7 +229,7 @@ message: FrameMessage;
 
 ```
 
-### slotInfo
+### LastMessageInfo.slotInfo
 
 Slot timing metadata for the frame.
 
@@ -253,30 +240,25 @@ slotInfo: SlotInfo;
 ```
 ## AutoCallProposal
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Declarative automatic-call request proposed by a utility plugin.
 
 Utility plugins should prefer returning this shape from
-{@link PluginHooks.onAutoCallCandidate} instead of directly invoking
-`ctx.operator.call(...)` inside broadcast hooks. This lets the host arbitrate
-between multiple simultaneous auto-call plugins in a deterministic way.
+[`PluginHooks.onAutoCallCandidate`](./hooks#pluginhooks-onautocallcandidate) instead of directly submitting a call
+command from a broadcast hook. This lets the host arbitrate between multiple
+simultaneous auto-call plugins in a deterministic way.
 
 ```ts
 export interface AutoCallProposal {
-  /** Target callsign that should be called next. */
-  callsign: string;
-  /** Optional arbitration priority; higher values win. */
-  priority?: number;
-  /** Optional triggering frame context used to preserve slot alignment. */
-  lastMessage?: LastMessageInfo;
+    callsign: string;
+    priority?: number;
+    lastMessage?: LastMessageInfo;
 }
 ```
 
-## 成员
-
-### callsign
+### AutoCallProposal.callsign
 
 Target callsign that should be called next.
 
@@ -286,7 +268,7 @@ callsign: string;
 
 ```
 
-### priority
+### AutoCallProposal.priority
 
 Optional arbitration priority; higher values win.
 
@@ -296,7 +278,7 @@ priority?: number;
 
 ```
 
-### lastMessage
+### AutoCallProposal.lastMessage
 
 Optional triggering frame context used to preserve slot alignment.
 
@@ -307,35 +289,22 @@ lastMessage?: LastMessageInfo;
 ```
 ## AutoCallExecutionRequest
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Immutable metadata about the automatic-call proposal that won arbitration.
 
 ```ts
 export interface AutoCallExecutionRequest {
-  /** Plugin name that produced the winning proposal. */
-  sourcePluginName: string;
-  /** Target callsign chosen by the arbitration step. */
-  callsign: string;
-  /** Slot that is currently being processed when the autocall starts. */
-  slotInfo: SlotInfo;
-  /**
-   * Source receive slot that produced the accepted proposal.
-   *
-   * Execution-stage plugins should prefer this slot when they need to inspect
-   * the decode environment that triggered the autocall, such as picking a
-   * quieter transmit offset from the previous RX slot.
-   */
-  sourceSlotInfo?: SlotInfo;
-  /** Optional triggering frame context preserved from the proposal stage. */
-  lastMessage?: LastMessageInfo;
+    sourcePluginName: string;
+    callsign: string;
+    slotInfo: SlotInfo;
+    sourceSlotInfo?: SlotInfo;
+    lastMessage?: LastMessageInfo;
 }
 ```
 
-## 成员
-
-### sourcePluginName
+### AutoCallExecutionRequest.sourcePluginName
 
 Plugin name that produced the winning proposal.
 
@@ -345,7 +314,7 @@ sourcePluginName: string;
 
 ```
 
-### callsign
+### AutoCallExecutionRequest.callsign
 
 Target callsign chosen by the arbitration step.
 
@@ -355,7 +324,7 @@ callsign: string;
 
 ```
 
-### slotInfo
+### AutoCallExecutionRequest.slotInfo
 
 Slot that is currently being processed when the autocall starts.
 
@@ -365,7 +334,7 @@ slotInfo: SlotInfo;
 
 ```
 
-### sourceSlotInfo
+### AutoCallExecutionRequest.sourceSlotInfo
 
 Source receive slot that produced the accepted proposal.
 
@@ -379,7 +348,7 @@ sourceSlotInfo?: SlotInfo;
 
 ```
 
-### lastMessage
+### AutoCallExecutionRequest.lastMessage
 
 Optional triggering frame context preserved from the proposal stage.
 
@@ -390,27 +359,22 @@ lastMessage?: LastMessageInfo;
 ```
 ## AutoCallExecutionPlan
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Host-managed execution plan for an accepted automatic-call proposal.
 
 Utility plugins may refine this plan in
-{@link PluginHooks.onConfigureAutoCallExecution}. The host then applies the
+[`PluginHooks.onConfigureAutoCallExecution`](./hooks#pluginhooks-onconfigureautocallexecution). The host then applies the
 merged plan before calling the active strategy runtime.
 
 ```ts
 export interface AutoCallExecutionPlan {
-  /**
-   * Optional transmit audio offset to apply before starting the automatic call.
-   */
-  audioFrequency?: number;
+    audioFrequency?: number;
 }
 ```
 
-## 成员
-
-### audioFrequency
+### AutoCallExecutionPlan.audioFrequency
 
 Optional transmit audio offset to apply before starting the automatic call.
 
@@ -419,10 +383,90 @@ Optional transmit audio offset to apply before starting the automatic call.
 audioFrequency?: number;
 
 ```
+## SlotActivityEvent
+
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+
+Raw and parsed decode activity for one slot.
+
+This is intentionally protocol-neutral: plugins can consume the original
+`SlotPack.frames` when they need decoder metadata such as confidence while
+still receiving the host-parsed messages used by normal decision hooks.
+
+```ts
+export interface SlotActivityEvent {
+    slotInfo: SlotInfo;
+    slotPack: SlotPack | null;
+    frames: FrameMessage[];
+    messages: ParsedFT8Message[];
+    source: 'live' | 'replay' | 'reset';
+}
+```
+
+### SlotActivityEvent.slotInfo
+
+Timing and identity of the slot represented by this event.
+
+```ts
+
+slotInfo: SlotInfo;
+
+```
+
+### SlotActivityEvent.slotPack
+
+Complete decoder slot pack, or `null` for reset/no-pack events.
+
+```ts
+
+slotPack: SlotPack | null;
+
+```
+
+### SlotActivityEvent.frames
+
+Original decoder frames in their received order.
+
+```ts
+
+frames: FrameMessage[];
+
+```
+
+### SlotActivityEvent.messages
+
+Host-parsed messages derived from the frames.
+
+```ts
+
+messages: ParsedFT8Message[];
+
+```
+
+### SlotActivityEvent.source
+
+Whether the data is live, replayed, or clearing prior slot state.
+
+```ts
+
+source: 'live' | 'replay' | 'reset';
+
+```
+## FrequencyChangeState
+
+- 类型: `type`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+
+Protocol-neutral radio frequency/band change event.
+
+```ts
+export type FrequencyChangeState = FrequencyState;
+```
 ## PluginHooks
 
-- Kind: `interface`
-- Source: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
+- 类型: `interface`
+- 源码: [hooks.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/hooks.ts)
 
 Hook collection implemented by a plugin.
 
@@ -432,113 +476,38 @@ Hooks fall into three broad categories:
 - broadcast hooks observe lifecycle events and side effects.
 
 Hooks should be quick and defensive. A misbehaving plugin can delay the whole
-decode pipeline, so expensive work should be throttled, cached or deferred.
+decode pipeline, so expensive work should be throttled, cached, or explicitly
+awaited with cancellation and error handling rather than detached in the
+background.
+
+DTO arguments are detached snapshots and may be inspected or transformed
+without mutating Host state. `ctx` properties that perform Host operations are
+live capabilities and may only be invoked before the current Hook settles.
 
 ```ts
-export interface PluginHooks {
-  /**
-   * Proposes an automatic call target while the operator is idle.
-   *
-   * The host collects proposals from all active utility plugins, resolves
-   * conflicts deterministically, and then triggers at most one host-managed
-   * `requestCall(...)` action for the winning proposal.
-   */
-  onAutoCallCandidate?(
-    slotInfo: SlotInfo,
-    messages: ParsedFT8Message[],
-    ctx: PluginContext,
-  ): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
-
-  /**
-   * Refines how an accepted automatic-call proposal should be executed.
-   *
-   * The host runs this as a utility-plugin pipeline after proposal
-   * arbitration. Each plugin receives the current execution plan and may return
-   * an updated copy. This is the preferred place to centralize execution
-   * policies such as pre-call frequency selection.
-   */
-  onConfigureAutoCallExecution?(
-    request: AutoCallExecutionRequest,
-    plan: AutoCallExecutionPlan,
-    ctx: PluginContext,
-  ): AutoCallExecutionPlan | null | undefined | Promise<AutoCallExecutionPlan | null | undefined>;
-
-  /**
-   * Filters candidate target messages before the scoring phase.
-   *
-   * The returned array feeds into the next plugin in the utility pipeline. As a
-   * safety mechanism, returning an empty array when the input was non-empty is
-   * treated by the host as an accidental full drop and may be ignored.
-   */
-  onFilterCandidates?(
-    candidates: ParsedFT8Message[],
-    ctx: PluginContext,
-  ): ParsedFT8Message[] | Promise<ParsedFT8Message[]>;
-
-  /**
-   * Adjusts ranking scores for the current candidate list.
-   *
-   * Implementations typically add bonuses or penalties based on DXCC, signal
-   * quality, duplicate history or custom operator preferences.
-   */
-  onScoreCandidates?(
-    candidates: ScoredCandidate[],
-    ctx: PluginContext,
-  ): ScoredCandidate[] | Promise<ScoredCandidate[]>;
-
-  /**
-   * Broadcast at the start of every slot with the slot metadata and decoded
-   * messages already associated with that slot.
-   */
-  onSlotStart?(slotInfo: SlotInfo, messages: ParsedFT8Message[], ctx: PluginContext): void;
-
-  /**
-   * Broadcast whenever decoded messages become available.
-   *
-   * This fires even when the operator is idle, which makes it a good place for
-   * monitoring, trigger detection and passive analytics.
-   */
-  onDecode?(messages: ParsedFT8Message[], ctx: PluginContext): void;
-
-  /**
-   * Broadcast when the host locks onto a target and a QSO officially starts.
-   */
-  onQSOStart?(info: { targetCallsign: string; grid?: string }, ctx: PluginContext): void;
-
-  /**
-   * Broadcast after a QSO has been completed and recorded.
-   */
-  onQSOComplete?(record: QSORecord, ctx: PluginContext): void;
-
-  /**
-   * Broadcast when an in-progress QSO terminates unsuccessfully.
-   */
-  onQSOFail?(info: QSOFailureInfo, ctx: PluginContext): void;
-
-  /**
-   * Broadcast when a named timer created through {@link PluginContext.timers}
-   * fires.
-   */
-  onTimer?(timerId: string, ctx: PluginContext): void;
-
-  /**
-   * Broadcast when the user clicks one of the plugin's declared quick actions.
-   */
-  onUserAction?(actionId: string, payload: unknown, ctx: PluginContext): void;
-
-  /**
-   * Broadcast after one or more persisted plugin settings have changed.
-   *
-   * The `changes` object contains only the updated keys and their new resolved
-   * values.
-   */
-  onConfigChange?(changes: Record<string, unknown>, ctx: PluginContext): void;
+export interface PluginHooks<Permissions extends readonly PluginPermission[] = readonly [
+]> {
+    onAutoCallCandidate?(slotInfo: SlotInfo, messages: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
+    onConfigureAutoCallExecution?(request: AutoCallExecutionRequest, plan: AutoCallExecutionPlan, ctx: PluginContextFor<Permissions>): AutoCallExecutionPlan | null | undefined | Promise<AutoCallExecutionPlan | null | undefined>;
+    onFilterCandidates?(candidates: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): ParsedFT8Message[] | Promise<ParsedFT8Message[]>;
+    onScoreCandidates?(candidates: ScoredCandidate[], ctx: PluginContextFor<Permissions>): ScoredCandidate[] | Promise<ScoredCandidate[]>;
+    onSlotStart?(slotInfo: SlotInfo, messages: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onSlotActivity?(event: SlotActivityEvent, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onDecode?(messages: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onFrequencyChange?(state: FrequencyChangeState, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onQSOStart?(info: {
+        targetCallsign: string;
+        grid?: string;
+    }, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onQSOComplete?(record: QSORecord, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onQSOFail?(info: QSOFailureInfo, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onTimer?(timerId: string, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onUserAction?(actionId: string, payload: unknown, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+    onConfigChange?(changes: Record<string, unknown>, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 }
 ```
 
-## 成员
-
-### onAutoCallCandidate
+### PluginHooks.onAutoCallCandidate
 
 Proposes an automatic call target while the operator is idle.
 
@@ -548,15 +517,11 @@ conflicts deterministically, and then triggers at most one host-managed
 
 ```ts
 
-onAutoCallCandidate?(
-    slotInfo: SlotInfo,
-    messages: ParsedFT8Message[],
-    ctx: PluginContext,
-  ): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
+onAutoCallCandidate?(slotInfo: SlotInfo, messages: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): AutoCallProposal | null | undefined | Promise<AutoCallProposal | null | undefined>;
 
 ```
 
-### onConfigureAutoCallExecution
+### PluginHooks.onConfigureAutoCallExecution
 
 Refines how an accepted automatic-call proposal should be executed.
 
@@ -567,32 +532,24 @@ policies such as pre-call frequency selection.
 
 ```ts
 
-onConfigureAutoCallExecution?(
-    request: AutoCallExecutionRequest,
-    plan: AutoCallExecutionPlan,
-    ctx: PluginContext,
-  ): AutoCallExecutionPlan | null | undefined | Promise<AutoCallExecutionPlan | null | undefined>;
+onConfigureAutoCallExecution?(request: AutoCallExecutionRequest, plan: AutoCallExecutionPlan, ctx: PluginContextFor<Permissions>): AutoCallExecutionPlan | null | undefined | Promise<AutoCallExecutionPlan | null | undefined>;
 
 ```
 
-### onFilterCandidates
+### PluginHooks.onFilterCandidates
 
 Filters candidate target messages before the scoring phase.
 
-The returned array feeds into the next plugin in the utility pipeline. As a
-safety mechanism, returning an empty array when the input was non-empty is
-treated by the host as an accidental full drop and may be ignored.
+The returned array feeds into the next plugin in the utility pipeline.
+Returning an empty array intentionally removes every remaining candidate.
 
 ```ts
 
-onFilterCandidates?(
-    candidates: ParsedFT8Message[],
-    ctx: PluginContext,
-  ): ParsedFT8Message[] | Promise<ParsedFT8Message[]>;
+onFilterCandidates?(candidates: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): ParsedFT8Message[] | Promise<ParsedFT8Message[]>;
 
 ```
 
-### onScoreCandidates
+### PluginHooks.onScoreCandidates
 
 Adjusts ranking scores for the current candidate list.
 
@@ -601,25 +558,35 @@ quality, duplicate history or custom operator preferences.
 
 ```ts
 
-onScoreCandidates?(
-    candidates: ScoredCandidate[],
-    ctx: PluginContext,
-  ): ScoredCandidate[] | Promise<ScoredCandidate[]>;
+onScoreCandidates?(candidates: ScoredCandidate[], ctx: PluginContextFor<Permissions>): ScoredCandidate[] | Promise<ScoredCandidate[]>;
 
 ```
 
-### onSlotStart
+### PluginHooks.onSlotStart
 
 Broadcast at the start of every slot with the slot metadata and decoded
 messages already associated with that slot.
 
 ```ts
 
-onSlotStart?(slotInfo: SlotInfo, messages: ParsedFT8Message[], ctx: PluginContext): void;
+onSlotStart?(slotInfo: SlotInfo, messages: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onDecode
+### PluginHooks.onSlotActivity
+
+Broadcast with raw slot/frame context plus parsed messages.
+
+Prefer this hook when a plugin needs full decoder metadata or wants to
+preserve a cache suitable for replay/status integrations.
+
+```ts
+
+onSlotActivity?(event: SlotActivityEvent, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+
+```
+
+### PluginHooks.onDecode
 
 Broadcast whenever decoded messages become available.
 
@@ -628,70 +595,87 @@ monitoring, trigger detection and passive analytics.
 
 ```ts
 
-onDecode?(messages: ParsedFT8Message[], ctx: PluginContext): void;
+onDecode?(messages: ParsedFT8Message[], ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onQSOStart
+### PluginHooks.onFrequencyChange
 
-Broadcast when the host locks onto a target and a QSO officially starts.
+Broadcast when the host operating frequency or band changes.
 
 ```ts
 
-onQSOStart?(info: { targetCallsign: string; grid?: string }, ctx: PluginContext): void;
+onFrequencyChange?(state: FrequencyChangeState, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onQSOComplete
+### PluginHooks.onQSOStart
+
+Reserved QSO-start notification.
+
+> **Deprecated:** The Host does not currently dispatch this hook. Do not use it
+for state transitions; observe decoded/slot activity or the active strategy
+snapshot instead until an explicit QSO-start event is implemented.
+
+```ts
+
+onQSOStart?(info: {
+    targetCallsign: string;
+    grid?: string;
+}, ctx: PluginContextFor<Permissions>): void | Promise<void>;
+
+```
+
+### PluginHooks.onQSOComplete
 
 Broadcast after a QSO has been completed and recorded.
 
 ```ts
 
-onQSOComplete?(record: QSORecord, ctx: PluginContext): void;
+onQSOComplete?(record: QSORecord, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onQSOFail
+### PluginHooks.onQSOFail
 
 Broadcast when an in-progress QSO terminates unsuccessfully.
 
 ```ts
 
-onQSOFail?(info: QSOFailureInfo, ctx: PluginContext): void;
+onQSOFail?(info: QSOFailureInfo, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onTimer
+### PluginHooks.onTimer
 
-Broadcast when a named timer created through {@link PluginContext.timers}
+Broadcast when a named timer created through [`PluginContext.timers`](./context#plugincontextbase-timers)
 fires.
 
 ```ts
 
-onTimer?(timerId: string, ctx: PluginContext): void;
+onTimer?(timerId: string, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onUserAction
+### PluginHooks.onUserAction
 
 Broadcast when the user clicks one of the plugin's declared quick actions.
 
 ```ts
 
-onUserAction?(actionId: string, payload: unknown, ctx: PluginContext): void;
+onUserAction?(actionId: string, payload: unknown, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```
 
-### onConfigChange
+### PluginHooks.onConfigChange
 
 Broadcast after one or more persisted plugin settings have changed.
 
-The `changes` object contains only the updated keys and their new resolved
-values.
+The first argument is the Host's merged persisted settings object for the
+affected scope, not only the keys changed by the latest update.
 
 ```ts
 
-onConfigChange?(changes: Record<string, unknown>, ctx: PluginContext): void;
+onConfigChange?(changes: Record<string, unknown>, ctx: PluginContextFor<Permissions>): void | Promise<void>;
 
 ```

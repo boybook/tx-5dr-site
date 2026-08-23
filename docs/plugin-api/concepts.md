@@ -1,127 +1,117 @@
-# 心智模型
+# 插件如何运行
 
-本页说明插件接口之间的职责关系。相关类型定义位于 `packages/plugin-api/src/definition.ts`、`context.ts`、`hooks.ts` 和 `runtime.ts`。
+TX-5DR 插件通常包含两部分：运行在服务端的插件代码，以及可选的 iframe 页面。理解这条边界后，大部分 API 都可以按普通 TypeScript 接口使用。
 
-## 四个核心接口
+## 服务端插件
 
-- `PluginDefinition`：声明插件名称、版本、类型、设置、静态面板和生命周期入口
-- `PluginContext`：提供配置、存储、日志、操作员控制和电台控制接口
-- `PluginHooks`：定义过滤、打分、广播监听和配置变更入口
-- `StrategyRuntime`：定义策略插件的自动化运行时接口
+插件入口默认导出 `definePlugin({...})`。Host 根据定义创建一个 operator 或 global 实例，然后调用 `onLoad`、Hook、timer 和页面 handler。
 
-## PluginDefinition
+服务端代码可以：
 
-`PluginDefinition` 是插件入口文件的默认导出结构。该接口负责声明静态信息和生命周期方法，典型字段包括：
+- 监听解码、通联和频率事件
+- 使用插件私有的设置、KV 和文件存储
+- 向声明式面板推送数据
+- 在声明权限后调用网络、日志本、电台或宿主设置能力
 
-- `name`、`version`
-- `type`
-- `settings`、`quickActions`、`panels`
-- `onLoad`、`onUnload`
-- `hooks`
-- `createStrategyRuntime`
+插件定义会在加载时校验并冻结。不要在运行期修改 `permissions`、`hooks` 或 UI descriptor。
 
-设置字段支持 `boolean`、`number`、`string`、`string[]`、`object[]` 和 `info`。其中 `object[]` 用 `itemFields` 描述每一项的简单字段，适合由宿主生成列表编辑器；如果设置 UI 需要复杂交互，应改用 iframe 设置页。
+## iframe 页面
 
-## PluginContext
+自定义页面运行在浏览器 iframe 中，可以使用 HTML、CSS、React、Vue 和常见浏览器 API。页面不会直接获得服务端 `ctx`。
 
-`PluginContext` 由宿主在运行时注入。当前公共字段包括：
-
-- `config`
-- `store.global` / `store.operator`
-- `log`
-- `timers`
-- `operator`
-- `radio`
-- `logbook`（查询 + 写入 + 通知）
-- `band`
-- `ui`（结构化面板推送 + 运行期面板 contribution + iframe 页面通信）
-- `files`（二进制文件持久化）
-- `logbookSync`（日志同步 Provider 注册）
-- `settings`（声明 `settings:*` 权限后访问安全白名单内的宿主设置）
-- `fetch`（声明 `network` 权限时可用）
-
-这些字段对应主项目中明确开放给插件的运行时表面。敏感能力采用显式权限声明，完整说明见 [插件权限模型](./permissions)。
-
-`ctx.radio` 包含基础只读状态、频率设置、电台能力协商和物理电源管理。能力快照、能力写入、开机请求与自动连接都只暴露在服务端插件上下文中；如果插件提供 iframe UI，应通过页面通信把用户动作交给服务端插件逻辑处理。详细权限与示例见 [电台能力与电源](./radio-capabilities-power)。
-
-`ctx.settings` 用于让受信任插件读取或调整安全白名单内的宿主设置，例如 FT8/FT4 自动化、解码窗口、实时音频传输、频率预设、站台信息、PSK Reporter 和 NTP 服务器。每个命名空间都需要单独权限；iframe 页面不能直接绕过宿主 REST API，应通过 `tx5dr.invoke()` 调用插件后端 handler。详细范围见 [宿主设置能力](./host-settings)。
-
-## 静态面板与运行期 UI Contribution
-
-`PluginDefinition.panels` 适合声明插件安装后固定存在的面板。宿主内部会把这些静态面板视为保留的 `manifest` contribution group，因此它们和运行期动态面板走同一套 slot 查询、iframe 渲染、权限、meta、snapshot 与 websocket 管线。
-
-如果插件需要由配置决定“现在有几个 Tab/面板”，不要预先声明多个空面板，也不要在 iframe 内部伪装宿主 Tab。应在运行时调用：
-
-```ts
-ctx.ui.setPanelContributions('my-runtime-group', panels);
-ctx.ui.clearPanelContributions('my-runtime-group');
+```text
+iframe page -- tx5dr.invoke() --> page handler -- Host capability --> TX-5DR
+iframe page <-- tx5dr.onPush() -- page handler / runtime
 ```
 
-`setPanelContributions()` 的语义是替换整个 group。`groupId` 需要是插件内稳定 ID；合并后的 `panel.id` 在同一插件实例内必须唯一。iframe 动态面板可以通过 `params` 复用同一个 `ui.pages` 页面，例如多个语音右侧 Tab 共享一个 `voice-right-webview`，再用 `tx5dr.params.tabId` 区分上下文。
+页面通过 `window.tx5dr` 与自己的服务端 handler 通信。用户、operator、callsign 和页面 session 等可信信息来自 `requestContext`，不要用 iframe 自报的数据替代 Host 已验证的绑定。
 
-## PluginHooks
+## 普通数据按值传递
 
-`PluginHooks` 用于处理宿主发出的事件。当前主要分为三类：
+配置、Hook 参数、查询结果、EventBus payload 和 UI 消息都是独立数据。它们跨过边界时会被复制，而不是把 Host 内部对象的引用直接交给插件。EventBus 的发布者和每个 subscriber 也分别获得自己的副本。
 
-### Pipeline Hooks
+```ts
+const config = ctx.store.global.get<{ enabled: boolean }>('config');
+config.enabled = false; // 只修改本地副本
+ctx.store.global.set('config', config); // 明确写回
+```
 
-- `onFilterCandidates`
-- `onScoreCandidates`
+实际开发只需要记住三点：
 
-这两个入口会改变候选消息列表或排序结果。
+- 可以缓存、排序或修改收到的普通对象，不会意外改坏 Host 状态。
+- 修改 `ctx.config`、查询结果或 UI 返回值不会自动持久化。
+- 要改变状态，调用明确的 `ctx.updateConfig()`、`store.set()` 或 command port。
 
-其中 `onScoreCandidates` 适合“偏好排序型”插件：插件通过调整 `candidate.score` 表达偏好，而不是直接调用呼叫控制。内置 `worked-station-bias` 就是标准示例。
+不同通道接受的数据略有不同：
 
-### Autocall Proposal Hook
+| 通道 | 可以传什么 |
+| --- | --- |
+| 配置、KV、iframe invoke/push、panel 数据 | JSON 兼容值 |
+| Hook、strategy、EventBus 等进程内数据 | structured-clone 兼容值 |
+| `ctx.files` | `Buffer` 二进制数据 |
 
-- `onAutoCallCandidate`
+不要跨边界传递函数、Promise、WeakMap、循环 JSON、类方法或 Host capability。对象的原型和方法不是数据契约的一部分。非法值会以 `PLUGIN_DATA_NOT_SERIALIZABLE` 被拒绝。
 
-这个入口适用于“守候型” utility 插件。它不直接执行呼叫，而是向 Host 返回一个 declarative proposal：
+## Host capability 是受控句柄
 
-- `callsign`：建议自动起呼的目标呼号
-- `priority`：提议优先级，值越大越优先
-- `lastMessage`：触发该提议的具体消息及其 slot 元数据
+`ctx.ui`、`ctx.logbook`、`ctx.radioCommands`、网络 socket 和页面 `requestContext.files` 不是数据快照，而是 Host 提供的实时操作句柄。
 
-Host 会统一收集并仲裁多个 proposal，再最多执行一次真正的 `requestCall(...)`。这使得多个自动起呼插件可以稳定组合，而不会因为广播 Hook 的执行时序产生竞态。
+这些句柄只能在 Host 发起且仍然有效的 callback 中调用：
 
-这里的 `lastMessage.slotInfo` 必须表示触发消息所属的真实 RX 时隙，因为后续自动起呼会依赖它去选择相反的回复周期。
+- 可以在同一个插件实例中保存句柄，但不要在 callback 返回后启动悬空任务继续调用它。
+- 定时工作使用 `ctx.timers.set()`，在下一次 `hooks.onTimer` 中执行。
+- 异步 Hook 应 `await` 工作，并响应 strategy 的 `AbortSignal`。
+- disable、reload、unload、timeout 或 shutdown 后，旧调用会得到 `PLUGIN_INVOCATION_EXPIRED`。
 
-### Autocall Execution Hook
+`onUnload` 只提供 `store`、`log`、`timers`、`files` 和只读 `operator`，用于识别实例并释放插件自己的资源。新插件不能在 cleanup 中使用 UI、网络、电台、EventBus、日志本或 command port。
 
-- `onConfigureAutoCallExecution`
+## 权限决定可见能力
 
-这个入口位于 proposal 仲裁之后、真正 `requestCall(...)` 之前，用于描述“命中后怎么执行”。当前内置 `autocall-controls` 就使用它来统一控制自动起呼前的空闲频率选择。
+基础 context 始终包含只读 `operator`、只读 `radio`、`config`、`store`、`log`、`timers`、`band`、`ui` 和 `files`。
 
-### Broadcast Hooks
+敏感能力由 `permissions` 添加。例如：
 
-- `onSlotStart`
-- `onDecode`
-- `onQSOStart`
-- `onQSOComplete`
-- `onQSOFail`
-- `onTimer`
-- `onUserAction`
-- `onConfigChange`
+```ts
+import { definePlugin } from '@tx5dr/plugin-api';
 
-这类入口主要用于监听事件、记录状态、触发定时任务或更新面板。
+export default definePlugin({
+  apiVersion: 2,
+  name: 'band-switcher',
+  version: '1.0.0',
+  type: 'utility',
+  permissions: ['radio:read', 'radio:control'],
 
-对于新的自动起呼插件，推荐优先使用 `onAutoCallCandidate`；`onSlotStart` / `onDecode` 更适合做观察、统计、缓存和预处理，而不是直接抢占自动起呼。
+  async onLoad(ctx) {
+    const capabilities = ctx.radioCapabilities.getSnapshot();
+    await ctx.radioCommands.submit({
+      type: 'set-frequency',
+      frequency: 14_074_000,
+    });
+    ctx.log.info('Radio updated', { capabilityCount: capabilities.capabilities.length });
+  },
+});
+```
 
-## StrategyRuntime
+未声明的能力在 TypeScript 和运行时对象中都不存在。完整映射见 [权限与能力](./permissions)。
 
-`StrategyRuntime` 只用于 `strategy` 类型插件。当前接口负责以下对象：
+## 实例作用域
 
-- `decide()`：根据解码结果推进自动化流程
-- `getTransmitText()`：生成当前发射文本
-- `requestCall()`：处理呼叫请求
-- `getSnapshot()`：输出运行时快照
-- `patchContext()`、`setState()`、`setSlotContent()`、`reset()`：更新策略运行时状态
+- `instanceScope: 'operator'`：默认值，每个操作员一个实例。
+- `instanceScope: 'global'`：整个 Host 一个实例，只适用于 utility。
 
-## 作用域划分
+operator 插件适合候选处理、操作员面板和自动化辅助。global 插件适合站级同步、共享网络服务和全局电台计划。global 插件访问特定日志本时使用 `ctx.logbook.forCallsign(callsign)`。
 
-插件设置和存储都区分 `global` 与 `operator` 两个范围：
+global scope 只支持 utility，不能声明 operator-scope setting、`quickSettings`、operator panel 或大多数 operator 事件 Hook。
 
-- `global`：所有操作员共享
-- `operator`：每个操作员独立
+## 安全边界
 
-该划分与主项目的多操作员模型保持一致。
+权限和 callback 生命周期用于提供清晰、可审计的 Host API，并减少插件之间的意外影响。当前服务端插件仍运行在 TX-5DR 的 Node.js 进程中，因此安装插件等同于信任其服务端代码；真正面向不可信代码的隔离需要独立 Worker 或进程。
+
+iframe 页面与服务端 capability 分离。敏感操作应由页面请求服务端 handler，再由 handler 校验 `requestContext` 后调用对应能力。
+
+## 继续阅读
+
+- [API v2 与兼容性](./api-v2)
+- [权限与能力](./permissions)
+- [自定义 UI](./tutorial-custom-ui)
+- [PluginContext Reference](./reference/context)

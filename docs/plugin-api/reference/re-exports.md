@@ -1,24 +1,30 @@
 # Re-exports
 
-该页列出 `index.ts` 对外转出的本包接口和 contracts 类型。
-
-> 自动生成自 `../tx-5dr/packages/plugin-api/src/index.ts`
+`@tx5dr/plugin-api` 包的公开导出。
 
 ## plugin-api 本地导出
 
-- `./definition.js`: `PluginDefinition`
-- `./context.js`: `PluginContext`
-- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`、`QSOFailureInfo`
-- `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`
+- `./definition.js`: `definePlugin`
+- `./capabilities.js`: `PLUGIN_COMMAND_CAPABILITY_PERMISSIONS`、`PLUGIN_CONTEXT_CAPABILITY_KEYS`、`getPluginContextCapabilityKeys`
+- `./capabilities.js`: `PluginContextCapabilityKey`、`PluginContextCapabilityPermission`
+- `./definition.js`: `PluginDefinition`、`AnyPluginDefinition`
+- `./context.js`: `PluginContext`、`PluginContextBase`、`PluginCleanupContext`、`PluginContextFor`、`RuntimePluginContext`、`StrategyPluginContext`、`PluginEligibilityContext`
+- `./host-dependencies.js`: `HostDependencies`、`HamlibHostDependency`、`HamlibRotator`、`HamlibRotatorConstructor`、`HamlibSupportedRotatorInfo`、`HamlibRotatorConnectionInfo`、`HamlibRotatorPosition`、`HamlibRotatorStatus`、`HamlibRotatorDirection`、`HamlibRotatorResetType`、`HamlibConfigFieldDescriptor`、`HamlibPortCaps`、`HamlibRotatorCaps`
+- `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`SlotActivityEvent`、`FrequencyChangeState`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`、`QSOFailureInfo`
+- `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`、`StrategyRuntimeCheckpoint`、`StrategyDecisionMetaV2`、`StrategyDecisionResult`、`StrategyDecisionSource`、`StrategyQSOCompletionEffect`、`StrategyQSOCompletionSettlement`、`AssistedQueueDisplayState`、`AssistedQueuePauseReason`、`AssistedQueueTone`、`AssistedQueueIcon`、`AssistedQueueRow`、`AssistedQueueSnapshot`、`QueuedStrategyObservationMeta`、`QueuedStrategyTargetRequest`、`QueuedStrategyMutationResult`、`QueuedStrategyRuntime`
+- `./runtime.js`: `isQueuedStrategyRuntime`
 - `./settings.js`: `HostSettingsControl`、`HostSettingsNamespace`、`HostFrequencyPresetsSettingsNamespace`、`HostFT8Settings`、`HostFT8SettingsPatch`、`HostFrequencyPresetsSettings`、`HostStationInfoPatch`、`HostPSKReporterSettingsPatch`
-- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OperatorControl`、`RadioControl`、`RadioCapabilitiesControl`、`RadioPowerControl`、`RadioPowerSetOptions`、`LogbookAccess`、`CallsignLogbookAccess`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PanelMeta`、`PluginUIHandler`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`
-- `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncTestResult`、`SyncUploadOptions`、`SyncUploadResult`、`SyncPreflightIssue`、`SyncUploadPreflightResult`、`SyncDownloadResult`、`SyncDownloadOptions`
+- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OtherOperatorSnapshot`、`OperatorSnapshot`、`OperatorCommandPort`、`PluginOperatorCommand`、`PluginOperatorCommandResult`、`RadioView`、`RadioOperatingMode`、`RadioCapabilitiesView`、`RadioCommandPort`、`PluginRadioCommand`、`RadioTunerCommandPort`、`PluginRadioTunerCommand`、`RadioPowerView`、`RadioPowerCommandPort`、`PluginRadioPowerCommand`、`RadioPowerSetOptions`、`LogbookAccess`、`LogbookReadAccess`、`LogbookCommandPort`、`CallsignLogbookAccess`、`CallsignLogbookReadAccess`、`CallsignLogbookCommandPort`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PanelMeta`、`PluginUIHandler`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`、`PluginNetworkControl`、`PluginEventBus`、`PluginEventBusMessage`、`PluginUdpControl`、`PluginUdpSocket`、`PluginUdpSocketOptions`、`PluginUdpBindOptions`、`PluginUdpRemoteInfo`
+- `@tx5dr/core`: `getCallsignInfo`、`listDXCCEntities`、`resolveDXCCEntity`
+- `@tx5dr/core`: `CallsignInfo`、`DXCCEntity`、`DXCCResolutionResult`
+- `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncFailure`、`SyncFailureInput`、`SyncFailureOperation`、`SyncFailureSource`、`SyncTestResult`、`SyncUploadProgress`、`SyncUploadOptions`、`SyncUploadPreflightOptions`、`SyncUploadResult`、`SyncPreflightIssue`、`SyncUploadPreflightResult`、`SyncDownloadProgress`、`SyncDownloadResult`、`SyncDownloadOptions`
+- `./sync.js`: `createSyncFailure`、`errorToSyncFailure`、`failureMessage`、`sanitizeSyncFailureText`
 - `./ft8-message-type.js`: `FT8MessageType`
 - `./utils/callsign.js`: `normalizeCallsign`
 - `./utils/adif.js`: `parseADIFContent`、`parseADIFRecord`、`parseADIFFields`、`convertQSOToADIF`、`generateADIFFile`、`formatADIFDate`、`formatADIFTime`、`parseADIFDateTime`
 - `./utils/page-scope.js`: `getPluginPageFileScopePath`、`getPluginPageScopePath`、`getPluginPageScopeSegments`、`getPluginPageStorePath`
 - `./utils/page-scope.js`: `PluginPageBoundResource`
-- `./utils/qso-text-fields.js`: `parseLegacyComment`、`resolveQsoComment`、`buildCommentFromMessageHistory`、`normalizeMessageHistory`
+- `./utils/qso-text-fields.js`: `buildSignalReportComment`、`parseQsoTextFields`、`parseLegacyComment`、`parseMessageHistoryText`、`resolveQsoComment`、`buildCommentFromMessageHistory`、`normalizeMessageHistory`、`sanitizeAdifFieldValue`
 
 ## 来自 @tx5dr/contracts 的类型导出
 
@@ -37,6 +43,7 @@
 - [`LogbookAnalysis`](./contracts#logbookanalysis)
 - [`SlotInfo`](./contracts#slotinfo)
 - [`SlotPack`](./contracts#slotpack)
+- [`FrequencyState`](./contracts#frequencystate)
 - [`QSORecord`](./contracts#qsorecord)
 - [`FrameMessage`](./contracts#framemessage)
 - [`ModeDescriptor`](./contracts#modedescriptor)
@@ -55,9 +62,14 @@
 - [`PluginPanelDescriptor`](./contracts#pluginpaneldescriptor)
 - [`PluginPanelComponent`](./contracts#pluginpanelcomponent)
 - [`PluginPanelWidth`](./contracts#pluginpanelwidth)
+- [`PluginPanelOpenMode`](./contracts#pluginpanelopenmode)
+- [`PluginPanelUISize`](./contracts#pluginpaneluisize)
 - [`PluginUIPanelContributionGroup`](./contracts#pluginuipanelcontributiongroup)
 - [`PluginUIPanelContributionTarget`](./contracts#pluginuipanelcontributiontarget)
 - [`PluginObjectArrayField`](./contracts#pluginobjectarrayfield)
+- [`PluginKeyedStringArrayKey`](./contracts#pluginkeyedstringarraykey)
+- [`PluginSettingCondition`](./contracts#pluginsettingcondition)
+- [`PluginSettingConditionalDescription`](./contracts#pluginsettingconditionaldescription)
 - [`PluginSettingOption`](./contracts#pluginsettingoption)
 - [`PluginStorageScope`](./contracts#pluginstoragescope)
 - [`PluginStorageConfig`](./contracts#pluginstorageconfig)
@@ -86,4 +98,3 @@
 - [`UpdateNtpServerListRequest`](./contracts#updatentpserverlistrequest)
 
 ## 来自 @tx5dr/contracts 的值导出
-

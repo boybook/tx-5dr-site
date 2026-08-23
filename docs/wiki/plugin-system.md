@@ -22,7 +22,7 @@
 - 每个操作员同一时刻只启用一个
 - 负责 QSO 自动化运行时、状态和发射文本
 
-内置 `standard-qso` 位于 `packages/server/src/plugin/builtins/standard-qso/`，可作为策略插件的参考实现。
+内置 `standard-qso` 位于 `packages/builtin-plugins/src/standard-qso/`，可作为策略插件的参考实现。
 
 ### 工具插件
 
@@ -37,11 +37,11 @@
 - `onScoreCandidates(...)`：用于“偏好排序型”插件，例如已通联偏置，只调整候选分数，不直接控制呼叫
 - `onAutoCallCandidate(...)`：用于“守候型”插件，返回自动起呼提议，由 Host 统一仲裁
 
-内置 `snr-filter`、`worked-station-bias`、`qso-session-inspector`、`heartbeat-demo`、`watched-callsign-autocall` 和 `watched-novelty-autocall` 都属于该类。
+内置 `snr-filter`、`callsign-filter`、`worked-station-bias`、`watched-callsign-autocall`、`scheduled-cq-autocall` 和日志同步 Provider 都属于该类。
 
 ### 自动起呼提议（Autocall Proposal）
 
-对于“守候型”工具插件，当前推荐实现 `onAutoCallCandidate(slotInfo, messages, ctx)`，返回一个自动起呼提议，而不是在 `onSlotStart` / `onDecode` 中直接调用 `ctx.operator.call(...)`。
+对于“守候型”工具插件，当前推荐实现 `onAutoCallCandidate(slotInfo, messages, ctx)`，返回一个自动起呼提议，而不是在 `onSlotStart` / `onDecode` 中直接提交起呼命令。
 
 其设计目标是让多个自动起呼插件可以稳定组合：
 
@@ -54,7 +54,7 @@
 - `watched-callsign-autocall`：显式守候呼号，默认优先级更高
 - `watched-novelty-autocall`：守候新 DXCC / 新网格 / 新呼号，适合和其他插件组合
 
-这套 proposal 机制是当前推荐的新写法；旧插件仍可兼容直接 `call()`，但不再建议作为新插件的默认实现方式。
+proposal 是当前公开 API 的组合式入口；实际起呼由 Host 和当前 strategy 统一执行。
 
 这里最重要的细节之一是：`lastMessage.slotInfo` 必须表示**触发消息真正所属的 RX 时隙**，而不是简单复用当前 hook 被调用时的时隙参数。后续自动起呼会根据这条消息所属时隙去推导下一次发射周期；如果时隙语义写错，就可能出现同一时隙误发。
 
@@ -62,7 +62,7 @@
 
 proposal 胜出后，Host 还会继续调用 `onConfigureAutoCallExecution(request, plan, ctx)`。这个 hook 用来描述“命中后如何执行”，而不是“如何发现目标”。
 
-当前内置 `autocall-controls` 就是通过这个 hook 提供共享执行策略，例如：
+当前内置 `autocall-idle-frequency` 就是通过这个 hook 提供共享执行策略，例如：
 
 - 是否在自动起呼前先选择更空闲的发射音频频率
 - 后续不同自动起呼插件之间如何共享同一套执行层策略
@@ -73,11 +73,11 @@ proposal 胜出后，Host 还会继续调用 `onConfigureAutoCallExecution(reque
 
 外部插件开发应优先依赖 `@tx5dr/plugin-api`。当前公共接口包括：
 
-- `PluginDefinition`
-- `PluginContext`
+- `definePlugin()` / `PluginDefinition`
+- `PluginContextFor`
 - `PluginHooks`
 - `StrategyRuntime`
-- `KVStore`、`PluginLogger`、`OperatorControl` 等辅助接口
+- `KVStore`、`PluginLogger`、只读 view 和 command port 等辅助接口
 
 该接口边界用于把插件作者依赖的类型与主项目内部实现分离。
 
@@ -102,7 +102,7 @@ proposal 胜出后，Host 还会继续调用 `onConfigureAutoCallExecution(reque
 常见问题：
 
 1. 直接把 TypeScript 源码放进插件目录，未构建为可运行 JS。
-2. 默认导出不是 `PluginDefinition` 对象。
+2. 默认导出不是 `definePlugin({...})` 的结果或有效插件定义对象。
 3. 插件名与内置插件重名。
 4. 自定义 UI 声明了 `pageId`，但缺失对应 HTML 入口文件，或 `ui.dir`/`entry` 路径不匹配。
 

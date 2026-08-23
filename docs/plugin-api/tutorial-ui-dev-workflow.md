@@ -1,6 +1,6 @@
 # 插件 UI 开发实战：脚手架、框架模板与实时预览
 
-[第 6 章](./tutorial-custom-ui) 讲了 iframe 面板的原理 —— Bridge SDK、invoke/onPush、CSS 变量。本篇聚焦于**怎么高效地开发**这些 UI 页面：从零创建项目、用 React 或 Vue 编写交互界面、一键链接到运行中的 TX-5DR、以及修改代码后自动编译和重载。
+[自定义 UI](./tutorial-custom-ui) 介绍了 Bridge SDK、invoke/onPush 和 CSS 变量。本篇只讲开发工作流：创建项目、使用 React 或 Vue、一键链接到 TX-5DR，以及修改后的自动编译和重载。
 
 ## 创建项目
 

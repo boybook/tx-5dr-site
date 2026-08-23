@@ -1,110 +1,48 @@
-# 学习路径
+# 按需求选择指南
 
-如果你希望系统地学会 TX-5DR 插件开发，推荐按下面顺序阅读。整套路径是从“最小可运行插件”一路走到“完整策略运行时”。
+插件文档不要求顺序通读。先完成 [快速开始](./getting-started)，再根据目标选择一条路径。
 
-## 建议顺序
+## 第一次写插件
 
-1. [快速开始](./getting-started)
-2. [第 1 章：Hello Utility](./tutorial-hello-utility)
-3. [第 2 章：过滤与评分](./tutorial-filter-and-score)
-4. [第 3 章：守候与自动起呼](./tutorial-watcher-autocall)
-5. [第 4 章：面板、按钮与定时器](./tutorial-ui-actions-and-panels)
-6. [第 5 章：StrategyRuntime](./tutorial-strategy-runtime)
-7. [第 6 章：自定义 UI 与 iframe 面板](./tutorial-custom-ui)
-8. [第 7 章：日志同步 Provider](./tutorial-logbook-sync)
-9. [心智模型](./concepts)
-10. [Reference](./reference/)
+1. [快速开始](./getting-started)：创建、构建、链接和加载第一个 v2 插件。
+2. [插件如何运行](./concepts)：了解服务端、iframe、数据快照和 callback 生命周期。
+3. [编写 Utility 插件](./tutorial-hello-utility)：添加第一个 Hook 和设置。
+4. [测试插件](./testing)：用与公开 API 对齐的 mock 验证行为。
 
-## 每一章解决什么问题
+## 调整自动化行为
 
-### 第 1 章：Hello Utility
+- 排除候选或改变候选顺序：[过滤与评分](./tutorial-filter-and-score)
+- 发现目标后提出自动起呼：[自动起呼提议](./tutorial-watcher-autocall)
+- 定时请求操作员自动化：[权限与能力](./permissions#命令型能力)
+- 接管完整 QSO 状态机：[StrategyRuntime](./tutorial-strategy-runtime)
 
-解决“插件最少需要写什么”的问题。你会学到：
+先用 utility 表达一个局部规则。只有需要维护 QSO 阶段和下一条发射文本时，才实现 strategy。
 
-- `PluginDefinition` 的最小结构
-- `utility` 插件的基本形态
-- `onDecode(...)` 这类最容易上手的 Hook
-- 如何组织 `plugin.js`、`locales/`、`README.md`
+## 添加界面
 
-### 第 2 章：过滤与评分
+1. 简单按钮、状态和表格：[按钮、定时器与面板](./tutorial-ui-actions-and-panels)
+2. 表单或复杂交互：[自定义 UI](./tutorial-custom-ui)
+3. React、Vue、Vite 和热重载：[UI 开发实战](./tutorial-ui-dev-workflow)
 
-解决“插件如何影响目标选择，但不直接控制发射”的问题。你会学到：
+iframe 页面没有服务端 capability。敏感操作通过 `tx5dr.invoke()` 请求 page handler，再由 handler 校验 Host 提供的 `requestContext`。
 
-- `onFilterCandidates(...)` 用于硬过滤
-- `onScoreCandidates(...)` 用于软偏置
-- 为什么 `worked-station-bias` 应该走评分 hook，而不是直接起呼
-- 多个 utility 插件如何叠加
+## 接入外部系统
 
-### 第 3 章：守候与自动起呼
+- HTTP、UDP 和插件间消息：[权限与能力](./permissions)
+- WaveLog、LoTW、QRZ.com 一类日志服务：[日志同步 Provider](./tutorial-logbook-sync)
+- 频率、调谐器和物理电源：[电台控制](./radio-capabilities-power)
+- 调整 TX-5DR 白名单设置：[宿主设置](./host-settings)
 
-解决“命中目标后如何自动起呼，并且能和别的插件组合”的问题。你会学到：
+## 查字段和签名
 
-- `onAutoCallCandidate(...)` 的 proposal 模式
-- `priority`、`lastMessage` 与自动起呼时隙语义
-- `onConfigureAutoCallExecution(...)` 与共享执行策略
-- 为什么新的守候型插件不建议直接 `ctx.operator.call(...)`
-- `watched-callsign-autocall` 与 `watched-novelty-autocall` 的设计思路
+[API Reference](./reference/) 由脚本从当前公共源码生成。Reference 适合核对类型，不是第一次阅读的教程。
 
-### 第 4 章：面板、按钮与定时器
+- 插件入口：[PluginDefinition](./reference/definition)
+- callback context：[PluginContext](./reference/context)
+- utility 事件：[PluginHooks](./reference/hooks)
+- strategy：[StrategyRuntime](./reference/runtime)
+- view、command port、UI 和存储：[Helper Interfaces](./reference/helpers)
 
-解决“插件如何和 UI / 用户交互”的问题。你会学到：
+## 维护旧插件
 
-- `quickActions`
-- `onUserAction(...)`
-- `onTimer(...)`
-- `ctx.ui.send(...)` 与面板数据推送
-
-### 第 5 章：StrategyRuntime
-
-解决”如何接管自动化流程本身”的问题。你会学到：
-
-- `type: 'strategy'`
-- `createStrategyRuntime(ctx)`
-- `decide(...)`、`getTransmitText()`、`requestCall(...)`
-- 什么时候应该写 strategy，而不是 utility
-
-### 第 6 章：自定义 UI 与 iframe 面板
-
-解决”结构化面板不够灵活，需要完全自定义界面”的问题。你会学到：
-
-- `component: 'iframe'` 面板与 `ui.pages` 声明
-- Bridge SDK（`window.tx5dr`）的完整 API
-- `invoke()` / `onPush()` 双向通信模型
-- CSS Design Tokens 主题适配
-- `slot: 'operator'` vs `slot: 'automation'` 面板渲染位置
-- `requestContext.page.push()` / `ctx.ui.pushToSession()` / `ctx.ui.pushToPage()` 的分层推送模型
-
-### 第 7 章：日志同步 Provider
-
-解决”如何接入外部日志同步服务”的问题。你会学到：
-
-- `LogbookSyncProvider` 接口与注册流程
-- `ctx.logbook` 的查询/写入能力
-- `ctx.files` 文件存储
-- 设置页面与 `SyncAction` 自定义操作
-- 自动上传管线
-
-## 三条最重要的分界线
-
-先记住这几条，后面大多数设计判断都会变简单：
-
-**自动化逻辑**：
-- 如果你只是”影响候选排序或补充能力”，优先写 `utility`
-- 如果你要”接管整个 QSO 流程”，才写 `strategy`
-
-**目标选择**：
-- “硬过滤”优先用 `onFilterCandidates(...)`
-- “软偏置”优先用 `onScoreCandidates(...)`
-- “守候后自动起呼”优先用 `onAutoCallCandidate(...)`
-
-**UI 与数据展示**：
-- 只需要展示简单数据 → 第 4 章的结构化面板（`ctx.ui.send()`）
-- 需要自定义交互界面 → 第 6 章的 iframe 面板
-- 需要接入外部日志服务 → 第 7 章的日志同步 Provider
-
-## 和主仓库文档的关系
-
-站点中的教程更偏“教学式阅读”；主仓库里的 [`docs/plugin-system.md`](https://github.com/boybook/tx-5dr/blob/main/docs/plugin-system.md) 更偏“完整技术说明”。推荐做法是：
-
-- 先按本节教程顺序建立心智模型
-- 再回到主仓库文档和 Reference 核对细节字段
+先看 [API v2 与兼容性](./api-v2)，然后让 TypeScript 根据 `permissions` 找出仍在使用的旧写接口。不要只以“插件能加载”为迁移完成标准；至少实际走一遍关键用户流程和 unload/reload。

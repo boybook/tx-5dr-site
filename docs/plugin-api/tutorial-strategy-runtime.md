@@ -1,162 +1,168 @@
-# 第 5 章：StrategyRuntime
+# StrategyRuntime
 
-前面几章都在讲 utility 插件：它们负责“补充能力”。这一章讲的是另一类完全不同的插件：**strategy 插件**。
+strategy 插件负责一个操作员的 QSO 状态机：接收解码、维护阶段、返回下一条发射文本，并提供可恢复的状态快照。过滤、评分、守候、同步和面板通常都应该使用 utility，而不是 strategy。
 
-如果你要接管自动化流程本身，就需要：
-
-- `type: 'strategy'`
-- `createStrategyRuntime(ctx)`
-
-## 什么时候才应该写 strategy
-
-先给出最重要的判断标准：
-
-如果你的需求只是下面这些之一，通常还不需要 strategy：
-
-- 过滤候选
-- 给候选加减分
-- 守候后自动起呼
-- 推送面板
-- 响应按钮
-
-只有当你要控制这些东西时，才进入 strategy：
-
-- QSO 状态推进
-- 当前发什么文本
-- 收到解码后如何推进阶段
-- 用户 / 插件请求呼叫后如何接管流程
-
-## 一个最小 strategy 骨架
+## 最小 v2 runtime
 
 ```ts
-import type {
-  PluginDefinition,
-  StrategyRuntime,
+import {
+  definePlugin,
+  type ParsedFT8Message,
+  type StrategyDecisionMetaV2,
+  type StrategyDecisionResult,
+  type StrategyPluginContext,
+  type StrategyRuntime,
+  type StrategyRuntimeCheckpoint,
+  type StrategyRuntimeContext,
+  type StrategyRuntimeSlot,
+  type StrategyRuntimeSlotContentUpdate,
 } from '@tx5dr/plugin-api';
 
 class SimpleRuntime implements StrategyRuntime {
-  constructor(private ctx: Parameters<NonNullable<PluginDefinition['createStrategyRuntime']>>[0]) {}
+  private state: StrategyRuntimeSlot = 'TX6';
+  private slots: Partial<Record<StrategyRuntimeSlot, string>> = {};
+  private context: StrategyRuntimeContext = {};
 
-  decide() {
-    return {};
+  constructor(private readonly ctx: StrategyPluginContext) {}
+
+  checkpoint(): StrategyRuntimeCheckpoint {
+    return structuredClone({
+      state: this.state,
+      slots: this.slots,
+      context: this.context,
+    });
   }
 
-  getTransmitText() {
-    return '';
+  restore(checkpoint: StrategyRuntimeCheckpoint): void {
+    const saved = checkpoint as {
+      state: StrategyRuntimeSlot;
+      slots: Partial<Record<StrategyRuntimeSlot, string>>;
+      context: StrategyRuntimeContext;
+    };
+    this.state = saved.state;
+    this.slots = { ...saved.slots };
+    this.context = { ...saved.context };
   }
 
-  requestCall(callsign) {
-    this.ctx.log.info('strategy received requestCall', { callsign });
+  decide(
+    _messages: ParsedFT8Message[],
+    meta: StrategyDecisionMetaV2,
+  ): StrategyDecisionResult {
+    if (meta.signal.aborted) {
+      throw meta.signal.reason ?? new Error('Decision aborted');
+    }
+
+    return {
+      transmission: this.getTransmitText(),
+      snapshot: this.getSnapshot(),
+    };
+  }
+
+  getTransmitText(): string | null {
+    return this.slots[this.state] ?? null;
+  }
+
+  requestCall(callsign: string): void {
+    this.context.targetCallsign = callsign;
+    this.state = 'TX1';
+    this.ctx.log.info('Call requested', { callsign });
   }
 
   getSnapshot() {
     return {
-      currentState: 'TX6',
-      context: {},
-      slots: {},
-      availableSlots: [],
+      currentState: this.state,
+      slots: { ...this.slots },
+      context: { ...this.context },
     };
   }
 
-  patchContext() {}
-  setState() {}
-  setSlotContent() {}
-  reset() {}
+  patchContext(patch: Partial<StrategyRuntimeContext>): void {
+    Object.assign(this.context, patch);
+  }
+
+  setState(state: StrategyRuntimeSlot): void {
+    this.state = state;
+  }
+
+  setSlotContent(update: StrategyRuntimeSlotContentUpdate): void {
+    this.slots[update.slot] = update.content;
+  }
+
+  reset(): void {
+    this.state = 'TX6';
+    this.slots = {};
+    this.context = {};
+  }
 }
 
-const plugin: PluginDefinition = {
+export default definePlugin({
+  apiVersion: 2,
   name: 'simple-strategy',
   version: '1.0.0',
   type: 'strategy',
+
   createStrategyRuntime(ctx) {
     return new SimpleRuntime(ctx);
   },
-};
-
-export default plugin;
+});
 ```
 
-真实策略通常会复杂得多，但骨架就是这样。
+strategy 不申请 `operator:transmit-control`。用户选择某个 strategy，已经是允许它返回声明式 RF 决策的明确动作。
 
-## 你真正要关心的四个方法
+## 为什么需要 checkpoint
 
-### `decide(messages, meta)`
+`decide()` 是 speculative phase。新命令、晚到解码、reload 或 shutdown 都可能让当前决策失效，Host 会使用 `checkpoint()` 和 `restore()` 回退 runtime。
 
-每个时隙，Host 会把候选消息送进来，让策略决定下一步是否推进状态。
+- checkpoint 必须是 structured-clone 兼容数据。
+- 不要放入函数、Promise、socket、文件句柄或 Host context。
+- 异步工作必须传递并响应 `meta.signal`。
+- `decide()` 内不要直接写日志本、提交 operator command 或产生不可撤销的外部副作用。
 
-你可以把它理解为：
+## Decision result
 
-> “收到这一批解码后，我当前这场 QSO 应该怎么走？”
+每次调用都返回当前准备发射的文本和对应快照：
 
-这里有一个很关键的宿主语义：
+```ts
+return {
+  transmission: 'CQ W1AW FN31', // 没有待发内容时为 null
+  snapshot: this.getSnapshot(),
+  stop: false,
+};
+```
 
-- 普通决策里返回 `{ stop: true }`，表示停止这个 operator 的自动化
-- 如果 `meta?.isReDecision === true`，同样的 `{ stop: true }` 还会让 Host 立即中断当前正在播放/PTT 的那次发射
+`stop: true` 表示停止这个操作员后续的自动化和新帧，不会中断已经提交或正在播出的 RF 帧。
 
-这意味着 strategy 不需要自己偷偷调用别的宿主内部接口来“强停当前发射”；只要显式返回 `stop: true` 即可。
+完成 QSO 时，使用可选 `qsoCompletion` effect，让 Host durable 写入日志本：
 
-### `getTransmitText()`
+```ts
+return {
+  transmission: null,
+  snapshot: this.getSnapshot(),
+  qsoCompletion: {
+    record,
+    lifecycleEpoch,
+  },
+};
+```
 
-Host 在发射时隙会来取当前要发送的文本。
+需要在 commit 后更新 runtime 时，实现 `settleQSOCompletion()`。不要在 speculative decision 中直接调用日志本写入。
 
-也就是说，strategy 不只是“决定逻辑”，还负责“告诉 Host 这一拍该发什么”。
+## Strategy context
 
-### `requestCall(callsign, lastMessage?)`
+`StrategyPluginContext` 只包含：
 
-当用户手动点选呼号，或某个 utility 插件的自动起呼 proposal 被 Host 仲裁通过后，最后都会汇总到这里。
+- `config`
+- `log`
+- 只读 `operator`
 
-这也是为什么：
+它没有 radio、network、timer、UI、日志本写入或 command port。需要这些能力的附加功能应放在独立 utility 插件中。
 
-- 守候型 utility 插件不该自己接管整个流程
-- 它们只应该提 proposal
-- 真正进入自动化运行时的入口仍然是 strategy 的 `requestCall(...)`
+## 测试重点
 
-### `getSnapshot()`
+- `structuredClone(runtime.checkpoint())` 成功。
+- `restore()` 后的 snapshot 与 checkpoint 一致。
+- abort 后不继续改变 runtime 或产生外部副作用。
+- `transmission` 与 `snapshot` 来自同一次状态推进。
+- QSO effect settle 后不会泄漏到下一场通联。
 
-前端 UI、调试工具和宿主状态展示都会依赖这份快照。
-
-所以它不只是“为了调试方便”，也是策略对外暴露状态的正式接口。
-
-## 一个非常重要的分层关系
-
-可以把当前插件系统理解成两层：
-
-### 上层：utility
-
-负责：
-
-- 过滤
-- 评分
-- 守候 proposal
-- 面板
-- quick action
-
-### 下层：strategy
-
-负责：
-
-- 接住最终被选中的目标
-- 维护 QSO 流程状态
-- 输出当前发射文本
-- 暴露运行时快照
-
-这套分层的好处是：utility 可以很多个一起叠加，但 strategy 始终只有一个活跃实例。
-
-## 学习内置参考时怎么读
-
-建议读 `standard-qso` 时按下面顺序看：
-
-1. 先看插件定义和 `createStrategyRuntime(ctx)`
-2. 再看 `requestCall(...)`
-3. 再看 `decide(...)`
-4. 最后看 snapshot / slots / context 的输出
-
-这样更容易从“外部入口”一路理解到“内部状态机”。
-
-## 这一章你应该学会什么
-
-- `strategy` 用来接管自动化流程，而不是补充小能力
-- utility 和 strategy 的职责边界要尽量清晰
-- `requestCall(...)` 是很多上层行为最终汇入的统一入口
-
-到这里，你已经可以从最简单的日志型插件，一路写到完整的自动化策略插件了。后续遇到具体字段或类型签名，再回到 [Reference](./reference/) 查即可。
+完整实现可以参考内置 `standard-qso`；接口签名见 [StrategyRuntime Reference](./reference/runtime)。

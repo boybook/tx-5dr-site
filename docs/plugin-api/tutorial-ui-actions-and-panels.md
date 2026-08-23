@@ -1,4 +1,4 @@
-# 第 4 章：面板、按钮与定时器
+# 按钮、定时器与面板
 
 前面几章的插件都偏“后台逻辑”。这一章开始讲插件怎样和用户交互。
 
@@ -47,12 +47,14 @@
 ## 一个最小 quickAction 例子
 
 ```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
+import { definePlugin } from '@tx5dr/plugin-api';
 
-const plugin: PluginDefinition = {
+export default definePlugin({
+  apiVersion: 2,
   name: 'button-demo',
   version: '1.0.0',
   type: 'utility',
+  permissions: [],
   quickActions: [
     { id: 'ping', label: 'pingAction' },
   ],
@@ -67,9 +69,7 @@ const plugin: PluginDefinition = {
       });
     },
   },
-};
-
-export default plugin;
+});
 ```
 
 这类场景的重点是：**用户显式点击，插件再响应**。这和自动起呼 proposal 完全是两种设计语义。
@@ -77,14 +77,16 @@ export default plugin;
 ## 一个最小 timer 例子
 
 ```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
+import { definePlugin } from '@tx5dr/plugin-api';
 
-const plugin: PluginDefinition = {
+export default definePlugin({
+  apiVersion: 2,
   name: 'timer-demo',
   version: '1.0.0',
   type: 'utility',
+  permissions: [],
   onLoad(ctx) {
-    ctx.timers.setInterval('heartbeat', 30_000);
+    ctx.timers.set('heartbeat', 30_000);
   },
   onUnload(ctx) {
     ctx.timers.clear('heartbeat');
@@ -99,22 +101,22 @@ const plugin: PluginDefinition = {
       });
     },
   },
-};
-
-export default plugin;
+});
 ```
 
-`heartbeat-demo` 就是这一模式的参考实现。
+内置 `scheduled-band-switcher` 和 `scheduled-cq-autocall` 使用同一套命名 timer 模式。
 
 ## 一个最小面板数据推送例子
 
 ```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
+import { definePlugin } from '@tx5dr/plugin-api';
 
-const plugin: PluginDefinition = {
+export default definePlugin({
+  apiVersion: 2,
   name: 'panel-demo',
   version: '1.0.0',
   type: 'utility',
+  permissions: [],
   panels: [
     { id: 'stats', title: 'statsPanel', component: 'key-value', width: 'full' },
   ],
@@ -126,12 +128,12 @@ const plugin: PluginDefinition = {
       });
     },
   },
-};
-
-export default plugin;
+});
 ```
 
 这样前端面板就可以订阅这份数据并渲染。
+
+`ctx.ui.send()` 接受 JSON 兼容数据。Host 会保存独立快照；后续修改原对象不会改变已经发送的面板状态。
 
 这里顺便出现了一个新字段：`width`。
 
@@ -167,24 +169,6 @@ ctx.ui.clearPanelContributions('voice-tabs');
 - iframe 面板的 `pageId` 必须引用 `ui.pages` 里声明过的页面
 - `params` 只接受字符串键值，会作为 `tx5dr.params` 注入 iframe
 
-## 两个内置案例
-
-### heartbeat-demo
-
-它展示的是：
-
-- 生命周期
-- timer
-- button quickAction
-
-### qso-session-inspector
-
-它展示的是：
-
-- 广播 Hook 监听
-- operator-scope 存储
-- 面板数据推送
-
 ## 什么时候不要用 onUserAction(...)
 
 `onUserAction(...)` 只适合插件自己的交互语义。像这些系统核心控制，不建议绕进去：
@@ -206,14 +190,12 @@ ctx.ui.clearPanelContributions('voice-tabs');
 
 可以使用 **iframe 面板** —— 插件提供自己的 HTML/CSS/JS 页面，由宿主在沙箱 iframe 中渲染。iframe 面板支持双向通信：`tx5dr.invoke()` 向服务端请求数据，`tx5dr.onPush()` 接收服务端推送。
 
-详见 [第 6 章：自定义 UI 与 iframe 面板](./tutorial-custom-ui)。
+详见 [自定义 UI](./tutorial-custom-ui)。
 
-## 这一章你应该学会什么
+## 要点
 
 - 按钮是 `quickActions + onUserAction(...)`
 - 定时逻辑是 `timers + onTimer(...)`
 - 面板数据是 `ctx.ui.send(...)`
 - 动态宿主面板是 `ctx.ui.setPanelContributions(...)`
-- 需要自定义交互时，用 iframe 面板（第 6 章）
-
-下一章进入最复杂、也最强大的部分：自己写一个 `strategy` 插件。
+- 需要自定义交互时，用 iframe 页面

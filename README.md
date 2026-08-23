@@ -16,6 +16,7 @@ TX-5DR 官网与文档中心，基于 VitePress 构建，面向 GitHub Pages 部
 - `/wiki/`：项目定位、架构、分发策略、命令与安装包说明
 - `/plugin-api/`：面向插件开发者的文档入口与自动生成的 Reference
 - `/en/`：英文首页
+- `/en/plugin-api/reference/`、`/ja/plugin-api/reference/`：英文/日文 Reference 框架，共用英文 JSDoc
 
 ## 功能
 
@@ -31,7 +32,7 @@ TX-5DR 官网与文档中心，基于 VitePress 构建，面向 GitHub Pages 部
 
 ```bash
 npm install
-npm run docs:sync-plugin-api   # 从 ../tx-5dr 同步插件 API Reference
+npm run docs:sync-plugin-api   # 从 ../tx-5dr 生成中英日三套 Plugin API Reference
 npm run dev
 ```
 

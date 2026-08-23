@@ -58,7 +58,7 @@ TX-5DR
 
 ## 插件位置
 
-插件运行时位于 `packages/server/src/plugin/`。内置插件位于 `packages/server/src/plugin/builtins/`，外部插件通过 `packages/plugin-api` 所暴露的公共接口接入。
+插件运行时位于 `packages/server/src/plugin/`。内置插件位于 `packages/builtin-plugins/src/`，外部插件通过 `packages/plugin-api` 所暴露的公共接口接入。
 
 当前插件分为两类：
 

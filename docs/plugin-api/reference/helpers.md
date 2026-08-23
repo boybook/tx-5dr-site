@@ -1,21 +1,42 @@
 # Helper Interfaces
 
-该页列出 `KVStore`、日志、定时器、操作员控制等辅助接口。
-
-> 自动生成自 `../tx-5dr/packages/plugin-api/src/helpers.ts`
+存储、日志、定时器、网络、操作员、电台、日志本和 UI 接口。
 
 ## 导出
 
 - [KVStore](#kvstore)
 - [PluginLogger](#pluginlogger)
 - [PluginTimers](#plugintimers)
-- [OperatorControl](#operatorcontrol)
-- [RadioControl](#radiocontrol)
-- [RadioCapabilitiesControl](#radiocapabilitiescontrol)
+- [PluginUdpRemoteInfo](#pluginudpremoteinfo)
+- [PluginUdpBindOptions](#pluginudpbindoptions)
+- [PluginUdpSocketOptions](#pluginudpsocketoptions)
+- [PluginUdpSocket](#pluginudpsocket)
+- [PluginUdpControl](#pluginudpcontrol)
+- [PluginNetworkControl](#pluginnetworkcontrol)
+- [PluginEventBusMessage](#plugineventbusmessage)
+- [PluginEventBus](#plugineventbus)
+- [OtherOperatorSnapshot](#otheroperatorsnapshot)
+- [OperatorSnapshot](#operatorsnapshot)
+- [PluginOperatorCommand](#pluginoperatorcommand)
+- [PluginOperatorCommandResult](#pluginoperatorcommandresult)
+- [OperatorCommandPort](#operatorcommandport)
+- [RadioOperatingMode](#radiooperatingmode)
+- [RadioView](#radioview)
+- [RadioCapabilitiesView](#radiocapabilitiesview)
+- [PluginRadioCommand](#pluginradiocommand)
+- [RadioCommandPort](#radiocommandport)
+- [PluginRadioTunerCommand](#pluginradiotunercommand)
+- [RadioTunerCommandPort](#radiotunercommandport)
 - [RadioPowerSetOptions](#radiopowersetoptions)
-- [RadioPowerControl](#radiopowercontrol)
+- [RadioPowerView](#radiopowerview)
+- [PluginRadioPowerCommand](#pluginradiopowercommand)
+- [RadioPowerCommandPort](#radiopowercommandport)
 - [QSOQueryFilter](#qsoqueryfilter)
+- [CallsignLogbookReadAccess](#callsignlogbookreadaccess)
+- [CallsignLogbookCommandPort](#callsignlogbookcommandport)
 - [CallsignLogbookAccess](#callsignlogbookaccess)
+- [LogbookReadAccess](#logbookreadaccess)
+- [LogbookCommandPort](#logbookcommandport)
 - [LogbookAccess](#logbookaccess)
 - [IdleTransmitFrequencyOptions](#idletransmitfrequencyoptions)
 - [AutoTargetEligibilityReason](#autotargeteligibilityreason)
@@ -34,8 +55,8 @@
 
 ## KVStore
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Simple persistent key-value store exposed to plugins.
 
@@ -44,46 +65,21 @@ plain JSON-compatible data for maximum portability.
 
 ```ts
 export interface KVStore {
-  /**
-   * Reads a stored value.
-   *
-   * When the key is missing, the provided `defaultValue` is returned instead.
-   */
-  get<T = unknown>(key: string, defaultValue?: T): T;
-
-  /**
-   * Persists a value under the given key.
-   */
-  set(key: string, value: unknown): void;
-
-  /**
-   * Removes a stored key and its value.
-   */
-  delete(key: string): void;
-
-  /**
-   * Returns a shallow snapshot of all stored entries in this scope.
-   */
-  getAll(): Record<string, unknown>;
-
-  /**
-   * Flushes pending writes to persistent storage.
-   *
-   * In normal operation the host flushes automatically. Call this explicitly
-   * only when you need to guarantee that recently written data survives a
-   * crash or restart (e.g. during a migration sequence).
-   */
-  flush(): Promise<void>;
+    get<T = unknown>(key: string, defaultValue?: T): T;
+    set(key: string, value: unknown): void;
+    delete(key: string): void;
+    getAll(): Record<string, unknown>;
+    flush(): Promise<void>;
 }
 ```
 
-## 成员
-
-### get
+### KVStore.get
 
 Reads a stored value.
 
-When the key is missing, the provided `defaultValue` is returned instead.
+Stored values are returned by value, so mutating the result does not update
+persistence until `set` is called. When the key is missing, the
+caller-owned `defaultValue` is returned unchanged.
 
 ```ts
 
@@ -91,9 +87,13 @@ get<T = unknown>(key: string, defaultValue?: T): T;
 
 ```
 
-### set
+### KVStore.set
 
-Persists a value under the given key.
+Persists a JSON-compatible snapshot under the given key.
+
+`undefined` follows JSON object semantics and removes the key. Cycles,
+BigInt values, functions and Host capabilities are rejected with
+`PLUGIN_DATA_NOT_SERIALIZABLE`.
 
 ```ts
 
@@ -101,7 +101,7 @@ set(key: string, value: unknown): void;
 
 ```
 
-### delete
+### KVStore.delete
 
 Removes a stored key and its value.
 
@@ -111,9 +111,9 @@ delete(key: string): void;
 
 ```
 
-### getAll
+### KVStore.getAll
 
-Returns a shallow snapshot of all stored entries in this scope.
+Returns an independent snapshot of all stored entries in this scope.
 
 ```ts
 
@@ -121,7 +121,7 @@ getAll(): Record<string, unknown>;
 
 ```
 
-### flush
+### KVStore.flush
 
 Flushes pending writes to persistent storage.
 
@@ -136,8 +136,8 @@ flush(): Promise<void>;
 ```
 ## PluginLogger
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Structured logger dedicated to a plugin instance.
 
@@ -146,20 +146,14 @@ both backend logs and operator-facing diagnostics.
 
 ```ts
 export interface PluginLogger {
-  /** Writes a verbose diagnostic message. */
-  debug(message: string, data?: Record<string, unknown>): void;
-  /** Writes a lifecycle or informational message. */
-  info(message: string, data?: Record<string, unknown>): void;
-  /** Writes a warning that does not stop plugin execution. */
-  warn(message: string, data?: Record<string, unknown>): void;
-  /** Writes an error with optional structured details or an exception object. */
-  error(message: string, error?: unknown): void;
+    debug(message: string, data?: Record<string, unknown>): void;
+    info(message: string, data?: Record<string, unknown>): void;
+    warn(message: string, data?: Record<string, unknown>): void;
+    error(message: string, error?: unknown): void;
 }
 ```
 
-## 成员
-
-### debug
+### PluginLogger.debug
 
 Writes a verbose diagnostic message.
 
@@ -169,7 +163,7 @@ debug(message: string, data?: Record<string, unknown>): void;
 
 ```
 
-### info
+### PluginLogger.info
 
 Writes a lifecycle or informational message.
 
@@ -179,7 +173,7 @@ info(message: string, data?: Record<string, unknown>): void;
 
 ```
 
-### warn
+### PluginLogger.warn
 
 Writes a warning that does not stop plugin execution.
 
@@ -189,7 +183,7 @@ warn(message: string, data?: Record<string, unknown>): void;
 
 ```
 
-### error
+### PluginLogger.error
 
 Writes an error with optional structured details or an exception object.
 
@@ -200,36 +194,24 @@ error(message: string, error?: unknown): void;
 ```
 ## PluginTimers
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Host-managed named timers for plugin code.
 
 ```ts
 export interface PluginTimers {
-  /**
-   * Starts or replaces a named interval timer.
-   *
-   * When the timer fires, the host invokes {@link PluginHooks.onTimer} with the
-   * same id.
-   */
-  set(id: string, intervalMs: number): void;
-
-  /** Clears a named timer if it exists. */
-  clear(id: string): void;
-
-  /** Clears all timers owned by the current plugin instance. */
-  clearAll(): void;
+    set(id: string, intervalMs: number): void;
+    clear(id: string): void;
+    clearAll(): void;
 }
 ```
 
-## 成员
-
-### set
+### PluginTimers.set
 
 Starts or replaces a named interval timer.
 
-When the timer fires, the host invokes {@link PluginHooks.onTimer} with the
+When the timer fires, the host invokes [`PluginHooks.onTimer`](./hooks#pluginhooks-ontimer) with the
 same id.
 
 ```ts
@@ -238,7 +220,7 @@ set(id: string, intervalMs: number): void;
 
 ```
 
-### clear
+### PluginTimers.clear
 
 Clears a named timer if it exists.
 
@@ -248,7 +230,7 @@ clear(id: string): void;
 
 ```
 
-### clearAll
+### PluginTimers.clearAll
 
 Clears all timers owned by the current plugin instance.
 
@@ -257,86 +239,429 @@ Clears all timers owned by the current plugin instance.
 clearAll(): void;
 
 ```
-## OperatorControl
+## PluginUdpRemoteInfo
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Control surface for the active operator instance.
-
-This interface lets plugins inspect operator state and request host-managed
-actions such as starting automation, calling a target or notifying the UI.
+Remote UDP endpoint metadata for datagrams received by plugin-owned sockets.
 
 ```ts
-export interface OperatorControl {
-  /** Unique operator identifier used by the host. */
-  readonly id: string;
-  /** Whether this operator is currently transmitting or otherwise armed. */
-  readonly isTransmitting: boolean;
-  /** Configured callsign of the operator/station. */
-  readonly callsign: string;
-  /** Configured grid locator of the operator/station. */
-  readonly grid: string;
-  /** Current audio offset frequency in Hz within the passband. */
-  readonly frequency: number;
-  /** Active digital mode descriptor, for example FT8 or FT4. */
-  readonly mode: ModeDescriptor;
-  /** Current transmit cycle selection where `0` is even and `1` is odd. */
-  readonly transmitCycles: number[];
-  /** Current automation runtime snapshot visible to the operator UI. */
-  readonly automation: StrategyRuntimeSnapshot | null;
-
-  /** Enables transmission/automation for the current operator. */
-  startTransmitting(): void;
-
-  /** Disables transmission/automation for the current operator. */
-  stopTransmitting(): void;
-
-  /**
-   * Requests that the operator call the specified target station.
-   *
-   * Passing `lastMessage` helps the host preserve the triggering context.
-   */
-  call(callsign: string, lastMessage?: { message: FrameMessage; slotInfo: SlotInfo }): void;
-
-  /**
-   * Updates the operator's transmit cycle preference.
-   *
-   * Pass a single value or an array to support alternating or multi-cycle modes.
-   */
-  setTransmitCycles(cycles: number | number[]): void;
-
-  /**
-   * Checks whether this operator has previously worked the given callsign.
-   */
-  hasWorkedCallsign(callsign: string): Promise<boolean>;
-
-  /**
-   * Checks whether another operator with the same station identity is already
-   * working the target callsign.
-   */
-  isTargetBeingWorkedByOthers(targetCallsign: string): boolean;
-
-  /**
-   * Records a completed QSO through the host logbook pipeline.
-   */
-  recordQSO(record: QSORecord): void;
-
-  /**
-   * Pushes updated slot text content to the frontend operator view.
-   */
-  notifySlotsUpdated(slots: OperatorSlots): void;
-
-  /**
-   * Pushes a strategy state change notification to the frontend operator view.
-   */
-  notifyStateChanged(state: string): void;
+export interface PluginUdpRemoteInfo {
+    address: string;
+    port: number;
+    family: string;
+    size: number;
 }
 ```
 
-## 成员
+### PluginUdpRemoteInfo.address
 
-### id
+Source IP address reported by the UDP socket.
+
+```ts
+
+address: string;
+
+```
+
+### PluginUdpRemoteInfo.port
+
+Source UDP port.
+
+```ts
+
+port: number;
+
+```
+
+### PluginUdpRemoteInfo.family
+
+Address family reported by Node.js, typically `IPv4` or `IPv6`.
+
+```ts
+
+family: string;
+
+```
+
+### PluginUdpRemoteInfo.size
+
+Datagram size in bytes.
+
+```ts
+
+size: number;
+
+```
+## PluginUdpBindOptions
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Local endpoint used when binding a plugin-owned UDP socket.
+
+```ts
+export interface PluginUdpBindOptions {
+    host?: string;
+    port?: number;
+}
+```
+
+### PluginUdpBindOptions.host
+
+Local interface/address. Omit to use the Host default.
+
+```ts
+
+host?: string;
+
+```
+
+### PluginUdpBindOptions.port
+
+Local port. Omit or use `0` to let the operating system choose one.
+
+```ts
+
+port?: number;
+
+```
+## PluginUdpSocketOptions
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Options applied when the Host creates a plugin-owned UDP socket.
+
+```ts
+export interface PluginUdpSocketOptions {
+    type?: 'udp4' | 'udp6';
+    reuseAddr?: boolean;
+    broadcast?: boolean;
+    multicastTtl?: number;
+}
+```
+
+### PluginUdpSocketOptions.type
+
+IP family. Defaults to `udp4`.
+
+```ts
+
+type?: 'udp4' | 'udp6';
+
+```
+
+### PluginUdpSocketOptions.reuseAddr
+
+Whether multiple sockets may reuse the local address.
+
+```ts
+
+reuseAddr?: boolean;
+
+```
+
+### PluginUdpSocketOptions.broadcast
+
+Whether the socket may send IPv4 broadcast datagrams.
+
+```ts
+
+broadcast?: boolean;
+
+```
+
+### PluginUdpSocketOptions.multicastTtl
+
+Multicast time-to-live applied to outbound multicast packets.
+
+```ts
+
+multicastTtl?: number;
+
+```
+## PluginUdpSocket
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Host-owned UDP socket capability.
+
+The handle may be stored by the plugin, but its methods are invocation
+guarded. Close it during unload when possible; Host cleanup also closes all
+sockets owned by the plugin instance.
+
+```ts
+export interface PluginUdpSocket {
+    bind(options?: PluginUdpBindOptions): Promise<void>;
+    send(data: Uint8Array | string, port: number, host: string): Promise<void>;
+    onMessage(handler: (data: Uint8Array, remote: PluginUdpRemoteInfo) => void | Promise<void>): void;
+    onError(handler: (error: Error) => void): void;
+    close(): Promise<void>;
+}
+```
+
+### PluginUdpSocket.bind
+
+Binds the socket and resolves when it is ready to receive datagrams.
+
+```ts
+
+bind(options?: PluginUdpBindOptions): Promise<void>;
+
+```
+
+### PluginUdpSocket.send
+
+Sends one datagram to the exact remote host and port.
+
+```ts
+
+send(data: Uint8Array | string, port: number, host: string): Promise<void>;
+
+```
+
+### PluginUdpSocket.onMessage
+
+Registers the callback used for received datagrams.
+
+```ts
+
+onMessage(handler: (data: Uint8Array, remote: PluginUdpRemoteInfo) => void | Promise<void>): void;
+
+```
+
+### PluginUdpSocket.onError
+
+Registers the callback used for socket-level errors.
+
+```ts
+
+onError(handler: (error: Error) => void): void;
+
+```
+
+### PluginUdpSocket.close
+
+Closes the socket. Calling it again is safe.
+
+```ts
+
+close(): Promise<void>;
+
+```
+## PluginUdpControl
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Factory and bulk-cleanup surface for UDP sockets owned by one plugin instance.
+
+```ts
+export interface PluginUdpControl {
+    createSocket(options?: PluginUdpSocketOptions): PluginUdpSocket;
+    closeAll(): Promise<void>;
+}
+```
+
+### PluginUdpControl.createSocket
+
+Creates an unbound socket with the requested options.
+
+```ts
+
+createSocket(options?: PluginUdpSocketOptions): PluginUdpSocket;
+
+```
+
+### PluginUdpControl.closeAll
+
+Closes every UDP socket created through this control.
+
+```ts
+
+closeAll(): Promise<void>;
+
+```
+## PluginNetworkControl
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Network capability exposed when the plugin declares `network`.
+
+```ts
+export interface PluginNetworkControl {
+    readonly udp: PluginUdpControl;
+}
+```
+
+### PluginNetworkControl.udp
+
+UDP socket factory. HTTP requests use the sibling `ctx.fetch` capability.
+
+```ts
+
+readonly udp: PluginUdpControl;
+
+```
+## PluginEventBusMessage
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+A message delivered through the plugin-to-plugin event bus.
+
+Every message carries metadata about its publisher so subscribers can
+apply routing or filtering logic based on the source plugin.
+
+```ts
+export interface PluginEventBusMessage {
+    topic: string;
+    payload: unknown;
+    timestamp: number;
+    publisher: {
+        pluginName: string;
+        instanceScope: 'operator' | 'global';
+        operatorId?: string;
+    };
+}
+```
+
+### PluginEventBusMessage.topic
+
+The topic this message was published to.
+
+```ts
+
+topic: string;
+
+```
+
+### PluginEventBusMessage.payload
+
+Structured-clone-compatible payload. The host does not interpret its
+business schema, but delivers an independent value to each subscriber.
+
+```ts
+
+payload: unknown;
+
+```
+
+### PluginEventBusMessage.timestamp
+
+Epoch milliseconds when the host dispatched the message.
+
+```ts
+
+timestamp: number;
+
+```
+
+### PluginEventBusMessage.publisher
+
+Identity of the plugin instance that published this message.
+
+```ts
+
+publisher: {
+    pluginName: string;
+    instanceScope: 'operator' | 'global';
+    operatorId?: string;
+};
+
+```
+## PluginEventBus
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Permission-gated pub/sub bus for in-process plugin-to-plugin communication.
+
+Topics are plain strings shared across all plugin instances within the same
+host process. Handlers are started synchronously in subscription order.
+Async handlers run independently; their errors are captured and logged by
+the host rather than propagated to the publisher.
+
+**Lifecycle**: the host automatically removes all subscriptions owned by a
+plugin instance when it unloads. Individual subscriptions can be cancelled
+earlier by calling the function returned from `subscribe`.
+
+**Topic naming**: use dot-separated, plugin-prefixed names to avoid
+collisions — for example `my-plugin.status.changed` or
+`callsign-filter.match.found`.
+
+```ts
+export interface PluginEventBus {
+    publish(topic: string, payload?: unknown): void;
+    subscribe(topic: string, handler: (message: PluginEventBusMessage) => void | Promise<void>): () => void;
+}
+```
+
+### PluginEventBus.publish
+
+Publishes a message to all current subscribers of the given topic.
+
+This is a fire-and-forget operation. The host guarantees that subscriber
+exceptions never propagate back to the caller. The call itself throws
+synchronously when the payload is not structured-clone compatible or
+contains a Host capability.
+
+**Parameters**
+
+- `topic`: Exact topic string to publish to.
+- `payload`: Optional structured-clone-compatible data. Keep payloads reasonably small.
+
+```ts
+
+publish(topic: string, payload?: unknown): void;
+
+```
+
+### PluginEventBus.subscribe
+
+Subscribes to messages on the given topic.
+
+The same handler function instance will only be added once per topic.
+Different closures with identical logic are treated as distinct subscribers.
+
+**Parameters**
+
+- `topic`: Exact topic string to listen on.
+- `handler`: Callback invoked for each matching message. May return a
+  `Promise`; the host catches rejections and logs them.
+
+**Returns:** An unsubscribe function. Calling it more than once is a no-op.
+
+```ts
+
+subscribe(topic: string, handler: (message: PluginEventBusMessage) => void | Promise<void>): () => void;
+
+```
+## OtherOperatorSnapshot
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read-only summary of another operator in the same Host.
+
+```ts
+export interface OtherOperatorSnapshot {
+    readonly id: string;
+    readonly callsign: string;
+    readonly grid: string;
+    readonly audioFrequencyHz: number;
+    readonly mode: ModeDescriptor;
+    readonly isTransmitting: boolean;
+    readonly transmitCycles: number[];
+    readonly automation?: StrategyRuntimeSnapshot | null;
+}
+```
+
+### OtherOperatorSnapshot.id
 
 Unique operator identifier used by the host.
 
@@ -346,17 +671,7 @@ readonly id: string;
 
 ```
 
-### isTransmitting
-
-Whether this operator is currently transmitting or otherwise armed.
-
-```ts
-
-readonly isTransmitting: boolean;
-
-```
-
-### callsign
+### OtherOperatorSnapshot.callsign
 
 Configured callsign of the operator/station.
 
@@ -366,7 +681,7 @@ readonly callsign: string;
 
 ```
 
-### grid
+### OtherOperatorSnapshot.grid
 
 Configured grid locator of the operator/station.
 
@@ -376,17 +691,17 @@ readonly grid: string;
 
 ```
 
-### frequency
+### OtherOperatorSnapshot.audioFrequencyHz
 
-Current audio offset frequency in Hz within the passband.
+Current transmit audio offset in Hz within the passband.
 
 ```ts
 
-readonly frequency: number;
+readonly audioFrequencyHz: number;
 
 ```
 
-### mode
+### OtherOperatorSnapshot.mode
 
 Active digital mode descriptor, for example FT8 or FT4.
 
@@ -396,7 +711,17 @@ readonly mode: ModeDescriptor;
 
 ```
 
-### transmitCycles
+### OtherOperatorSnapshot.isTransmitting
+
+Whether this operator is currently transmitting or otherwise armed.
+
+```ts
+
+readonly isTransmitting: boolean;
+
+```
+
+### OtherOperatorSnapshot.transmitCycles
 
 Current transmit cycle selection where `0` is even and `1` is odd.
 
@@ -406,7 +731,113 @@ readonly transmitCycles: number[];
 
 ```
 
-### automation
+### OtherOperatorSnapshot.automation
+
+Current automation runtime snapshot when available.
+
+```ts
+
+readonly automation?: StrategyRuntimeSnapshot | null;
+
+```
+## OperatorSnapshot
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read-only state and query surface for the current operator-scoped plugin
+instance. Mutations are submitted through `ctx.operatorCommands` when the
+plugin declares `operator:transmit-control`.
+
+```ts
+export interface OperatorSnapshot {
+    readonly id: string;
+    readonly isTransmitting: boolean;
+    readonly callsign: string;
+    readonly grid: string;
+    readonly frequency: number;
+    readonly mode: ModeDescriptor;
+    readonly transmitCycles: number[];
+    readonly automation: StrategyRuntimeSnapshot | null;
+    getOtherOperators(): OtherOperatorSnapshot[];
+    hasWorkedCallsign(callsign: string, options?: {
+        anyBand?: boolean;
+    }): Promise<boolean>;
+    isTargetBeingWorkedByOthers(targetCallsign: string): boolean;
+}
+```
+
+### OperatorSnapshot.id
+
+Unique operator identifier used by the host.
+
+```ts
+
+readonly id: string;
+
+```
+
+### OperatorSnapshot.isTransmitting
+
+Whether this operator is currently transmitting or otherwise armed.
+
+```ts
+
+readonly isTransmitting: boolean;
+
+```
+
+### OperatorSnapshot.callsign
+
+Configured callsign of the operator/station.
+
+```ts
+
+readonly callsign: string;
+
+```
+
+### OperatorSnapshot.grid
+
+Configured grid locator of the operator/station.
+
+```ts
+
+readonly grid: string;
+
+```
+
+### OperatorSnapshot.frequency
+
+Current audio offset frequency in Hz within the passband.
+
+```ts
+
+readonly frequency: number;
+
+```
+
+### OperatorSnapshot.mode
+
+Active digital mode descriptor, for example FT8 or FT4.
+
+```ts
+
+readonly mode: ModeDescriptor;
+
+```
+
+### OperatorSnapshot.transmitCycles
+
+Current transmit cycle selection where `0` is even and `1` is odd.
+
+```ts
+
+readonly transmitCycles: number[];
+
+```
+
+### OperatorSnapshot.automation
 
 Current automation runtime snapshot visible to the operator UI.
 
@@ -416,61 +847,29 @@ readonly automation: StrategyRuntimeSnapshot | null;
 
 ```
 
-### startTransmitting
+### OperatorSnapshot.getOtherOperators
 
-Enables transmission/automation for the current operator.
-
-```ts
-
-startTransmitting(): void;
-
-```
-
-### stopTransmitting
-
-Disables transmission/automation for the current operator.
+Returns read-only snapshots for operators other than the current instance.
 
 ```ts
 
-stopTransmitting(): void;
+getOtherOperators(): OtherOperatorSnapshot[];
 
 ```
 
-### call
-
-Requests that the operator call the specified target station.
-
-Passing `lastMessage` helps the host preserve the triggering context.
-
-```ts
-
-call(callsign: string, lastMessage?: { message: FrameMessage; slotInfo: SlotInfo }): void;
-
-```
-
-### setTransmitCycles
-
-Updates the operator's transmit cycle preference.
-
-Pass a single value or an array to support alternating or multi-cycle modes.
-
-```ts
-
-setTransmitCycles(cycles: number | number[]): void;
-
-```
-
-### hasWorkedCallsign
+### OperatorSnapshot.hasWorkedCallsign
 
 Checks whether this operator has previously worked the given callsign.
 
 ```ts
 
-hasWorkedCallsign(callsign: string): Promise<boolean>;
+hasWorkedCallsign(callsign: string, options?: {
+    anyBand?: boolean;
+}): Promise<boolean>;
 
 ```
 
-### isTargetBeingWorkedByOthers
+### OperatorSnapshot.isTargetBeingWorkedByOthers
 
 Checks whether another operator with the same station identity is already
 working the target callsign.
@@ -480,71 +879,206 @@ working the target callsign.
 isTargetBeingWorkedByOthers(targetCallsign: string): boolean;
 
 ```
+## PluginOperatorCommand
 
-### recordQSO
+- 类型: `type`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Records a completed QSO through the host logbook pipeline.
+Declarative operator mutations accepted by the host transmission framework.
+
+The command set deliberately contains no PTT, audio, mixer, encoder, raw
+transmit or emergency-stop primitive. Plugins can request product actions;
+only the host coordinators may translate them into a physical RF lifecycle.
 
 ```ts
-
-recordQSO(record: QSORecord): void;
-
+export type PluginOperatorCommand = {
+    type: 'start-automation';
+} | {
+    type: 'stop-automation';
+} | {
+    type: 'request-call';
+    callsign: string;
+    lastMessage?: {
+        message: FrameMessage;
+        slotInfo: SlotInfo;
+    };
+} | {
+    type: 'reply-to-decode';
+    callsign: string;
+    lastMessage: {
+        message: FrameMessage;
+        slotInfo: SlotInfo;
+    };
+    modifiers?: number;
+} | {
+    type: 'set-transmit-cycles';
+    cycles: number | number[];
+} | {
+    type: 'remove-contribution';
+} | {
+    type: 'clear-decodes';
+    window?: number;
+} | {
+    type: 'set-free-text';
+    text: string;
+} | {
+    type: 'send-free-text';
+    text?: string;
+} | {
+    type: 'set-temporary-location';
+    location: string;
+} | {
+    type: 'highlight-callsign';
+    callsign: string;
+    background?: string | null;
+    foreground?: string | null;
+    lastOnly?: boolean;
+};
 ```
+## PluginOperatorCommandResult
 
-### notifySlotsUpdated
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Pushes updated slot text content to the frontend operator view.
-
-```ts
-
-notifySlotsUpdated(slots: OperatorSlots): void;
-
-```
-
-### notifyStateChanged
-
-Pushes a strategy state change notification to the frontend operator view.
+Settlement returned after the Host accepts an operator command.
 
 ```ts
-
-notifyStateChanged(state: string): void;
-
-```
-## RadioControl
-
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
-
-Read/write access to radio state that is safe for plugins.
-
-```ts
-export interface RadioControl {
-  /** Current tuned radio frequency in Hz. */
-  readonly frequency: number;
-  /** Human-readable current band label, for example `20m`. */
-  readonly band: string;
-  /** Whether the radio transport is currently connected. */
-  readonly isConnected: boolean;
-
-  /** Negotiated radio capability controls. Requires radio plugin permissions. */
-  readonly capabilities: RadioCapabilitiesControl;
-
-  /** Physical radio power controls. Requires radio plugin permissions. */
-  readonly power: RadioPowerControl;
-
-  /**
-   * Requests a frequency change.
-   *
-   * The host remains responsible for serializing hardware access and enforcing
-   * any safety or capability constraints.
-   */
-  setFrequency(freq: number): Promise<void>;
+export interface PluginOperatorCommandResult {
+    epoch: number;
+    outcome: 'completed' | 'superseded';
 }
 ```
 
-## 成员
+### PluginOperatorCommandResult.epoch
 
-### frequency
+Host command epoch allocated before any asynchronous work begins.
+
+```ts
+
+epoch: number;
+
+```
+
+### PluginOperatorCommandResult.outcome
+
+`superseded` means a newer host command revoked this request.
+
+```ts
+
+outcome: 'completed' | 'superseded';
+
+```
+## OperatorCommandPort
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Capability-scoped command port for plugins with
+`operator:transmit-control` and API v2.
+
+The property is omitted from contexts without that capability. Every submit
+is invocation-guarded and enters the host's per-operator intent lane.
+
+```ts
+export interface OperatorCommandPort {
+    submit(command: PluginOperatorCommand): Promise<PluginOperatorCommandResult>;
+}
+```
+
+### OperatorCommandPort.submit
+
+Submits one high-level operator command through the Host intent lane.
+Rejects when the invocation expired, the plugin safety gate is disabled,
+or the current physical lifecycle cannot accept the command.
+
+```ts
+
+submit(command: PluginOperatorCommand): Promise<PluginOperatorCommandResult>;
+
+```
+## RadioOperatingMode
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read-only operating-mode projection that is safe for plugins.
+
+```ts
+export interface RadioOperatingMode {
+    readonly engineMode: EngineMode;
+    readonly mode: string;
+    readonly submode?: string;
+    readonly radioMode?: string;
+    readonly descriptor: ModeDescriptor;
+}
+```
+
+### RadioOperatingMode.engineMode
+
+TX-5DR engine mode that owns the current radio operating mode.
+
+```ts
+
+readonly engineMode: EngineMode;
+
+```
+
+### RadioOperatingMode.mode
+
+ADIF-compatible main mode, for example `SSB`, `FM`, `CW`, `FT8` or `MFSK`.
+
+```ts
+
+readonly mode: string;
+
+```
+
+### RadioOperatingMode.submode
+
+ADIF-compatible submode when applicable, for example `USB`, `LSB` or `FT4`.
+
+```ts
+
+readonly submode?: string;
+
+```
+
+### RadioOperatingMode.radioMode
+
+Raw radio modulation mode reported or remembered by the host, for example `USB`.
+
+```ts
+
+readonly radioMode?: string;
+
+```
+
+### RadioOperatingMode.descriptor
+
+TX-5DR runtime mode descriptor used by automation and timing subsystems.
+
+```ts
+
+readonly descriptor: ModeDescriptor;
+
+```
+## RadioView
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read-only frequency, band, mode and connection state for the active radio.
+
+```ts
+export interface RadioView {
+    readonly frequency: number;
+    readonly band: string;
+    readonly mode: RadioOperatingMode;
+    readonly isConnected: boolean;
+}
+```
+
+### RadioView.frequency
 
 Current tuned radio frequency in Hz.
 
@@ -554,7 +1088,7 @@ readonly frequency: number;
 
 ```
 
-### band
+### RadioView.band
 
 Human-readable current band label, for example `20m`.
 
@@ -564,7 +1098,17 @@ readonly band: string;
 
 ```
 
-### isConnected
+### RadioView.mode
+
+Current operating mode projected to ADIF mode/submode semantics.
+
+```ts
+
+readonly mode: RadioOperatingMode;
+
+```
+
+### RadioView.isConnected
 
 Whether the radio transport is currently connected.
 
@@ -573,67 +1117,24 @@ Whether the radio transport is currently connected.
 readonly isConnected: boolean;
 
 ```
+## RadioCapabilitiesView
 
-### capabilities
-
-Negotiated radio capability controls. Requires radio plugin permissions.
-
-```ts
-
-readonly capabilities: RadioCapabilitiesControl;
-
-```
-
-### power
-
-Physical radio power controls. Requires radio plugin permissions.
-
-```ts
-
-readonly power: RadioPowerControl;
-
-```
-
-### setFrequency
-
-Requests a frequency change.
-
-The host remains responsible for serializing hardware access and enforcing
-any safety or capability constraints.
-
-```ts
-
-setFrequency(freq: number): Promise<void>;
-
-```
-## RadioCapabilitiesControl
-
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Access to the host-managed radio capability negotiation system.
 
 ```ts
-export interface RadioCapabilitiesControl {
-  /** Returns the current capability descriptor/state snapshot. Requires `radio:read`. */
-  getSnapshot(): CapabilityList;
-
-  /** Returns a single capability state from the current snapshot, or null. Requires `radio:read`. */
-  getState(id: string): CapabilityState | null;
-
-  /** Refreshes readable capability values and returns the updated snapshot. Requires `radio:read`. */
-  refresh(): Promise<CapabilityList>;
-
-  /** Writes a capability value or triggers an action capability. Requires `radio:control`. */
-  write(payload: WriteCapabilityPayload): Promise<void>;
+export interface RadioCapabilitiesView {
+    getSnapshot(): CapabilityList;
+    getState(id: string): CapabilityState | null;
+    refresh(): Promise<CapabilityList>;
 }
 ```
 
-## 成员
+### RadioCapabilitiesView.getSnapshot
 
-### getSnapshot
-
-Returns the current capability descriptor/state snapshot. Requires `radio:read`.
+Returns the current capability descriptor/state snapshot.
 
 ```ts
 
@@ -641,9 +1142,9 @@ getSnapshot(): CapabilityList;
 
 ```
 
-### getState
+### RadioCapabilitiesView.getState
 
-Returns a single capability state from the current snapshot, or null. Requires `radio:read`.
+Returns a single capability state from the current snapshot, or null.
 
 ```ts
 
@@ -651,44 +1152,110 @@ getState(id: string): CapabilityState | null;
 
 ```
 
-### refresh
+### RadioCapabilitiesView.refresh
 
-Refreshes readable capability values and returns the updated snapshot. Requires `radio:read`.
+Refreshes readable capability values and returns the updated snapshot.
 
 ```ts
 
 refresh(): Promise<CapabilityList>;
 
 ```
+## PluginRadioCommand
 
-### write
+- 类型: `type`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Writes a capability value or triggers an action capability. Requires `radio:control`.
+Declarative radio mutations accepted by the host radio coordinator.
+
+```ts
+export type PluginRadioCommand = {
+    type: 'set-frequency';
+    frequency: number;
+} | {
+    type: 'switch-band';
+    frequency: number;
+    autoTune?: boolean;
+};
+```
+## RadioCommandPort
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Capability-scoped radio command port.
+
+This port exists only for plugins with `radio:control`. It deliberately does
+not expose a radio connection, PTT primitive, mode switch, audio output or
+any other physical device object.
+
+```ts
+export interface RadioCommandPort {
+    submit(command: PluginRadioCommand): Promise<void>;
+}
+```
+
+### RadioCommandPort.submit
+
+Submits a frequency/band command after Host physical-idle validation.
 
 ```ts
 
-write(payload: WriteCapabilityPayload): Promise<void>;
+submit(command: PluginRadioCommand): Promise<void>;
+
+```
+## PluginRadioTunerCommand
+
+- 类型: `type`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Explicit tuner operations; no arbitrary capability identifier is accepted.
+
+```ts
+export type PluginRadioTunerCommand = {
+    type: 'set-enabled';
+    enabled: boolean;
+} | {
+    type: 'start-manual-tune';
+};
+```
+## RadioTunerCommandPort
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Capability-scoped tuner command port for `radio:tuner-control` plugins.
+
+```ts
+export interface RadioTunerCommandPort {
+    submit(command: PluginRadioTunerCommand): Promise<void>;
+}
+```
+
+### RadioTunerCommandPort.submit
+
+Submits one explicit tuner operation after Host safety validation.
+
+```ts
+
+submit(command: PluginRadioTunerCommand): Promise<void>;
 
 ```
 ## RadioPowerSetOptions
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Optional target profile and startup behavior for a radio power command.
 
 ```ts
 export interface RadioPowerSetOptions {
-  /** Profile to target. Defaults to the active profile. */
-  profileId?: string;
-  /** Start TX-5DR after physical power-on. Defaults to true. */
-  autoEngine?: boolean;
+    profileId?: string;
+    autoEngine?: boolean;
 }
 ```
 
-## 成员
-
-### profileId
+### RadioPowerSetOptions.profileId
 
 Profile to target. Defaults to the active profile.
 
@@ -698,7 +1265,7 @@ profileId?: string;
 
 ```
 
-### autoEngine
+### RadioPowerSetOptions.autoEngine
 
 Start TX-5DR after physical power-on. Defaults to true.
 
@@ -707,31 +1274,23 @@ Start TX-5DR after physical power-on. Defaults to true.
 autoEngine?: boolean;
 
 ```
-## RadioPowerControl
+## RadioPowerView
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Access to physical radio power management.
 
 ```ts
-export interface RadioPowerControl {
-  /** Returns power support information for the active or specified profile. Requires `radio:read`. */
-  getSupport(profileId?: string): Promise<RadioPowerSupportInfo>;
-
-  /** Returns the last known power transition state for the active or specified profile. Requires `radio:read`. */
-  getState(profileId?: string): RadioPowerStateEvent | null;
-
-  /** Requests a physical power transition. Requires `radio:power`. */
-  set(state: RadioPowerTarget, options?: RadioPowerSetOptions): Promise<RadioPowerResponse>;
+export interface RadioPowerView {
+    getSupport(profileId?: string): Promise<RadioPowerSupportInfo>;
+    getState(profileId?: string): RadioPowerStateEvent | null;
 }
 ```
 
-## 成员
+### RadioPowerView.getSupport
 
-### getSupport
-
-Returns power support information for the active or specified profile. Requires `radio:read`.
+Returns power support information for the active or specified profile.
 
 ```ts
 
@@ -739,29 +1298,55 @@ getSupport(profileId?: string): Promise<RadioPowerSupportInfo>;
 
 ```
 
-### getState
+### RadioPowerView.getState
 
-Returns the last known power transition state for the active or specified profile. Requires `radio:read`.
+Returns the last known power transition state for the active or specified profile.
 
 ```ts
 
 getState(profileId?: string): RadioPowerStateEvent | null;
 
 ```
+## PluginRadioPowerCommand
 
-### set
+- 类型: `type`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Requests a physical power transition. Requires `radio:power`.
+Declarative power-state transition accepted by `ctx.radioPowerCommands`.
+
+```ts
+export type PluginRadioPowerCommand = {
+    type: 'set-power';
+    state: RadioPowerTarget;
+    options?: RadioPowerSetOptions;
+};
+```
+## RadioPowerCommandPort
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Capability-scoped physical power command port for `radio:power` plugins.
+
+```ts
+export interface RadioPowerCommandPort {
+    submit(command: PluginRadioPowerCommand): Promise<RadioPowerResponse>;
+}
+```
+
+### RadioPowerCommandPort.submit
+
+Requests a power transition and resolves with the Host's final state.
 
 ```ts
 
-set(state: RadioPowerTarget, options?: RadioPowerSetOptions): Promise<RadioPowerResponse>;
+submit(command: PluginRadioPowerCommand): Promise<RadioPowerResponse>;
 
 ```
 ## QSOQueryFilter
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Filter criteria for querying QSO records from the logbook.
 
@@ -771,33 +1356,25 @@ native query format.
 
 ```ts
 export interface QSOQueryFilter {
-  /** Match a specific callsign (exact match). */
-  callsign?: string;
-  /** Restrict to a time window (epoch ms). */
-  timeRange?: { start: number; end: number };
-  /** Restrict to a frequency window (Hz). */
-  frequencyRange?: { min: number; max: number };
-  /** Mode filter (e.g. 'FT8'). */
-  mode?: string;
-  /**
-   * QSL confirmation status filter.
-   * - `'confirmed'`: at least one platform confirmed
-   * - `'uploaded'`: at least one platform uploaded but not confirmed
-   * - `'none'`: not uploaded to any platform
-   */
-  qslStatus?: 'confirmed' | 'uploaded' | 'none';
-  /** Maximum number of records to return. */
-  limit?: number;
-  /** Number of records to skip (for pagination). */
-  offset?: number;
-  /** Sort direction. Defaults to descending (newest first). */
-  orderDirection?: 'asc' | 'desc';
+    callsign?: string;
+    timeRange?: {
+        start: number;
+        end: number;
+    };
+    frequencyRange?: {
+        min: number;
+        max: number;
+    };
+    mode?: string;
+    band?: string;
+    qslStatus?: 'confirmed' | 'uploaded' | 'none';
+    limit?: number;
+    offset?: number;
+    orderDirection?: 'asc' | 'desc';
 }
 ```
 
-## 成员
-
-### callsign
+### QSOQueryFilter.callsign
 
 Match a specific callsign (exact match).
 
@@ -807,27 +1384,33 @@ callsign?: string;
 
 ```
 
-### timeRange
+### QSOQueryFilter.timeRange
 
 Restrict to a time window (epoch ms).
 
 ```ts
 
-timeRange?: { start: number; end: number };
+timeRange?: {
+    start: number;
+    end: number;
+};
 
 ```
 
-### frequencyRange
+### QSOQueryFilter.frequencyRange
 
 Restrict to a frequency window (Hz).
 
 ```ts
 
-frequencyRange?: { min: number; max: number };
+frequencyRange?: {
+    min: number;
+    max: number;
+};
 
 ```
 
-### mode
+### QSOQueryFilter.mode
 
 Mode filter (e.g. 'FT8').
 
@@ -837,7 +1420,17 @@ mode?: string;
 
 ```
 
-### qslStatus
+### QSOQueryFilter.band
+
+Band filter (e.g. '20m'). Compared via getBandFromFrequency on stored records.
+
+```ts
+
+band?: string;
+
+```
+
+### QSOQueryFilter.qslStatus
 
 QSL confirmation status filter.
 - `'confirmed'`: at least one platform confirmed
@@ -850,7 +1443,7 @@ qslStatus?: 'confirmed' | 'uploaded' | 'none';
 
 ```
 
-### limit
+### QSOQueryFilter.limit
 
 Maximum number of records to return.
 
@@ -860,7 +1453,7 @@ limit?: number;
 
 ```
 
-### offset
+### QSOQueryFilter.offset
 
 Number of records to skip (for pagination).
 
@@ -870,7 +1463,7 @@ offset?: number;
 
 ```
 
-### orderDirection
+### QSOQueryFilter.orderDirection
 
 Sort direction. Defaults to descending (newest first).
 
@@ -879,42 +1472,27 @@ Sort direction. Defaults to descending (newest first).
 orderDirection?: 'asc' | 'desc';
 
 ```
-## CallsignLogbookAccess
+## CallsignLogbookReadAccess
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Callsign-bound view over a single logbook.
 
-The host resolves the concrete logbook lazily on each operation, which keeps
-the handle valid even if the underlying logbook is created or reloaded later.
+The host resolves an already registered concrete logbook on each operation,
+which keeps the handle valid across reloads without implicitly creating data.
 
 ```ts
-export interface CallsignLogbookAccess {
-  /** Normalized callsign that scopes this accessor. */
-  readonly callsign: string;
-
-  /** Returns the resolved logbook id, or null when no logbook exists yet. */
-  getLogBookId(): Promise<string | null>;
-
-  /** Queries QSO records matching the given filter. */
-  queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
-  /** Counts QSO records matching the given filter. */
-  countQSOs(filter?: QSOQueryFilter): Promise<number>;
-  /** Adds a new QSO record to this callsign's logbook. */
-  addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
-  /** Updates partial fields of an existing QSO record. */
-  updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
-  /** Returns current statistics for this callsign's logbook. */
-  getStatistics(): Promise<import('@tx5dr/contracts').LogBookStatistics | null>;
-  /** Notifies the frontend that this callsign's logbook changed. */
-  notifyUpdated(operatorId?: string): Promise<void>;
+export interface CallsignLogbookReadAccess {
+    readonly callsign: string;
+    getLogBookId(): Promise<string | null>;
+    queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+    countQSOs(filter?: QSOQueryFilter): Promise<number>;
+    getStatistics(): Promise<import('@tx5dr/contracts').LogBookStatistics | null>;
 }
 ```
 
-## 成员
-
-### callsign
+### CallsignLogbookReadAccess.callsign
 
 Normalized callsign that scopes this accessor.
 
@@ -924,9 +1502,9 @@ readonly callsign: string;
 
 ```
 
-### getLogBookId
+### CallsignLogbookReadAccess.getLogBookId
 
-Returns the resolved logbook id, or null when no logbook exists yet.
+Returns the resolved logbook id, or null when no logbook is registered.
 
 ```ts
 
@@ -934,7 +1512,7 @@ getLogBookId(): Promise<string | null>;
 
 ```
 
-### queryQSOs
+### CallsignLogbookReadAccess.queryQSOs
 
 Queries QSO records matching the given filter.
 
@@ -944,7 +1522,7 @@ queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[
 
 ```
 
-### countQSOs
+### CallsignLogbookReadAccess.countQSOs
 
 Counts QSO records matching the given filter.
 
@@ -954,27 +1532,7 @@ countQSOs(filter?: QSOQueryFilter): Promise<number>;
 
 ```
 
-### addQSO
-
-Adds a new QSO record to this callsign's logbook.
-
-```ts
-
-addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
-
-```
-
-### updateQSO
-
-Updates partial fields of an existing QSO record.
-
-```ts
-
-updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
-
-```
-
-### getStatistics
+### CallsignLogbookReadAccess.getStatistics
 
 Returns current statistics for this callsign's logbook.
 
@@ -983,8 +1541,53 @@ Returns current statistics for this callsign's logbook.
 getStatistics(): Promise<import('@tx5dr/contracts').LogBookStatistics | null>;
 
 ```
+## CallsignLogbookCommandPort
 
-### notifyUpdated
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Durable mutation operations scoped to one normalized station callsign.
+
+```ts
+export interface CallsignLogbookCommandPort {
+    readonly callsign: string;
+    addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<import('@tx5dr/contracts').QSORecord>;
+    updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+    notifyUpdated(operatorId?: string): Promise<void>;
+}
+```
+
+### CallsignLogbookCommandPort.callsign
+
+Normalized callsign that scopes this accessor.
+
+```ts
+
+readonly callsign: string;
+
+```
+
+### CallsignLogbookCommandPort.addQSO
+
+Adds a QSO and resolves with the final record after durable commit.
+
+```ts
+
+addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<import('@tx5dr/contracts').QSORecord>;
+
+```
+
+### CallsignLogbookCommandPort.updateQSO
+
+Updates a QSO and resolves with the final record after durable commit.
+
+```ts
+
+updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+
+```
+
+### CallsignLogbookCommandPort.notifyUpdated
 
 Notifies the frontend that this callsign's logbook changed.
 
@@ -993,65 +1596,50 @@ Notifies the frontend that this callsign's logbook changed.
 notifyUpdated(operatorId?: string): Promise<void>;
 
 ```
-## LogbookAccess
+## CallsignLogbookAccess
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Full logbook access for plugins.
-
-Extends the original read-only helpers with query, write and notification
-capabilities so that sync providers can self-orchestrate their entire flow
-without host-side special handling.
+Combined read/write callsign-bound logbook capability.
 
 ```ts
-export interface LogbookAccess {
-  // === Read-only helpers (original) ===
+export interface CallsignLogbookAccess extends CallsignLogbookReadAccess, CallsignLogbookCommandPort {
+}
+```
+## LogbookReadAccess
 
-  /** Checks whether the callsign has already been worked. */
-  hasWorked(callsign: string): Promise<boolean>;
-  /** Checks whether the DXCC entity has already been worked. */
-  hasWorkedDXCC(dxccEntity: string): Promise<boolean>;
-  /** Checks whether the Maidenhead grid has already been worked. */
-  hasWorkedGrid(grid: string): Promise<boolean>;
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-  // === Query ===
+Read-only worked-status and QSO query capability for `logbook:read`.
 
-  /** Queries QSO records matching the given filter. */
-  queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
-  /** Counts QSO records matching the given filter. */
-  countQSOs(filter?: QSOQueryFilter): Promise<number>;
-
-  /** Returns a callsign-bound accessor suitable for global plugin instances. */
-  forCallsign(callsign: string): CallsignLogbookAccess;
-
-  // === Write ===
-
-  /** Adds a new QSO record. Deduplication is the caller's responsibility. */
-  addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
-  /** Updates partial fields of an existing QSO record (e.g. QSL status). */
-  updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
-
-  // === Notification ===
-
-  /** Notifies the frontend to refresh logbook data (call after batch writes). */
-  notifyUpdated(): Promise<void>;
+```ts
+export interface LogbookReadAccess {
+    hasWorked(callsign: string, options?: {
+        anyBand?: boolean;
+    }): Promise<boolean>;
+    hasWorkedDXCC(dxccEntity: string): Promise<boolean>;
+    hasWorkedGrid(grid: string): Promise<boolean>;
+    queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+    countQSOs(filter?: QSOQueryFilter): Promise<number>;
+    forCallsign(callsign: string): CallsignLogbookReadAccess;
 }
 ```
 
-## 成员
-
-### hasWorked
+### LogbookReadAccess.hasWorked
 
 Checks whether the callsign has already been worked.
 
 ```ts
 
-hasWorked(callsign: string): Promise<boolean>;
+hasWorked(callsign: string, options?: {
+    anyBand?: boolean;
+}): Promise<boolean>;
 
 ```
 
-### hasWorkedDXCC
+### LogbookReadAccess.hasWorkedDXCC
 
 Checks whether the DXCC entity has already been worked.
 
@@ -1061,7 +1649,7 @@ hasWorkedDXCC(dxccEntity: string): Promise<boolean>;
 
 ```
 
-### hasWorkedGrid
+### LogbookReadAccess.hasWorkedGrid
 
 Checks whether the Maidenhead grid has already been worked.
 
@@ -1071,7 +1659,7 @@ hasWorkedGrid(grid: string): Promise<boolean>;
 
 ```
 
-### queryQSOs
+### LogbookReadAccess.queryQSOs
 
 Queries QSO records matching the given filter.
 
@@ -1081,7 +1669,7 @@ queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[
 
 ```
 
-### countQSOs
+### LogbookReadAccess.countQSOs
 
 Counts QSO records matching the given filter.
 
@@ -1091,37 +1679,52 @@ countQSOs(filter?: QSOQueryFilter): Promise<number>;
 
 ```
 
-### forCallsign
+### LogbookReadAccess.forCallsign
 
-Returns a callsign-bound accessor suitable for global plugin instances.
-
-```ts
-
-forCallsign(callsign: string): CallsignLogbookAccess;
-
-```
-
-### addQSO
-
-Adds a new QSO record. Deduplication is the caller's responsibility.
+Returns a read-only callsign-bound accessor suitable for global plugin instances.
 
 ```ts
 
-addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<void>;
+forCallsign(callsign: string): CallsignLogbookReadAccess;
 
 ```
+## LogbookCommandPort
 
-### updateQSO
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Updates partial fields of an existing QSO record (e.g. QSL status).
+Durable mutation operations exposed by the `logbook:write` permission.
+
+```ts
+export interface LogbookCommandPort {
+    addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<import('@tx5dr/contracts').QSORecord>;
+    updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+    notifyUpdated(): Promise<void>;
+    forCallsign(callsign: string): CallsignLogbookCommandPort;
+}
+```
+
+### LogbookCommandPort.addQSO
+
+Adds a QSO and resolves with the final record after durable commit.
 
 ```ts
 
-updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<void>;
+addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<import('@tx5dr/contracts').QSORecord>;
 
 ```
 
-### notifyUpdated
+### LogbookCommandPort.updateQSO
+
+Updates a QSO and resolves with the final record after durable commit.
+
+```ts
+
+updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+
+```
+
+### LogbookCommandPort.notifyUpdated
 
 Notifies the frontend to refresh logbook data (call after batch writes).
 
@@ -1130,29 +1733,55 @@ Notifies the frontend to refresh logbook data (call after batch writes).
 notifyUpdated(): Promise<void>;
 
 ```
+
+### LogbookCommandPort.forCallsign
+
+Returns a callsign-bound durable mutation port for global plugin instances.
+
+```ts
+
+forCallsign(callsign: string): CallsignLogbookCommandPort;
+
+```
+## LogbookAccess
+
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+> **Deprecated:** Prefer capability-specific LogbookReadAccess and LogbookCommandPort.
+
+```ts
+export interface LogbookAccess extends LogbookReadAccess, LogbookCommandPort {
+    forCallsign(callsign: string): CallsignLogbookAccess;
+}
+```
+
+### LogbookAccess.forCallsign
+
+Returns a combined read/write accessor for the requested station callsign.
+
+```ts
+
+forCallsign(callsign: string): CallsignLogbookAccess;
+
+```
 ## IdleTransmitFrequencyOptions
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Optional constraints used when asking the host for a quieter transmit offset.
 
 ```ts
 export interface IdleTransmitFrequencyOptions {
-  /** Slot identifier to analyze. Defaults to the latest available slot when omitted. */
-  slotId?: string;
-  /** Inclusive lower bound in Hz within the passband. */
-  minHz?: number;
-  /** Inclusive upper bound in Hz within the passband. */
-  maxHz?: number;
-  /** Guard bandwidth in Hz to keep around occupied frequencies. */
-  guardHz?: number;
+    slotId?: string;
+    minHz?: number;
+    maxHz?: number;
+    guardHz?: number;
 }
 ```
 
-## 成员
-
-### slotId
+### IdleTransmitFrequencyOptions.slotId
 
 Slot identifier to analyze. Defaults to the latest available slot when omitted.
 
@@ -1162,7 +1791,7 @@ slotId?: string;
 
 ```
 
-### minHz
+### IdleTransmitFrequencyOptions.minHz
 
 Inclusive lower bound in Hz within the passband.
 
@@ -1172,7 +1801,7 @@ minHz?: number;
 
 ```
 
-### maxHz
+### IdleTransmitFrequencyOptions.maxHz
 
 Inclusive upper bound in Hz within the passband.
 
@@ -1182,7 +1811,7 @@ maxHz?: number;
 
 ```
 
-### guardHz
+### IdleTransmitFrequencyOptions.guardHz
 
 Guard bandwidth in Hz to keep around occupied frequencies.
 
@@ -1193,50 +1822,32 @@ guardHz?: number;
 ```
 ## AutoTargetEligibilityReason
 
-- Kind: `type`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `type`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Reason codes returned by the host when evaluating whether a decoded target
 should be eligible for automatic CQ-style replies.
 
 ```ts
-export type AutoTargetEligibilityReason =
-  | 'non_cq_message'
-  | 'plain_cq'
-  | 'missing_callsign_identity'
-  | 'missing_target_identity'
-  | 'unsupported_activity_token'
-  | 'unsupported_callback_token'
-  | 'continent_match'
-  | 'continent_mismatch'
-  | 'dx_match'
-  | 'dx_same_continent'
-  | 'entity_match'
-  | 'entity_mismatch'
-  | 'unknown_modifier';
+export type AutoTargetEligibilityReason = 'non_cq_message' | 'plain_cq' | 'missing_callsign_identity' | 'missing_target_identity' | 'unsupported_activity_token' | 'unsupported_callback_token' | 'continent_match' | 'continent_mismatch' | 'dx_match' | 'dx_same_continent' | 'entity_match' | 'entity_mismatch' | 'unknown_modifier';
 ```
 ## AutoTargetEligibilityDecision
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Structured result returned by the host for automatic-target eligibility
 checks.
 
 ```ts
 export interface AutoTargetEligibilityDecision {
-  /** Whether the host would currently allow automation to react to the target. */
-  eligible: boolean;
-  /** Machine-friendly explanation of the decision. */
-  reason: AutoTargetEligibilityReason;
-  /** Directed CQ modifier/token extracted from the message, when present. */
-  modifier?: string;
+    eligible: boolean;
+    reason: AutoTargetEligibilityReason;
+    modifier?: string;
 }
 ```
 
-## 成员
-
-### eligible
+### AutoTargetEligibilityDecision.eligible
 
 Whether the host would currently allow automation to react to the target.
 
@@ -1246,7 +1857,7 @@ eligible: boolean;
 
 ```
 
-### reason
+### AutoTargetEligibilityDecision.reason
 
 Machine-friendly explanation of the decision.
 
@@ -1256,7 +1867,7 @@ reason: AutoTargetEligibilityReason;
 
 ```
 
-### modifier
+### AutoTargetEligibilityDecision.modifier
 
 Directed CQ modifier/token extracted from the message, when present.
 
@@ -1267,47 +1878,21 @@ modifier?: string;
 ```
 ## BandAccess
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Read-only access to the current decode environment.
 
 ```ts
 export interface BandAccess {
-  /**
-   * Returns the active CQ-like callers known in the current slot context.
-   */
-  getActiveCallers(): ParsedFT8Message[];
-
-  /**
-   * Returns the latest slot pack snapshot, or `null` if no slot has been
-   * processed yet.
-   */
-  getLatestSlotPack(): SlotPack | null;
-
-  /**
-   * Asks the host to recommend a quieter transmit audio offset for the current
-   * decode environment.
-   *
-   * Returns `null` when the host cannot evaluate the slot or when no suitable
-   * idle window is found.
-   */
-  findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null;
-
-  /**
-   * Evaluates whether the given decoded message is eligible for automatic
-   * target selection under the host's built-in CQ modifier rules.
-   *
-   * This lets third-party plugins reuse the same directed-CQ policy that the
-   * host applies to standard autocall and auto-reply flows.
-   */
-  evaluateAutoTargetEligibility(message: ParsedFT8Message): AutoTargetEligibilityDecision;
+    getActiveCallers(): ParsedFT8Message[];
+    getLatestSlotPack(): SlotPack | null;
+    findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null;
+    evaluateAutoTargetEligibility(message: ParsedFT8Message): AutoTargetEligibilityDecision;
 }
 ```
 
-## 成员
-
-### getActiveCallers
+### BandAccess.getActiveCallers
 
 Returns the active CQ-like callers known in the current slot context.
 
@@ -1317,7 +1902,7 @@ getActiveCallers(): ParsedFT8Message[];
 
 ```
 
-### getLatestSlotPack
+### BandAccess.getLatestSlotPack
 
 Returns the latest slot pack snapshot, or `null` if no slot has been
 processed yet.
@@ -1328,13 +1913,15 @@ getLatestSlotPack(): SlotPack | null;
 
 ```
 
-### findIdleTransmitFrequency
+### BandAccess.findIdleTransmitFrequency
 
 Asks the host to recommend a quieter transmit audio offset for the current
 decode environment.
 
 Returns `null` when the host cannot evaluate the slot or when no suitable
-idle window is found.
+idle window is found. A successful result also reserves that offset for the
+current operator and analyzed slot so later operators avoid selecting the
+same window.
 
 ```ts
 
@@ -1342,7 +1929,7 @@ findIdleTransmitFrequency(options?: IdleTransmitFrequencyOptions): number | null
 
 ```
 
-### evaluateAutoTargetEligibility
+### BandAccess.evaluateAutoTargetEligibility
 
 Evaluates whether the given decoded message is eligible for automatic
 target selection under the host's built-in CQ modifier rules.
@@ -1357,41 +1944,20 @@ evaluateAutoTargetEligibility(message: ParsedFT8Message): AutoTargetEligibilityD
 ```
 ## PanelMeta
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-Dynamic metadata for a plugin panel, sent via {@link UIBridge.setPanelMeta}.
+Dynamic metadata for a plugin panel, sent via [`UIBridge.setPanelMeta`](./helpers#uibridge-setpanelmeta).
 
 ```ts
 export interface PanelMeta {
-  /**
-   * Overrides the panel title dynamically.
-   * - i18n key (e.g. `"statusActive"`): resolved from the plugin's locale namespace
-   * - literal string (e.g. `"Active: 5"`): displayed as-is
-   * - empty string `""`: hides the title bar entirely (immersive)
-   * - null / undefined: reverts to the statically declared title
-   */
-  title?: string | null;
-
-  /**
-   * Interpolation values for the title when it is an i18n key.
-   * For example, if the plugin locale defines `"statusActive": "Active: {{count}}"`,
-   * pass `{ count: 5 }` to render "Active: 5".
-   */
-  titleValues?: Record<string, unknown>;
-
-  /**
-   * Controls whether the panel is visible.
-   * - false: the host hides the panel entirely (it takes no layout space)
-   * - true / undefined: normal display
-   */
-  visible?: boolean;
+    title?: string | null;
+    titleValues?: Record<string, unknown>;
+    visible?: boolean;
 }
 ```
 
-## 成员
-
-### title
+### PanelMeta.title
 
 Overrides the panel title dynamically.
 - i18n key (e.g. `"statusActive"`): resolved from the plugin's locale namespace
@@ -1405,7 +1971,7 @@ title?: string | null;
 
 ```
 
-### titleValues
+### PanelMeta.titleValues
 
 Interpolation values for the title when it is an i18n key.
 For example, if the plugin locale defines `"statusActive": "Active: {{count}}"`,
@@ -1417,7 +1983,7 @@ titleValues?: Record<string, unknown>;
 
 ```
 
-### visible
+### PanelMeta.visible
 
 Controls whether the panel is visible.
 - false: the host hides the panel entirely (it takes no layout space)
@@ -1430,80 +1996,28 @@ visible?: boolean;
 ```
 ## UIBridge
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Minimal bridge for sending structured data to plugin panels in the frontend.
 
 ```ts
 export interface UIBridge {
-  /**
-   * Publishes new panel data for the given declarative panel id.
-   */
-  send(panelId: string, data: unknown): void;
-
-  /**
-   * Updates the panel's display metadata at runtime. All fields are optional
-   * and use patch semantics. Subsequent calls overwrite previous values for the
-   * same keys.
-   */
-  setPanelMeta(panelId: string, meta: PanelMeta): void;
-
-  /**
-   * Replaces one runtime-owned group of plugin UI panels for this plugin
-   * instance. Static `PluginDefinition.panels` are exposed by the host as the
-   * reserved `manifest` group; plugins should use their own stable group ids.
-   */
-  setPanelContributions(groupId: string, panels: PluginPanelDescriptor[]): void;
-
-  /**
-   * Clears a runtime-owned panel contribution group for this plugin instance.
-   */
-  clearPanelContributions(groupId: string): void;
-
-  /**
-   * Registers a handler for custom messages sent from iframe UI pages via the
-   * `bridge.invoke()` SDK method. The host routes incoming invoke requests to
-   * the handler and sends the return value back to the iframe.
-   *
-   * Only one handler can be registered per plugin instance. Calling this method
-   * again replaces the previous handler.
-   */
-  registerPageHandler(handler: PluginUIHandler): void;
-
-  /**
-   * Pushes a custom message to the specific page session.
-   *
-   * Prefer this API whenever the plugin already knows the target session id
-   * (for example from {@link PluginUIRequestContext.pageSessionId} or
-   * `requestContext.page.sessionId`).
-   */
-  pushToSession(pageSessionId: string, action: string, data?: unknown): void;
-
-  /**
-   * Lists active page sessions for the current plugin instance and page id.
-   *
-   * This is useful for background timers or sync completions that need to
-   * notify every open page tied to the same runtime instance.
-   */
-  listActivePageSessions(pageId: string): PluginUIPageSessionInfo[];
-
-  /**
-   * Pushes a custom message to an iframe UI page by page id.
-   *
-   * This compatibility helper only succeeds when exactly one active session of
-   * the current plugin instance matches the page id. If multiple sessions are
-   * open, the host throws `explicit_page_session_required`.
-   */
-  pushToPage(pageId: string, action: string, data?: unknown): void;
+    send(panelId: string, data: unknown): void;
+    setPanelMeta(panelId: string, meta: PanelMeta): void;
+    setPanelContributions(groupId: string, panels: PluginPanelDescriptor[]): void;
+    clearPanelContributions(groupId: string): void;
+    registerPageHandler(handler: PluginUIHandler): void;
+    pushToSession(pageSessionId: string, action: string, data?: unknown): void;
+    listActivePageSessions(pageId: string): PluginUIPageSessionInfo[];
+    pushToPage(pageId: string, action: string, data?: unknown): void;
 }
 ```
 
-## 成员
+### UIBridge.send
 
-### send
-
-Publishes new panel data for the given declarative panel id.
+Publishes a JSON-compatible snapshot for the given declarative panel id.
+Mutating the caller's object after this call does not alter panel state.
 
 ```ts
 
@@ -1511,7 +2025,7 @@ send(panelId: string, data: unknown): void;
 
 ```
 
-### setPanelMeta
+### UIBridge.setPanelMeta
 
 Updates the panel's display metadata at runtime. All fields are optional
 and use patch semantics. Subsequent calls overwrite previous values for the
@@ -1523,7 +2037,7 @@ setPanelMeta(panelId: string, meta: PanelMeta): void;
 
 ```
 
-### setPanelContributions
+### UIBridge.setPanelContributions
 
 Replaces one runtime-owned group of plugin UI panels for this plugin
 instance. Static `PluginDefinition.panels` are exposed by the host as the
@@ -1535,7 +2049,7 @@ setPanelContributions(groupId: string, panels: PluginPanelDescriptor[]): void;
 
 ```
 
-### clearPanelContributions
+### UIBridge.clearPanelContributions
 
 Clears a runtime-owned panel contribution group for this plugin instance.
 
@@ -1545,7 +2059,7 @@ clearPanelContributions(groupId: string): void;
 
 ```
 
-### registerPageHandler
+### UIBridge.registerPageHandler
 
 Registers a handler for custom messages sent from iframe UI pages via the
 `bridge.invoke()` SDK method. The host routes incoming invoke requests to
@@ -1560,12 +2074,12 @@ registerPageHandler(handler: PluginUIHandler): void;
 
 ```
 
-### pushToSession
+### UIBridge.pushToSession
 
-Pushes a custom message to the specific page session.
+Pushes a JSON-compatible data snapshot to the specific page session.
 
 Prefer this API whenever the plugin already knows the target session id
-(for example from {@link PluginUIRequestContext.pageSessionId} or
+(for example from [`PluginUIRequestContext.pageSessionId`](./helpers#pluginuirequestcontext-pagesessionid) or
 `requestContext.page.sessionId`).
 
 ```ts
@@ -1574,7 +2088,7 @@ pushToSession(pageSessionId: string, action: string, data?: unknown): void;
 
 ```
 
-### listActivePageSessions
+### UIBridge.listActivePageSessions
 
 Lists active page sessions for the current plugin instance and page id.
 
@@ -1587,9 +2101,9 @@ listActivePageSessions(pageId: string): PluginUIPageSessionInfo[];
 
 ```
 
-### pushToPage
+### UIBridge.pushToPage
 
-Pushes a custom message to an iframe UI page by page id.
+Pushes a JSON-compatible data snapshot to an iframe UI page by page id.
 
 This compatibility helper only succeeds when exactly one active session of
 the current plugin instance matches the page id. If multiple sessions are
@@ -1602,80 +2116,61 @@ pushToPage(pageId: string, action: string, data?: unknown): void;
 ```
 ## PluginUIHandler
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Handler for custom messages sent from iframe UI pages.
 
 Plugins register a handler via `ctx.ui.registerPageHandler()` to receive
-arbitrary invoke requests from their iframe-based UIs. The host acts as a
-transparent router — it does not inspect or interpret the action or data.
+application-defined invoke requests from their iframe-based UIs. The Host
+does not interpret the business schema, but it enforces the page/session
+authorization and JSON data boundary in both directions.
 
 ```ts
 export interface PluginUIHandler {
-  /**
-   * Called when the iframe sends an invoke request via `bridge.invoke(action, data)`.
-   *
-   * @param pageId - The page that sent the message.
-   * @param action - Developer-defined action identifier.
-   * @param data - Arbitrary payload from the iframe.
-   * @param requestContext - Host-authenticated page context, including any
-   * bound resource for this page session.
-   * @returns The response value sent back to the iframe.
-   */
-  onMessage(
-    pageId: string,
-    action: string,
-    data: unknown,
-    requestContext: PluginUIRequestContext,
-  ): Promise<unknown>;
+    onMessage(pageId: string, action: string, data: unknown, requestContext: PluginUIRequestContext): Promise<unknown>;
 }
 ```
 
-## 成员
-
-### onMessage
+### PluginUIHandler.onMessage
 
 Called when the iframe sends an invoke request via `bridge.invoke(action, data)`.
 
-@param pageId - The page that sent the message.
-@param action - Developer-defined action identifier.
-@param data - Arbitrary payload from the iframe.
-@param requestContext - Host-authenticated page context, including any
+**Parameters**
+
+- `pageId`: The page that sent the message.
+- `action`: Developer-defined action identifier.
+- `data`: JSON-compatible snapshot from the iframe; validate it as
+  untrusted input before use.
+- `requestContext`: Host-authenticated page context, including any
 bound resource for this page session.
-@returns The response value sent back to the iframe.
+
+**Returns:** A JSON-compatible response snapshot sent back to the iframe.
 
 ```ts
 
-onMessage(
-    pageId: string,
-    action: string,
-    data: unknown,
-    requestContext: PluginUIRequestContext,
-  ): Promise<unknown>;
+onMessage(pageId: string, action: string, data: unknown, requestContext: PluginUIRequestContext): Promise<unknown>;
 
 ```
 ## PluginUIRequestUser
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Host-authenticated user identity attached to an iframe invoke request.
 
 ```ts
 export interface PluginUIRequestUser {
-  readonly tokenId: string;
-  readonly role: 'viewer' | 'operator' | 'admin';
-  readonly operatorIds: string[];
-  readonly permissionGrants?: PermissionGrant[];
+    readonly tokenId: string;
+    readonly role: 'viewer' | 'operator' | 'admin';
+    readonly operatorIds: string[];
+    readonly permissionGrants?: PermissionGrant[];
 }
 ```
 
-## 成员
+### PluginUIRequestUser.tokenId
 
-### tokenId
-
-未提供额外注释。
+Stable token/session identifier; not the raw credential.
 
 ```ts
 
@@ -1683,9 +2178,9 @@ readonly tokenId: string;
 
 ```
 
-### role
+### PluginUIRequestUser.role
 
-未提供额外注释。
+Effective role at the time the Host authorizes the request.
 
 ```ts
 
@@ -1693,9 +2188,9 @@ readonly role: 'viewer' | 'operator' | 'admin';
 
 ```
 
-### operatorIds
+### PluginUIRequestUser.operatorIds
 
-未提供额外注释。
+Operator IDs the current user is allowed to access.
 
 ```ts
 
@@ -1703,9 +2198,9 @@ readonly operatorIds: string[];
 
 ```
 
-### permissionGrants
+### PluginUIRequestUser.permissionGrants
 
-未提供额外注释。
+Fine-grained grants associated with the authenticated user, when present.
 
 ```ts
 
@@ -1714,23 +2209,21 @@ readonly permissionGrants?: PermissionGrant[];
 ```
 ## PluginUIBoundResource
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Resource identity resolved and authorized from the page descriptor binding.
 
 ```ts
 export interface PluginUIBoundResource {
-  readonly kind: 'callsign' | 'operator';
-  readonly value: string;
+    readonly kind: 'callsign' | 'operator';
+    readonly value: string;
 }
 ```
 
-## 成员
+### PluginUIBoundResource.kind
 
-### kind
-
-未提供额外注释。
+Kind declared by `resourceBinding`.
 
 ```ts
 
@@ -1738,9 +2231,9 @@ readonly kind: 'callsign' | 'operator';
 
 ```
 
-### value
+### PluginUIBoundResource.value
 
-未提供额外注释。
+Normalized callsign or authorized operator ID.
 
 ```ts
 
@@ -1749,36 +2242,37 @@ readonly value: string;
 ```
 ## PluginUIInstanceTarget
 
-- Kind: `type`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `type`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Plugin instance selected by the Host for this page request.
 
 ```ts
-export type PluginUIInstanceTarget =
-  | { readonly kind: 'global' }
-  | { readonly kind: 'operator'; readonly operatorId: string };
+export type PluginUIInstanceTarget = {
+    readonly kind: 'global';
+} | {
+    readonly kind: 'operator';
+    readonly operatorId: string;
+};
 ```
 ## PluginUIPageSessionInfo
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Read-only identity of one active plugin iframe page session.
 
 ```ts
 export interface PluginUIPageSessionInfo {
-  readonly sessionId: string;
-  readonly pageId: string;
-  readonly resource?: PluginUIBoundResource;
+    readonly sessionId: string;
+    readonly pageId: string;
+    readonly resource?: PluginUIBoundResource;
 }
 ```
 
-## 成员
+### PluginUIPageSessionInfo.sessionId
 
-### sessionId
-
-未提供额外注释。
+Unique ID used for exact session pushes.
 
 ```ts
 
@@ -1786,9 +2280,9 @@ readonly sessionId: string;
 
 ```
 
-### pageId
+### PluginUIPageSessionInfo.pageId
 
-未提供额外注释。
+`PluginDefinition.ui.pages` entry rendered by this session.
 
 ```ts
 
@@ -1796,9 +2290,9 @@ readonly pageId: string;
 
 ```
 
-### resource
+### PluginUIPageSessionInfo.resource
 
-未提供额外注释。
+Host-authorized resource binding, when the page declares one.
 
 ```ts
 
@@ -1807,22 +2301,20 @@ readonly resource?: PluginUIBoundResource;
 ```
 ## PluginUIPageContext
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Page-session identity plus an exact push channel back to that iframe.
 
 ```ts
 export interface PluginUIPageContext extends PluginUIPageSessionInfo {
-  push(action: string, data?: unknown): void;
+    push(action: string, data?: unknown): void;
 }
 ```
 
-## 成员
+### PluginUIPageContext.push
 
-### push
-
-未提供额外注释。
+Sends a JSON-compatible snapshot to this exact page session.
 
 ```ts
 
@@ -1831,34 +2323,28 @@ push(action: string, data?: unknown): void;
 ```
 ## PluginUIRequestContext
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
-未提供额外注释。
+Host-authenticated context passed to an iframe page handler.
+
+Treat `data` from the iframe as untrusted input. Use this context, rather
+than caller-supplied IDs, for authorization and storage scoping.
 
 ```ts
 export interface PluginUIRequestContext {
-  readonly pageSessionId: string;
-  readonly user: PluginUIRequestUser;
-  readonly resource?: PluginUIBoundResource;
-  readonly instanceTarget: PluginUIInstanceTarget;
-  readonly page: PluginUIPageContext;
-  /**
-   * Page-scoped file storage shared with iframe `tx5dr.file*()` calls.
-   *
-   * Use this in `registerPageHandler()` handlers to read files uploaded by the
-   * current iframe page session without reconstructing host-internal scope
-   * paths.
-   */
-  readonly files: PluginFileStore;
+    readonly pageSessionId: string;
+    readonly user: PluginUIRequestUser;
+    readonly resource?: PluginUIBoundResource;
+    readonly instanceTarget: PluginUIInstanceTarget;
+    readonly page: PluginUIPageContext;
+    readonly files: PluginFileStore;
 }
 ```
 
-## 成员
+### PluginUIRequestContext.pageSessionId
 
-### pageSessionId
-
-未提供额外注释。
+Same exact page session identifier exposed as `page.sessionId`.
 
 ```ts
 
@@ -1866,9 +2352,9 @@ readonly pageSessionId: string;
 
 ```
 
-### user
+### PluginUIRequestContext.user
 
-未提供额外注释。
+User identity authorized by the Host for this request.
 
 ```ts
 
@@ -1876,9 +2362,9 @@ readonly user: PluginUIRequestUser;
 
 ```
 
-### resource
+### PluginUIRequestContext.resource
 
-未提供额外注释。
+Bound callsign/operator, when required by the page descriptor.
 
 ```ts
 
@@ -1886,9 +2372,9 @@ readonly resource?: PluginUIBoundResource;
 
 ```
 
-### instanceTarget
+### PluginUIRequestContext.instanceTarget
 
-未提供额外注释。
+Global or operator plugin instance receiving the request.
 
 ```ts
 
@@ -1896,9 +2382,9 @@ readonly instanceTarget: PluginUIInstanceTarget;
 
 ```
 
-### page
+### PluginUIRequestContext.page
 
-未提供额外注释。
+Exact page session/push capability, valid only during the current handler invocation.
 
 ```ts
 
@@ -1906,13 +2392,14 @@ readonly page: PluginUIPageContext;
 
 ```
 
-### files
+### PluginUIRequestContext.files
 
 Page-scoped file storage shared with iframe `tx5dr.file*()` calls.
 
 Use this in `registerPageHandler()` handlers to read files uploaded by the
 current iframe page session without reconstructing host-internal scope
-paths.
+paths. Both `page` and `files` are exact-invocation capabilities: do not
+retain and invoke them after the current `onMessage()` promise settles.
 
 ```ts
 
@@ -1921,8 +2408,8 @@ readonly files: PluginFileStore;
 ```
 ## PluginFileStore
 
-- Kind: `interface`
-- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+- 类型: `interface`
+- 源码: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
 
 Persistent binary file storage for plugins.
 
@@ -1931,25 +2418,16 @@ traversal outside the sandbox is rejected by the host.
 
 ```ts
 export interface PluginFileStore {
-  /** Writes (or overwrites) a file at the given path. */
-  write(path: string, data: Buffer): Promise<void>;
-
-  /** Reads a file. Returns `null` when the path does not exist. */
-  read(path: string): Promise<Buffer | null>;
-
-  /** Deletes a file. Returns `true` if the file existed and was removed. */
-  delete(path: string): Promise<boolean>;
-
-  /** Lists file paths under the given prefix (or all files when omitted). */
-  list(prefix?: string): Promise<string[]>;
+    write(path: string, data: Buffer): Promise<void>;
+    read(path: string): Promise<Buffer | null>;
+    delete(path: string): Promise<boolean>;
+    list(prefix?: string): Promise<string[]>;
 }
 ```
 
-## 成员
+### PluginFileStore.write
 
-### write
-
-Writes (or overwrites) a file at the given path.
+Writes a copy of the Buffer, creating or replacing the file.
 
 ```ts
 
@@ -1957,9 +2435,9 @@ write(path: string, data: Buffer): Promise<void>;
 
 ```
 
-### read
+### PluginFileStore.read
 
-Reads a file. Returns `null` when the path does not exist.
+Reads a file into a new Buffer. Returns `null` when the path does not exist.
 
 ```ts
 
@@ -1967,7 +2445,7 @@ read(path: string): Promise<Buffer | null>;
 
 ```
 
-### delete
+### PluginFileStore.delete
 
 Deletes a file. Returns `true` if the file existed and was removed.
 
@@ -1977,7 +2455,7 @@ delete(path: string): Promise<boolean>;
 
 ```
 
-### list
+### PluginFileStore.list
 
 Lists file paths under the given prefix (or all files when omitted).
 

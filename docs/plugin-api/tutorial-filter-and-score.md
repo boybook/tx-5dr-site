@@ -1,4 +1,4 @@
-# 第 2 章：过滤与评分
+# 过滤与评分
 
 这一章解决一个很常见的问题：**我想影响候选目标的选择，但不想直接接管整个自动化流程。**
 
@@ -38,12 +38,14 @@
 下面这个例子只保留 `JA` 前缀：
 
 ```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
+import { definePlugin } from '@tx5dr/plugin-api';
 
-const plugin: PluginDefinition = {
+export default definePlugin({
+  apiVersion: 2,
   name: 'ja-only-filter',
   version: '1.0.0',
   type: 'utility',
+  permissions: [],
   hooks: {
     onFilterCandidates(candidates) {
       return candidates.filter((candidate) => {
@@ -54,9 +56,7 @@ const plugin: PluginDefinition = {
       });
     },
   },
-};
-
-export default plugin;
+});
 ```
 
 这类插件的心智模型很简单：输入一个候选列表，输出一个更小的候选列表。
@@ -66,12 +66,14 @@ export default plugin;
 下面这个例子模仿 `worked-station-bias`：如果已经通联过，就减分；否则加分。
 
 ```ts
-import type { PluginDefinition } from '@tx5dr/plugin-api';
+import { definePlugin } from '@tx5dr/plugin-api';
 
-const plugin: PluginDefinition = {
+export default definePlugin({
+  apiVersion: 2,
   name: 'worked-bias-demo',
   version: '1.0.0',
   type: 'utility',
+  permissions: ['logbook:read'],
   hooks: {
     async onScoreCandidates(candidates, ctx) {
       return Promise.all(candidates.map(async (candidate) => {
@@ -89,9 +91,7 @@ const plugin: PluginDefinition = {
       }));
     },
   },
-};
-
-export default plugin;
+});
 ```
 
 ## 为什么“已通联偏置”应该走评分 Hook
@@ -129,10 +129,10 @@ export default plugin;
 - “不许考虑” → `onFilterCandidates(...)`
 - “可以考虑，但优先级不同” → `onScoreCandidates(...)`
 
-## 这一章你应该学会什么
+## 要点
 
 - `onFilterCandidates(...)` 负责硬过滤
 - `onScoreCandidates(...)` 负责软偏置
 - `worked-station-bias` 代表的是“评分型插件”，不是“自动起呼插件”
 
-下一章进入另一条非常常见、也更容易产生竞态的路径：守候与自动起呼。
+需要发现特定目标并请求起呼时，继续阅读 [自动起呼提议](./tutorial-watcher-autocall)。
