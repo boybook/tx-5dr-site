@@ -1,66 +1,74 @@
-# 架构概览
+# 总体架构
 
-本页说明 TX-5DR 各主要模块之间的关系。相关模块位于 `packages/contracts`、`packages/core`、`packages/server`、`packages/web`、`packages/electron-main` 和 `packages/plugin-api`。
+TX-5DR 的主体是一个前后端分离的 Web 应用。React 前端不直接访问硬件；Fastify 服务端持有电台、音频、时钟、日志本和插件运行时。Zod schema 与 TypeScript 类型定义两端共用的消息边界。
 
-## 顶层结构
+## 分层结构
 
-```text
-TX-5DR
-├─ packages/contracts
-├─ packages/core
-├─ packages/server
-├─ packages/web
-├─ packages/electron-main
-└─ packages/plugin-api
+```mermaid
+flowchart TB
+  UI["交互层<br/>React Web UI"]
+  Contract["契约层<br/>Zod schema、共享类型、WebSocket 消息"]
+  API["接口层<br/>REST、WebSocket、认证与权限"]
+  Domain["领域层<br/>操作员、时隙、模式、日志、插件"]
+  Runtime["运行时层<br/>生命周期、时钟、解码、发射管线"]
+  Adapter["设备与传输适配层<br/>电台、音频、频谱、网络服务"]
+
+  UI <--> Contract
+  Contract <--> API
+  API <--> Domain
+  Domain <--> Runtime
+  Runtime <--> Adapter
 ```
 
-## 模块职责
+层次不代表每个事件都必须经过同样的函数调用链。它表达的是所有权：界面不拥有物理设备，适配器不决定通联策略，插件不绕过 Host 直接发射。
 
-| 模块 | 位置 | 作用 |
-| --- | --- | --- |
-| 协议与类型 | `packages/contracts` | 定义 schema、共享类型和事件协议 |
-| 共享业务逻辑 | `packages/core` | 提供 WebSocket 客户端、事件模型和通用逻辑 |
-| 后端运行时 | `packages/server` | 提供引擎、状态机、插件运行时和对外接口 |
-| 浏览器界面 | `packages/web` | 提供表格、频谱、操作员面板和设置界面 |
-| 桌面宿主 | `packages/electron-main` | 组合桌面窗口、本地服务端和打包逻辑 |
-| 插件公共接口 | `packages/plugin-api` | 向外部插件作者暴露稳定的 TypeScript 接口 |
+## 桌面、服务器与 Android
 
-## 浏览器、桌面和服务端的关系
+```mermaid
+flowchart LR
+  subgraph Desktop["Electron 桌面版"]
+    Electron["Electron 主进程"] --> LocalServer["TX-5DR Server"]
+    Electron --> Window["Web 窗口"]
+    Window <--> LocalServer
+  end
 
-`packages/web` 负责浏览器界面，`packages/server` 负责后端入口、状态机、资源编排和对外接口。桌面版通过 `packages/electron-main` 启动本地宿主进程，再把服务端和 Web 界面作为一个发布物提供给桌面环境。
+  subgraph Headless["Linux / Docker"]
+    Service["TX-5DR Server"] <--> RemoteBrowser["远程浏览器"]
+  end
 
-该关系意味着：
+  subgraph Mobile["Android 独立运行形态"]
+    Kotlin["Kotlin 宿主"] --> PRoot["Debian PRoot<br/>TX-5DR Server + Web"]
+    Kotlin <-->|"Unix socket"| Bridge["音频 / USB 串口桥"]
+    PRoot <--> WebView["内置 WebView"]
+    PRoot <--> LanBrowser["局域网浏览器"]
+  end
+```
 
-- 桌面版与服务器版共享同一套后端逻辑
-- 浏览器界面不依赖桌面宿主才能工作
-- 不同分发形态之间可复用相同的配置模型和接口协议
+三种形态共用 Server、Web 和数据契约。Electron 提供桌面宿主与自动更新；Linux/Docker 把运行时交给服务管理器或容器；Android 则运行完整的 Linux/Node 内核，由 Kotlin 层提供移动系统才能访问的资源。
 
-## 后端内部结构
+## 工作区模块
 
-根目录 `CLAUDE.md` 和 `packages/server/CLAUDE.md` 说明，`DigitalRadioEngine` 是后端入口，内部再拆分为多个子系统：
+| 模块 | 责任 |
+| --- | --- |
+| `packages/contracts` | schema、共享类型、REST 载荷和 WebSocket 消息 |
+| `packages/core` | 运行时无关的时钟、消息解析、WebSocket 客户端和通用逻辑 |
+| `packages/server` | Fastify 服务、数字电台引擎、设备适配、日志与插件 Host |
+| `packages/web` | React 界面、状态投影、频谱和操作面板 |
+| `packages/electron-main` | 桌面进程、本地服务端启动、窗口与打包 |
+| `packages/electron-preload` | Electron 沙箱与有限的桌面桥接 |
+| `packages/plugin-api` | 插件作者可依赖的公共类型和工具 |
+| `packages/builtin-plugins` | 与主程序发布的策略与工具插件 |
+| `packages/rigctld-server` | 将通用电台控制器暴露为 NET rigctl TCP 服务 |
+| `packages/client-tools` | 生产和 Android 形态中的 Web 静态入口与 API 反向代理 |
 
-- `EngineLifecycle`：资源启停和生命周期编排
-- `RadioBridge`：电台连接、事件转发和断线恢复
-- `TransmissionPipeline`：编码、混音、PTT 和播放时序
-- `ClockCoordinator`：时钟、频谱、解码和时隙事件桥接
-- `AudioVolumeController`：音量读写和持久化
+## 共享契约
 
-这些组件共同构成服务端运行时。
+`packages/contracts` 不只是 TypeScript 类型集合。Zod schema 在运行时校验来自界面、配置和插件的载荷，并为 REST 与 WebSocket 两侧提供一致类型。新增跨进程字段时，契约、服务端产生者和前端消费者必须作为一个变更单元验证。
 
-## 状态机结构
+## 系统约束
 
-主项目当前使用两套状态机：
-
-- 引擎状态机：`IDLE / STARTING / RUNNING / STOPPING`
-- 电台状态机：`DISCONNECTED / CONNECTING / CONNECTED / RECONNECTING`
-
-该划分用于把“引擎启动停止”和“电台连接状态”分成两条独立流程，便于处理首次连接失败、运行中断线和重连退避等情况。
-
-## 插件位置
-
-插件运行时位于 `packages/server/src/plugin/`。内置插件位于 `packages/builtin-plugins/src/`，外部插件通过 `packages/plugin-api` 所暴露的公共接口接入。
-
-当前插件分为两类：
-
-- `strategy`：按操作员互斥，负责自动化运行时
-- `utility`：可叠加启用，负责筛选、评分、广播监听或面板数据
+- 运行形态可以替换宿主，不改变 Server 业务所有权。
+- 电台协议差异留在连接适配器中。
+- 服务端事件先进入领域投影，再发往 WebSocket 或插件 Host。
+- 高频数据需要订阅和背压策略，不默认广播给所有客户端。
+- 与 RF 相关的关键操作必须经过权限、状态和串行化边界。

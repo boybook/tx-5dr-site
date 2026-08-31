@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitepress';
+import { withMermaid } from 'vitepress-plugin-mermaid';
 import { REPO_URL } from '../../src/config/site';
 
 const base = process.env.VITE_BASE_PATH || '/';
@@ -65,21 +66,38 @@ const guideSidebar = [
 
 const wikiSidebar = [
   {
-    text: '项目地图',
+    text: '系统模型',
     items: [
-      { text: 'Wiki 入口', link: '/wiki/' },
-      { text: '关于', link: '/wiki/about' },
-      { text: '为什么是 TX-5DR', link: '/wiki/why-tx5dr' },
-      { text: '架构概览', link: '/wiki/architecture' },
-      { text: '插件系统概览', link: '/wiki/plugin-system' },
+      { text: 'Wiki', link: '/wiki/' },
+      { text: '设计目标与边界', link: '/wiki/why-tx5dr' },
+      { text: '领域模型', link: '/wiki/domain-model' },
+      { text: '总体架构', link: '/wiki/architecture' },
     ],
   },
   {
-    text: '稳定参考',
+    text: '运行时与数据流',
     items: [
-      { text: '下载与分发策略', link: '/wiki/distribution' },
-      { text: '命令参考', link: '/wiki/commands' },
-      { text: '安装包说明', link: '/wiki/packages' },
+      { text: '通信与协议', link: '/wiki/communications' },
+      { text: '状态与生命周期', link: '/wiki/lifecycle' },
+      { text: 'FT8 收发时序', link: '/wiki/ft8-flow' },
+      { text: '实时语音与远程音频', link: '/wiki/realtime-audio' },
+      { text: '电台适配层', link: '/wiki/radio-adapters' },
+    ],
+  },
+  {
+    text: '扩展与公共能力',
+    items: [
+      { text: '插件与事件系统', link: '/wiki/plugin-system' },
+      { text: '公共 Node.js / Rust 库', link: '/wiki/packages' },
+    ],
+  },
+  {
+    text: '贡献与发布',
+    items: [
+      { text: '贡献者代码地图', link: '/wiki/contributing' },
+      { text: '开发与验证', link: '/wiki/commands' },
+      { text: '发布与分发链路', link: '/wiki/distribution' },
+      { text: '开源与许可证', link: '/wiki/about' },
     ],
   },
 ];
@@ -219,7 +237,7 @@ const jaThemeConfig = {
   },
 };
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: 'TX-5DR',
   description: 'TX-5DR 官网与文档中心',
   lang: 'zh-CN',
@@ -234,6 +252,21 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: ['mermaid', 'fastdom'],
+    },
+  },
+  mermaid: {
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#e8f0fe',
+      primaryTextColor: '#172033',
+      primaryBorderColor: '#5277c3',
+      lineColor: '#65728a',
+      secondaryColor: '#edf7f2',
+      tertiaryColor: '#fff4dc',
+      fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+    },
   },
   locales: {
     root: {
@@ -291,4 +324,4 @@ export default defineConfig({
     },
     socialLinks: [{ icon: 'github', link: REPO_URL }],
   },
-});
+}));

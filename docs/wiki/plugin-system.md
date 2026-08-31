@@ -1,111 +1,69 @@
-# 插件系统概览
+# 插件与事件系统
 
-本页说明 TX-5DR 插件系统的作用范围、类型划分和接口边界。相关实现位于 `packages/server/src/plugin/`，对外公共接口位于 `packages/plugin-api`。
-
-## 背景
-
-自动化逻辑、候选目标筛选、面板展示和外部集成如果直接写入核心后端，会增加以下维护成本：
-
-- 不同场景下的自动化逻辑难以并存
-- 外部扩展需要直接修改主项目代码
-- 升级主项目时难以隔离本地改动
-
-因此，本项目把扩展点放到插件层，并将公共接口单独整理到 `packages/plugin-api`。
+插件层承载可替换的通联策略、候选筛选、自动起呼、日志同步和自定义面板。核心引擎保留时钟、电台、PTT、权限和最终仲裁，插件通过 Host 提供的有限上下文参与系统。
 
 ## 插件类型
 
-### 策略插件
+| 类型 | 并存规则 | 典型责任 |
+| --- | --- | --- |
+| Strategy | 每个操作员同时选择一个 | QSO 状态、待发文本、时隙决策和操作员动作 |
+| Utility | 多个叠加启用 | 过滤、评分、守候、定时任务、日志同步和面板数据 |
 
-策略插件通过 `createStrategyRuntime(ctx)` 返回 `StrategyRuntime`。其特点如下：
+Strategy 是当前操作员的通联状态机，Utility 则在共享事件上提供附加能力。Utility 不因能够看到解码事件就自动获得 RF 控制权。
 
-- 类型为 `type: 'strategy'`
-- 每个操作员同一时刻只启用一个
-- 负责 QSO 自动化运行时、状态和发射文本
+## 事件与决策流
 
-内置 `standard-qso` 位于 `packages/builtin-plugins/src/standard-qso/`，可作为策略插件的参考实现。
+```mermaid
+sequenceDiagram
+  participant E as 引擎事件
+  participant H as 插件 Host
+  participant U as Utility 插件
+  participant S as Strategy 插件
+  participant A as Host 仲裁器
+  participant O as 操作员运行时
+  participant R as 受控电台命令
 
-### 工具插件
+  E->>H: slotStart / decode / QSO / radio event
+  H->>U: 按权限投影参数与上下文
+  U-->>H: 过滤、评分或自动起呼提议
+  H->>S: 操作员状态与候选结果
+  S-->>H: 声明式策略决策
+  H->>A: 汇总提议、优先级与当前状态
+  A-->>O: 最多一个可执行意图
+  O->>R: 权限、时隙和 RF 状态校验后执行
+```
 
-工具插件通过 `hooks` 参与处理流程。其特点如下：
+自动起呼 Utility 返回 proposal，而不在解码回调中直接提交呼叫。Host 收集所有活跃插件的提议，按优先级、命中消息顺序和稳定插件标识仲裁，每个决策周期最多产生一次统一呼叫请求。
 
-- 类型为 `type: 'utility'`
-- 可多个同时启用
-- 常用于候选过滤、候选打分、广播监听、面板推送和定时任务
+## 公共 API 边界
 
-其中比较典型的两类规范入口是：
+外部插件只应依赖 `@tx5dr/plugin-api`。该包提供：
 
-- `onScoreCandidates(...)`：用于“偏好排序型”插件，例如已通联偏置，只调整候选分数，不直接控制呼叫
-- `onAutoCallCandidate(...)`：用于“守候型”插件，返回自动起呼提议，由 Host 统一仲裁
+- `definePlugin()` 和插件定义。
+- 由权限列表推导的上下文与结构化命令端口。
+- StrategyRuntime、Hook、EventBus、KV 存储和日志同步类型。
+- `testing` 测试工厂、`contest` 竞赛组合模块和 iframe Bridge 类型。
 
-内置 `snr-filter`、`callsign-filter`、`worked-station-bias`、`watched-callsign-autocall`、`scheduled-cq-autocall` 和日志同步 Provider 都属于该类。
+`packages/server/src/plugin/` 中的类、内部事件实例和引擎对象不属于公共插件 API。插件依赖这些内部实现会绕过权限投影，并在主程序重构时失去兼容性。
 
-### 自动起呼提议（Autocall Proposal）
+## 能力与调用生命周期
 
-对于“守候型”工具插件，当前推荐实现 `onAutoCallCandidate(slotInfo, messages, ctx)`，返回一个自动起呼提议，而不是在 `onSlotStart` / `onDecode` 中直接提交起呼命令。
+插件必须在 `permissions` 中声明所需能力。Host 只把获准属性投影到该插件的上下文，未声明属性在 TypeScript 类型和运行时对象中都不存在。
 
-其设计目标是让多个自动起呼插件可以稳定组合：
+Host 能力句柄只在当前回调有效。回调结束、超时、重载或卸载后，持有旧上下文并异步调用 Host 会被拒绝。配置、KV、查询结果和事件载荷跨边界时以值传递，插件修改本地副本不会隐式改变 Host 状态。
 
-- Host 会收集所有活跃 utility 插件的提议
-- 统一按 `priority`、命中消息顺序、插件名稳定排序进行仲裁
-- 仲裁完成后，最多只执行一次统一的 `requestCall(...)`
+## 自定义 UI
 
-内置参考：
+插件页面在 iframe 中运行，通过 Bridge SDK 调用已注册动作、读取主题 token 和接收面板数据。iframe 不直接获取服务端内存对象或底层设备句柄。自定义 UI 的网络请求、宿主调用和权限错误保留独立诊断边界。
 
-- `watched-callsign-autocall`：显式守候呼号，默认优先级更高
-- `watched-novelty-autocall`：守候新 DXCC / 新网格 / 新呼号，适合和其他插件组合
+## 安全范围
 
-proposal 是当前公开 API 的组合式入口；实际起呼由 Host 和当前 strategy 统一执行。
+能力模型防止普通插件在无声明情况下使用敏感 Host 能力，但当前 Node.js 插件仍在服务端进程中执行。这不是针对恶意代码的操作系统级沙箱。管理员应把安装第三方插件视为运行受信任的服务端代码。
 
-这里最重要的细节之一是：`lastMessage.slotInfo` 必须表示**触发消息真正所属的 RX 时隙**，而不是简单复用当前 hook 被调用时的时隙参数。后续自动起呼会根据这条消息所属时隙去推导下一次发射周期；如果时隙语义写错，就可能出现同一时隙误发。
+## 代码定位
 
-### 自动起呼执行策略（Autocall Execution）
-
-proposal 胜出后，Host 还会继续调用 `onConfigureAutoCallExecution(request, plan, ctx)`。这个 hook 用来描述“命中后如何执行”，而不是“如何发现目标”。
-
-当前内置 `autocall-idle-frequency` 就是通过这个 hook 提供共享执行策略，例如：
-
-- 是否在自动起呼前先选择更空闲的发射音频频率
-- 后续不同自动起呼插件之间如何共享同一套执行层策略
-
-如果插件需要复用系统内已有的空闲频率选择算法，应使用 `ctx.band.findIdleTransmitFrequency(...)`，而不是自己重写一套频谱占用分析逻辑。
-
-## 插件接口边界
-
-外部插件开发应优先依赖 `@tx5dr/plugin-api`。当前公共接口包括：
-
-- `definePlugin()` / `PluginDefinition`
-- `PluginContextFor`
-- `PluginHooks`
-- `StrategyRuntime`
-- `KVStore`、`PluginLogger`、只读 view 和 command port 等辅助接口
-
-该接口边界用于把插件作者依赖的类型与主项目内部实现分离。
-
-## 配置与数据目录
-
-主项目文档说明，用户插件放置在运行时数据目录下的 `plugins/` 子目录。不同分发形态下的绝对路径不同，但目录结构保持一致。插件本地化文件、README 和入口文件都位于该目录内。
-
-推荐以运行中页面「设置 → 插件」里展示的**插件目录**为准进行部署。
-
-- Docker 场景优先看页面中的宿主机映射提示，不要只看容器内路径。
-- 放入插件后需要点击「重载插件」才会触发重新扫描与加载。
-- 入口文件名仅支持：`plugin.js`、`plugin.mjs`、`index.js`、`index.mjs`。
-
-## 故障排查：插件目录放入后没有反应
-
-先打开「设置 → 插件 → 插件运行日志」，确认是否出现以下日志：
-
-- `Attempting to load plugin directory`（宿主已经开始尝试加载）
-- `Plugin loaded: ...`（加载成功）
-- 或明确失败原因（缺入口文件、导入失败、导出格式错误、校验失败、名称冲突等）
-
-常见问题：
-
-1. 直接把 TypeScript 源码放进插件目录，未构建为可运行 JS。
-2. 默认导出不是 `definePlugin({...})` 的结果或有效插件定义对象。
-3. 插件名与内置插件重名。
-4. 自定义 UI 声明了 `pageId`，但缺失对应 HTML 入口文件，或 `ui.dir`/`entry` 路径不匹配。
-
-## 与文档的关系
-
-本节说明的是插件层的结构和边界。具体接口字段与类型定义，请继续阅读 [插件 API](../plugin-api/)。
+- 公共插件类型：`packages/plugin-api/`
+- 插件加载、生命周期与 Host：`packages/server/src/plugin/`
+- 内置插件：`packages/builtin-plugins/src/`
+- 插件脚手架：`packages/create-tx5dr-plugin/`
+- 完整接口和教程：[插件 API](../plugin-api/)
