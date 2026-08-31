@@ -1,266 +1,164 @@
-# Docker 部署
+# 用 Docker Compose 运行 TX-5DR
 
-镜像：[`boybook/tx-5dr:latest`](https://hub.docker.com/r/boybook/tx-5dr)
+Docker 版适合已有 Linux 服务器、NAS 或 Compose 管理经验的用户。TX-5DR 在容器内完整运行，电台留在宿主机旁，操作员通过浏览器访问，不需要给服务器安装图形桌面或远程桌面软件。
 
-Docker 部署适合已有 `docker compose` 基础设施的环境。
+官方镜像：[`boybook/tx-5dr:latest`](https://hub.docker.com/r/boybook/tx-5dr)
 
-## 实时语音链路
+## 使用前提
 
-TX-5DR Docker 现在只有一个默认运行模式：`tx5dr` 单容器内置低延迟实时语音。
+- Docker Engine 24+ 和 Docker Compose V2 2.20+
+- Linux 宿主机能够识别电台、USB 串口和音频设备
+- 能够编辑 Compose 文件并管理宿主机设备权限
+- 数据目录所在磁盘有可靠的备份
 
-| 项目 | 当前默认 |
-| --- | --- |
-| 容器数量 | 1 个 (`tx5dr`) |
-| 默认低延迟链路 | `rtc-data-audio` WebRTC DataChannel |
-| 媒体端口 | `50110/udp`，单 UDP 端口 |
-| 兼容链路 | `ws-compat` WebSocket/TCP 自动降级 |
-| 语音监听 / 发射 | 完全可用 |
+如果你不熟悉容器设备映射，Linux 服务器版通常更容易安装和排障。
 
-不再需要 `docker-compose.livekit.yml`、`livekit` 或 `livekit-init`。如果 UDP 不可用，可以在“系统设置 > 实时音频”切到兼容模式；如果 UDP 可用，保持 `Auto` 即可优先使用 `rtc-data-audio`。
+## 1. 检查宿主机硬件
 
-## 前置要求
-
-- Docker Engine 24+ 和 Docker Compose V2 (2.20+)
-- 宿主机可识别电台相关硬件（USB 声卡、串口设备）
-
-在宿主机上运行以下命令确认硬件状态：
+先不要启动容器。在宿主机确认实际设备名称：
 
 ```bash
-lsusb                                           # USB 设备总览
-aplay -l                                        # 音频播放设备
-arecord -l                                      # 音频录制设备
-ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null     # 串口设备
-ls -l /dev/serial/by-id/ 2>/dev/null            # 稳定设备名
+lsusb
+aplay -l
+arecord -l
+ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+ls -l /dev/serial/by-id/ 2>/dev/null
 ```
 
-## 快速开始（独立模式）
+记录电台使用的串口和声卡。WSJT-X、JTDX、rigctld 或其他程序不能同时独占同一个 CAT 串口。
 
-仓库根目录的 [`docker-compose.yml`](https://github.com/boybook/tx-5dr/blob/main/docker-compose.yml) 是基线配置。下载或编写好 Compose 文件后：
+通过网络 Hamlib、ICOM WLAN 或 TCI 连接电台时，通常不需要映射本地串口；需要确认容器网络能够访问电台 IP 和端口。
+
+## 2. 准备 Compose 目录
 
 ```bash
-# 1. 创建数据目录
+mkdir tx5dr-docker
+cd tx5dr-docker
+curl -fLO https://raw.githubusercontent.com/boybook/tx-5dr/main/docker-compose.yml
 mkdir -p data/{logs/nginx,logs/supervisor}
+```
 
-# 2. 拉取镜像
+官方 [`docker-compose.yml`](https://github.com/boybook/tx-5dr/blob/main/docker-compose.yml) 是基线配置。启动前按自己的设备修改 `devices:`；不要直接照抄其他电台的 `/dev/ttyUSB0` 编号。
+
+## 3. 映射串口和音频
+
+`/dev/bus/usb` 不能代替具体的串口节点。使用 Hamlib CAT 时，必须把实际的 `/dev/ttyUSB*` 或 `/dev/ttyACM*` 传入容器：
+
+```yaml
+services:
+  tx5dr:
+    devices:
+      - /dev/bus/usb:/dev/bus/usb:rwm
+      - /dev/snd:/dev/snd:rwm
+      - /dev/ttyACM0:/dev/ttyACM0:rwm
+    group_add:
+      - audio
+      - dialout
+```
+
+常见情况：
+
+| 宿主机设备 | 常见用途 |
+| --- | --- |
+| `/dev/ttyACM*` | ICOM 等 USB CDC 串口 |
+| `/dev/ttyUSB*` | FTDI、CP210x、CH34x 等 USB 转串口 |
+| `/dev/snd` | USB 声卡和系统音频设备 |
+
+一部电台可能同时出现多个串口。应根据 `/dev/serial/by-id/`、电台手册和实际测试确认 CAT/PTT 使用哪一个。不要为了省事给容器增加 `privileged: true`；只开放 TX-5DR 实际需要的设备。
+
+## 4. 启动并登录
+
+```bash
 docker compose pull
-
-# 3. 启动
 docker compose up -d
-
-# 4. 获取管理员令牌
+docker compose ps
 docker exec tx5dr cat /app/data/config/.admin-token
 ```
 
-浏览器访问 `http://<宿主机IP>:8076`（或 `https://<宿主机IP>:8443`），使用管理员令牌登录。此时 TX-5DR 已完全可用。
+浏览器打开：
 
-::: tip HTTPS 已自动启用
-容器首次启动时会自动生成自签名 SSL 证书，HTTPS 默认可通过 `8443` 端口访问。浏览器会提示安全警告——点击「高级」→「继续前往」即可。如需使用自己的证书，参见下方 [HTTPS 与 SSL 证书](#https-与-ssl-证书) 章节。
-:::
+- `http://<宿主机 IP>:8076`
+- `https://<宿主机 IP>:8443`
 
-## 配置低延迟 WebRTC UDP
+首次使用自签名 HTTPS 证书时，浏览器会显示安全提示。确认地址属于自己的宿主机后再继续，并用上一步得到的管理员令牌登录。
 
-默认 `docker-compose.yml` 已暴露实时语音所需端口：
+如果页面没有出现，先查看：
 
-```yaml
-ports:
-  - "8076:80"
-  - "8443:443"
-  - "50110:50110/udp"
-environment:
-  - RTC_DATA_AUDIO_UDP_PORT=50110
-  - RTC_DATA_AUDIO_ICE_UDP_MUX=1
+```bash
+docker compose logs --tail=200 tx5dr
 ```
 
-### 局域网或本机访问
+## 5. 确认容器内设备
 
-通常无需额外配置。浏览器通过同源 `/api/realtime/rtc-data-audio` 建立信令连接，再用 `50110/udp` 建立 WebRTC DataChannel 媒体链路。失败时会自动回退到 `ws-compat`。
-
-### FRP / 静态 NAT
-
-如果浏览器从公网访问 Docker 主机，请把一个公网 UDP 端口映射到容器宿主机的 `50110/udp`，然后在“系统设置 > 实时音频”中填写 `WebRTC Data Audio external UDP address` 的公网主机/IP 和 UDP 端口。
-
-::: warning 只转发网页端口不够
-`8076/tcp` 或 `8443/tcp` 只能让页面和信令可达。低延迟媒体还需要 UDP；如果部署条件无法转发 UDP，请直接使用 `ws-compat` 兼容模式。
-:::
-
-### 修改 UDP 端口
-
-如需修改端口，compose 的端口映射和环境变量必须同步：
-
-```yaml
-ports:
-  - "50222:50222/udp"
-environment:
-  - RTC_DATA_AUDIO_UDP_PORT=50222
+```bash
+docker exec tx5dr ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+docker exec tx5dr ls -l /dev/snd/
 ```
 
-重新启动容器后，新会话会使用新的 UDP 端口。
+宿主机存在而容器内不存在，说明 Compose 设备映射不完整。容器内存在但 TX-5DR 连接时报 `Permission denied`，检查 `audio` / `dialout` 组和宿主机设备权限，然后重建容器：
 
-## Compose 配置说明
+```bash
+docker compose up -d --force-recreate
+```
 
-### 服务
+## 数据持久化
 
-| 服务 | 所在文件 | 作用 | 生命周期 |
-|------|---------|------|---------|
-| `tx5dr` | `docker-compose.yml` | 主应用（nginx 反代 + tx5dr-server，supervisor 管理），内置 `rtc-data-audio` | 持续运行 |
-
-### 持久化目录
-
-Compose 现在推荐直接持久化整个应用数据根目录：
+基线 Compose 会把整个应用数据根目录映射到宿主机：
 
 ```yaml
 volumes:
   - ./data:/app/data
 ```
 
-这样镜像更新、容器重建或切换 Compose 文件时，以下内容都会统一保留：
+请保持这条映射。`./data` 中包含配置、管理员令牌、日志本、插件、日志、证书和运行数据。删除容器不会删除该目录，但删除或换掉宿主机目录会让新容器看起来像一次全新安装。
 
-| 宿主机目录 | 内容 |
-|------|------|
-| `./data/config` | 应用配置、管理员令牌、认证数据 |
-| `./data/plugins` | 用户插件 |
-| `./data/logs` | 应用日志与通联日志 |
-| `./data/cache` | 缓存数据 |
-| `./data/ssl` | SSL 证书 |
-| `./data/realtime` | 实时语音运行时设置与诊断数据 |
+不要只挑选几个子目录持久化；完整备份 `./data` 更容易可靠迁移和回滚。
 
-::: warning 不建议只零散挂载某几个子目录
-如果你只挂载部分子目录，镜像更新或容器重建后更容易出现日志、凭据或运行时文件丢失。优先保持整个 `./data` 根目录持久化。
-:::
+## 浏览器端口和远程访问
 
-## HTTPS 与 SSL 证书
+官方 Compose 默认使用：
 
-### 自签名证书（默认）
+| 端口 | 用途 |
+| --- | --- |
+| `8076/tcp` | HTTP Web UI |
+| `8443/tcp` | HTTPS Web UI |
+| `50110/udp` | 低延迟实时音频 |
+| `4532/tcp` | 可选的 rigctld 兼容桥接 |
 
-容器首次启动时，entrypoint 脚本会自动生成自签名 SSL 证书并保存到 `./data/ssl/`。HTTPS 服务在容器内监听 443 端口，通过 `docker-compose.yml` 映射为宿主机的 **8443** 端口。
+只在确实需要 rigctld 兼容桥接时开放 `4532/tcp`，不要把它直接暴露到公网。实时音频的 UDP、FRP 和兼容传输见[远程监听与语音链路](./realtime-audio)。
 
-访问方式：
+跨网络访问时，优先使用 Tailscale、ZeroTier、WireGuard 等私有组网。使用域名、FRP 或反向代理时，在 TX-5DR 的“系统设置 > 访问范围”选择“正式开放部署”，并填写浏览器实际访问的完整 Origin；代理必须转发 WebSocket。
 
-| 协议 | 地址 | 说明 |
-|------|------|------|
-| HTTP | `http://<宿主机IP>:8076` | 无加密，局域网可用 |
-| HTTPS | `https://<宿主机IP>:8443` | 自签名证书，浏览器会提示安全警告 |
+HTTP 可以工作，但不会加密令牌和控制数据，部分浏览器音频能力也会受到限制。正式远程使用应配置受信任的 HTTPS 证书，不建议把 `8076` 直接暴露到公网。
 
-::: info 为什么需要 HTTPS？
-浏览器要求 HTTPS 才能授权麦克风访问。如果你需要使用语音功能（监听或发射），必须通过 HTTPS 或 `localhost` 访问。
-:::
+## 替换 HTTPS 证书
 
-::: warning 自签名证书的局限性
-自签名证书**不被**浏览器信任，每次打开页面时都会出现安全警告。这不影响功能使用——加密强度与正式证书完全相同，只是身份未经第三方验证。点击「高级」→「继续前往」即可正常使用。
-:::
-
-### 替换为自定义证书
-
-如果你有域名和正式 SSL 证书，可以替换自签名证书：
+把 PEM 证书和私钥写入持久化目录后重载 nginx：
 
 ```bash
-# 1. 将你的证书文件放入 ssl 目录
 cp your-cert.crt ./data/ssl/server.crt
 cp your-cert.key ./data/ssl/server.key
-
-# 2. 更新证书模式标记（可选，用于 status 显示）
 sed -i 's/TX5DR_SSL_MODE=self-signed/TX5DR_SSL_MODE=custom/' ./data/ssl/cert-info.env
-
-# 3. 重启容器（或仅 reload nginx）
-docker compose restart tx5dr
-# 或：docker exec tx5dr nginx -s reload
+docker exec tx5dr nginx -s reload
 ```
 
-::: tip
-证书文件名必须是 `server.crt` 和 `server.key`。替换后容器重启不会覆盖自定义证书。
-:::
+限制私钥文件权限，并在浏览器中确认实际证书已经更新。
 
-## 设备映射
-
-设备映射是 Docker 部署中最容易出错的部分。
-
-### 串口设备（CAT 电台控制）
-
-::: warning 关键
-`/dev/bus/usb` 只暴露 USB 总线，**不会**自动把宿主机的 `/dev/ttyUSB*` 或 `/dev/ttyACM*` 节点传入容器。必须额外映射具体的 tty 设备。
-:::
-
-先在宿主机确认设备类型：
+## 更新、停止与日志
 
 ```bash
-ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
-ls -l /dev/serial/by-id/ 2>/dev/null
+# 更新镜像并重建
+docker compose pull
+docker compose up -d
+
+# 正常停止或启动
+docker compose stop
+docker compose start
+
+# 跟踪日志
+docker compose logs -f tx5dr
 ```
 
-常见对应关系：
+更新前结束发射并备份 `./data`。更新后重新确认串口、音频、频率读取和 PTT；镜像拉取成功并不代表设备映射仍然正确。
 
-| 设备节点 | 典型硬件 | 举例 |
-|---------|---------|------|
-| `/dev/ttyUSB*` | CP2102、CH340、FTDI 等 USB 转串口芯片 | Yaesu FT-710、Elecraft K3 |
-| `/dev/ttyACM*` | USB CDC ACM（原生 USB） | ICOM IC-705、IC-7300 |
-
-在 `docker-compose.yml` 的 `devices:` 中添加：
-
-```yaml
-devices:
-  - /dev/bus/usb:/dev/bus/usb:rwm
-  - /dev/snd:/dev/snd:rwm
-  # 根据实际硬件取消注释：
-  - /dev/ttyUSB0:/dev/ttyUSB0:rwm    # CP2102/CH340 等
-  - /dev/ttyUSB1:/dev/ttyUSB1:rwm
-  # 或 ICOM / CDC ACM 设备：
-  - /dev/ttyACM0:/dev/ttyACM0:rwm
-  - /dev/ttyACM1:/dev/ttyACM1:rwm
-```
-
-### 音频设备
-
-USB 声卡需要同时在 `volumes` 和 `devices` 中映射 `/dev/snd`：
-
-```yaml
-volumes:
-  - /dev/snd:/dev/snd:rw
-devices:
-  - /dev/snd:/dev/snd:rwm
-```
-
-### 权限组
-
-容器进程需要 `audio` 和 `dialout` 两个组才能访问音频和串口硬件：
-
-```yaml
-group_add:
-  - audio      # /dev/snd 访问
-  - dialout    # /dev/ttyUSB*、/dev/ttyACM* 访问
-```
-
-::: danger 二者缺一不可
-- 缺少 `audio` → 音频设备列表只显示 "Default"，无法选择具体声卡
-- 缺少 `dialout` → 连接电台时报 "Permission denied"
-:::
-
-## WebRTC UDP 网络
-
-低延迟语音使用内置 `rtc-data-audio`，不再使用 LiveKit。Docker 默认只需要额外暴露一个 UDP 端口：
-
-| 端口 | 协议 | 用途 |
-|------|------|------|
-| 50110 | UDP | `rtc-data-audio` WebRTC DataChannel 媒体 |
-
-信令入口是当前站点同源的 `/api/realtime/rtc-data-audio`，通常跟 Web UI 一起走 HTTPS 反向代理，不需要单独暴露其他媒体服务端口。
-
-::: warning FRP / 仅网页反代场景
-如果你只是把网站转发到公网，而没有同时开放 UDP，浏览器可以打开页面但低延迟语音可能无法建立。此时可以继续使用 `ws-compat` 兼容模式。
-:::
-
-完整判断方法请参阅 [实时语音与 WebRTC UDP](./realtime-audio)。
-
-## 更新
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-::: warning
-更新前请确认宿主机上的 `./data` 目录保持不变。只要整个数据根目录持续挂载，配置、日志、SSL 证书和实时语音运行时数据都会保留。
-:::
-
-## 后续阅读
-
-- [实时语音与 WebRTC UDP](./realtime-audio)
-- [部署建议与升级](./deployment)
+更完整的维护清单见[长期运行、远程访问与升级](./deployment)。

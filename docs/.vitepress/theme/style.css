@@ -515,3 +515,28 @@ body.tx-page-home::before {
 .dark .tx-home .tx-footer {
   color: var(--color-slate-400);
 }
+
+.vp-doc img[src*="/guide/screenshots/"] {
+  display: block;
+  width: 100%;
+  max-height: 80vh;
+  margin: 1.5rem auto 0.5rem;
+  object-fit: contain;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: #020617;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 12%);
+}
+
+.dark .vp-doc img[src*="/guide/screenshots/"] {
+  box-shadow: 0 12px 32px rgb(0 0 0 / 32%);
+}
+
+.vp-doc p:has(> img[src*="/guide/screenshots/"]) + p > em:only-child {
+  display: block;
+  margin-bottom: 1.5rem;
+  color: var(--vp-c-text-2);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: center;
+}

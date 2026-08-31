@@ -8,24 +8,57 @@ const guideSidebar = [
   {
     text: '开始使用',
     items: [
-      { text: '文档入口', link: '/guide/' },
-      { text: '选型与安装', link: '/guide/installation' },
-      { text: '首次进入与基本使用', link: '/guide/first-steps' },
+      { text: '指南首页', link: '/guide/' },
+      { text: '选择运行方式', link: '/guide/installation' },
+      { text: '第一次 FT8 通联', link: '/guide/quick-start' },
+      { text: '搭好第一套站台', link: '/guide/first-steps' },
+      { text: '界面与日常操作', link: '/guide/interface' },
     ],
   },
   {
-    text: '实时语音',
+    text: '运行形态',
     items: [
-      { text: '实时语音与 WebRTC UDP', link: '/guide/realtime-audio' },
+      { text: '桌面版', link: '/guide/desktop' },
+      { text: 'Linux 服务器', link: '/guide/linux-server' },
+      { text: 'Docker', link: '/guide/docker' },
+      { text: 'Android', link: '/guide/android' },
     ],
   },
   {
-    text: '部署方式',
+    text: '电台与信号',
     items: [
-      { text: '桌面版安装', link: '/guide/desktop' },
-      { text: 'Linux 服务器安装', link: '/guide/linux-server' },
-      { text: 'Docker 部署', link: '/guide/docker' },
-      { text: '部署建议与升级', link: '/guide/deployment' },
+      { text: '电台兼容性', link: '/guide/radio-compatibility' },
+      { text: '电台 Profile 与音频', link: '/guide/radio-profile' },
+      { text: '数值表与电台控制', link: '/guide/radio-controls' },
+      { text: '远程监听与语音链路', link: '/guide/realtime-audio' },
+    ],
+  },
+  {
+    text: '通联模式',
+    items: [
+      { text: 'FT8 正式 / FT4 实验', link: '/guide/ft8' },
+      { text: '语音（正式）', link: '/guide/voice' },
+      { text: 'CW（实验）', link: '/guide/cw' },
+      { text: 'SSTV（实验）', link: '/guide/sstv' },
+      { text: 'FAX（实验）', link: '/guide/fax' },
+    ],
+  },
+  {
+    text: '共享、数据与扩展',
+    items: [
+      { text: '操作员、用户与远程访问', link: '/guide/operators-remote' },
+      { text: '通联日志', link: '/guide/logbook' },
+      { text: '外部集成', link: '/guide/integrations' },
+      { text: '插件与自动化', link: '/guide/plugins-automation' },
+    ],
+  },
+  {
+    text: '维护与参考',
+    items: [
+      { text: '长期运行、升级与备份', link: '/guide/deployment' },
+      { text: '日常维护', link: '/guide/maintenance' },
+      { text: '按现象排障', link: '/guide/troubleshooting' },
+      { text: '设置索引', link: '/guide/settings-reference' },
     ],
   },
 ];

@@ -1,39 +1,68 @@
-# 选型与安装
+# 选择适合你的运行方式
 
-本页用于区分 TX-5DR 当前提供的三种分发形态：桌面版、Linux 服务器版和 Docker。三者共享同一套核心后端与 Web 界面，但运行位置、部署方式和维护边界不同。
+第一次使用 TX-5DR，推荐从**桌面版 + 单操作员 + FT8**开始。它安装最直接，也最适合先确认 CAT、PTT、收发音频和校时都正常。
 
-## 分发形态对照
+如果你希望电台长期在线，则可以把 TX-5DR 安装在电台旁的 Linux 主机、Docker 主机或 Android 设备上。操作员只需在笔记本、平板或手机的浏览器中打开 TX-5DR，不必远程控制整台电脑的桌面，也不会因为远程桌面缩放、断线或音频重定向而影响操作。
 
-| 方式 | 运行位置 | 典型场景 | 额外要求 |
-| --- | --- | --- | --- |
-| **桌面版** | 本地桌面主机 | 电台旁边的单机工作位 | 需要图形界面 |
-| **Linux 服务器** | 独立 Linux 主机 | 长期在线、远程访问、多人共用 | 需要 Debian 12+ 或 Ubuntu 22.04+ |
-| **Docker** | 容器环境 | 已有 Compose 或容器基础设施 | 需要处理卷映射、设备映射和网络端口 |
+## 运行主机和操作终端
 
-## 选择依据
+- **运行主机**连接电台、音频设备并实际完成解码、CAT 控制和发射。
+- **操作终端**只需要现代浏览器，可以位于同一张桌子、同一局域网，或通过安全的远程网络访问。
+- 关闭运行主机上的 TX-5DR 服务、拔掉电台连接或让主机休眠，远端浏览器就无法继续操作。
 
-### 桌面版
+桌面版、Linux 服务器版、Docker 和 Android 都是完整运行形态。Android 版也会在设备上安装并运行完整的 TX-5DR runtime，并非只能连接另一台 TX-5DR 服务器的客户端。
 
-桌面版适合把 TX-5DR 运行在本地桌面环境中。发布物为 Electron 安装包，应用内包含服务端和浏览器界面，因此安装后即可在本机直接完成配置。
+## 四种运行形态
 
-### Linux 服务器版
+| 方式 | 最适合 | 电台接在哪里 | 从哪里操作 | 主要维护内容 |
+| --- | --- | --- | --- | --- |
+| **桌面版（推荐入门）** | 首次安装、日常本机操作 | Windows、macOS 或 Linux 桌面电脑 | 应用窗口，也可开放给浏览器 | 应用更新、系统设备权限 |
+| **Linux 服务器** | 电台长期在线、无桌面主机、远程值守 | Debian / Ubuntu 主机 | 任意浏览器 | 系统服务、网络、证书、备份 |
+| **Docker** | 已使用 Docker Compose 管理服务 | Linux 容器宿主机 | 任意浏览器 | 镜像、数据卷、设备映射、端口 |
+| **Android** | 便携台、低功耗值守、手机或平板直连电台 | Android 9+ arm64 设备 | 内置 WebView，或同一 Wi-Fi / 手机热点内的浏览器 | APK、运行环境、Android 权限与保活 |
 
-Linux 服务器版适合把电台控制主机与操作终端分离。安装脚本会部署 `tx5dr` 和 `nginx`，自动配置 HTTPS（自签名证书），并通过浏览器入口提供访问地址和管理员令牌。`tx5dr` 后端内置 `rtc-data-audio` WebRTC DataChannel 语音端点，默认使用 UDP `50110`。
+## 怎样选择
 
-### Docker
+### 我只想尽快完成第一次 FT8 通联
 
-Docker 形态适合已有 `docker compose` 基础设施的环境。该方式通常需要显式配置 `./data` 卷、`/dev/snd`、USB 设备映射以及对外端口。
+安装[桌面版](./desktop)。先在本机完成 Profile、电台控制和音频配置，确认接收稳定后再尝试发射。
+
+### 我想把一台小主机永久留在电台旁
+
+优先使用 [Linux 服务器版](./linux-server)。它不需要图形桌面，开机即可作为服务运行，适合通过局域网、私有组网或受保护的公网入口访问。
+
+### 我已有 NAS、家庭服务器或 Compose 环境
+
+使用 [Docker](./docker)。需要明确映射 USB 串口、音频设备和持久化数据目录；如果电台通过 ICOM WLAN、TCI 或网络 Hamlib 连接，则还要保证容器能够访问电台所在网络。
+
+### 我希望用手机、平板或 Android TV 做电台旁主机
+
+使用 [Android 版](./android)。它适合 USB 音频和 USB 串口设备，也能把热点或局域网访问地址提供给另一台手机、平板或电脑。购买设备前必须确认 Android 用户空间为 `arm64-v8a`，仅有 ARMv8 处理器并不代表系统一定是 64 位。
+
+## 安装前共同准备
+
+无论选择哪种方式，都建议先准备：
+
+- 电台及其 CAT/PTT 连接方式，例如 USB 串口、网络 Hamlib、ICOM WLAN 或 TCI
+- 能同时满足接收和发射的音频链路；部分电台可通过同一条 USB 线提供串口和 USB 声卡
+- 稳定的系统时间和可用的网络校时，FT8 对时钟误差敏感
+- 能在误配置时立即停止发射的本地方法
+- 远程使用时的登录令牌、HTTPS 或私有组网方案
+
+第一次配置建议把发射功率调低，并先完成 CAT 测试、PTT 测试和接收解码，再允许自动化功能发射。
 
 ## 下载入口
 
-- **桌面版 nightly**：<https://github.com/boybook/tx-5dr/releases/tag/nightly-app>
-- **Linux 服务器 nightly**：<https://github.com/boybook/tx-5dr/releases/tag/nightly-server>
-- **Docker nightly**：<https://github.com/boybook/tx-5dr/releases/tag/nightly-docker>
+- **桌面版**：<https://github.com/boybook/tx-5dr/releases/tag/nightly-app>
+- **Linux 服务器版**：<https://github.com/boybook/tx-5dr/releases/tag/nightly-server>
+- **Docker 镜像**：<https://hub.docker.com/r/boybook/tx-5dr>
+- **Android APK**：<https://github.com/boybook/tx5dr-android-bridge/releases/tag/nightly-android-bridge>
 
-当前官网首页会依据浏览器环境识别平台与架构，并结合站点里的发布元数据推荐安装包。该逻辑在 [下载与分发策略](../wiki/distribution) 中有说明。
+当前发布均为 nightly。更新可能包含新的电台能力和修复，也可能改变尚在演进的功能；长期运行前应保留数据备份，并在更新后重新检查电台、音频与 PTT 状态。
 
-## 后续页面
+## 安装完成后
 
-- 本地桌面主机：阅读 [桌面版安装](./desktop)
-- 独立 Linux 主机：阅读 [Linux 服务器安装](./linux-server)
-- 容器环境：阅读 [Docker 部署](./docker)
+1. 按对应平台页面启动 TX-5DR，并确认本机或浏览器能够打开界面。
+2. 按[第一次 FT8 通联](./quick-start)创建单操作员 FT8 配置。
+3. 其他设备访问、升级和备份见[长期运行、远程访问与升级](./deployment)。
+4. 远程监听和语音网络配置见[远程监听与语音链路](./realtime-audio)。
