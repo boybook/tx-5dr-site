@@ -93,10 +93,17 @@ export interface PluginDefinition<Permissions extends readonly PluginPermission[
     apiVersion?: 2;
     name: string;
     version: string;
+    minPluginApiVersion?: string;
     type: PluginType;
     strategyFeatures?: {
         targetQueue?: 1;
+        parallelTargetQueue?: 1;
+        queueActivation?: 'immediate' | 'operator-toggle';
+        manualInitiation?: 1;
+        maxConcurrentStreams?: number;
+        maxSimultaneousSignals?: number;
     };
+    simulationScenarios?: SimulationScenarioDescriptor[];
     instanceScope?: PluginInstanceScope;
     description?: string;
     permissions?: Permissions;
@@ -161,6 +168,19 @@ version: string;
 
 ```
 
+### PluginDefinition.minPluginApiVersion
+
+Oldest bundled `@tx5dr/plugin-api` version that can safely load this plugin.
+
+This is independent from the TX-5DR product/nightly version. Marketplace
+artifacts must declare it and match their catalog entry.
+
+```ts
+
+minPluginApiVersion?: string;
+
+```
+
 ### PluginDefinition.type
 
 Declares how the host should schedule and combine this plugin.
@@ -184,7 +204,22 @@ Optional strategy capabilities advertised to Host UI and routing.
 
 strategyFeatures?: {
     targetQueue?: 1;
+    parallelTargetQueue?: 1;
+    queueActivation?: 'immediate' | 'operator-toggle';
+    manualInitiation?: 1;
+    maxConcurrentStreams?: number;
+    maxSimultaneousSignals?: number;
 };
+
+```
+
+### PluginDefinition.simulationScenarios
+
+Development-only virtual-radio peer scenarios. The Host owns execution and RF safety.
+
+```ts
+
+simulationScenarios?: SimulationScenarioDescriptor[];
 
 ```
 
@@ -286,12 +321,16 @@ predeclaring placeholder panels.
 
 Each panel has a `slot` that controls where it renders: `'operator'` (the
 default, shown in the operator card), `'automation'` (shown in the
-top-right automation popover), `'main-right'` (the optional far-right main
+top-right automation popover), `'operator-action'` (an icon-and-text page
+action beside the operator logbook button), `'main-right'` (the optional far-right main
 pane), `'voice-left-top'` (above the voice frequency card),
 `'voice-right-top'` (the tabbed top area of the voice right panel),
 `'cw-left-top'` (above the CW frequency card),
 `'cw-right-top'` (the tabbed top area of the CW right panel), or
 `'radio-control-toolbar'` (a global utility iframe button in RadioControl).
+An `operator-action` panel must use `component: 'iframe'` and
+`openMode: 'page'`; the Host binds it to that operator and opens the
+referenced custom UI as a standalone page.
 Panels may also declare a preferred `width`, such as `'full'`, so hosts can
 promote more important live panels.
 
@@ -307,7 +346,7 @@ Declares which persistent storage scopes should be provisioned.
 
 Request `global` storage for data shared by the whole station, and
 `operator` storage for per-operator state. The corresponding stores are then
-available via [`PluginContext.store`](./context#plugincontextbase-store).
+available via [`PluginContext.store`](./context#plugincontext).
 
 ```ts
 

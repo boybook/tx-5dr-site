@@ -104,6 +104,7 @@ const wikiSidebar = [
 
 const pluginApiReferencePages = [
   { text: 'PluginDefinition', page: 'definition' },
+  { text: 'Plugin API Compatibility', page: 'compatibility' },
   { text: 'Capabilities', page: 'capabilities' },
   { text: 'PluginContext', page: 'context' },
   { text: 'PluginHooks', page: 'hooks' },
@@ -150,6 +151,7 @@ const pluginApiSidebar = [
       { text: '过滤与评分', link: '/plugin-api/tutorial-filter-and-score' },
       { text: '自动起呼提议', link: '/plugin-api/tutorial-watcher-autocall' },
       { text: 'StrategyRuntime', link: '/plugin-api/tutorial-strategy-runtime' },
+      { text: 'FT8 比赛插件', link: '/plugin-api/tutorial-ft8-contest' },
       { text: '自定义 UI', link: '/plugin-api/tutorial-custom-ui' },
       { text: 'UI 开发实战', link: '/plugin-api/tutorial-ui-dev-workflow' },
       { text: '日志同步 Provider', link: '/plugin-api/tutorial-logbook-sync' },

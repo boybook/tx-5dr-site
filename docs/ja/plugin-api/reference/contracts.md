@@ -21,6 +21,7 @@
 - [SlotPack](#slotpack)
 - [FrequencyState](#frequencystate)
 - [QSORecord](#qsorecord)
+- [ContestQsoEnvelope](#contestqsoenvelope)
 - [FrameMessage](#framemessage)
 - [ModeDescriptor](#modedescriptor)
 - [OperatorSlots](#operatorslots)
@@ -75,6 +76,10 @@
 
 ## 値エクスポート
 
+- [CONTEST_QSO_ENVELOPE_MAX_BYTES](#contest-qso-envelope-max-bytes)
+- [ContestQsoEnvelopeSchema](#contestqsoenvelopeschema)
+- [parseContestQsoEnvelope](#parsecontestqsoenvelope)
+- [serializeContestQsoEnvelope](#serializecontestqsoenvelope)
 
 ## FT8Message
 
@@ -534,6 +539,8 @@ export const QSORecordSchema = z.object({
     reportReceived: z.string().optional(),
     messageHistory: z.array(z.string()),
     comment: z.string().optional(),
+    contestId: z.string().optional(),
+    contestEntry: ContestQsoEnvelopeSchema.optional(),
     myCallsign: z.string().optional(),
     myGrid: z.string().optional(),
     qth: z.string().optional(),
@@ -564,6 +571,14 @@ export const QSORecordSchema = z.object({
     qrzQslSentDate: z.number().optional(),
     qrzQslReceivedDate: z.number().optional(),
     notes: z.string().optional(),
+}).superRefine((value, context) => {
+    if (value.contestId && value.contestEntry && value.contestId !== value.contestEntry.contestId) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['contestEntry', 'contestId'],
+            message: 'contestEntry.contestId must match contestId',
+        });
+    }
 });
 ```
 
@@ -571,6 +586,44 @@ export const QSORecordSchema = z.object({
 
 ```ts
 export type QSORecord = z.infer<typeof QSORecordSchema>;
+```
+## ContestQsoEnvelope
+
+- 種別: `type`
+- ソース: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
+- 関連 schema: `ContestQsoEnvelopeSchema`
+
+Versioned contest facts that must be committed atomically with their QSO.
+
+The shape is deliberately shallow and bounded. Contest plugins may choose
+their exchange and annotation keys, but cannot persist arbitrary object
+graphs or binary payloads in the logbook record.
+
+### データ構造
+
+```ts
+export const ContestQsoEnvelopeSchema = z.object({
+    schemaVersion: z.literal(1),
+    contestId: z.string().min(1),
+    editionId: z.string().min(1),
+    rulesetVersion: z.string().min(1),
+    sent: ContestQsoExchangeSchema,
+    received: ContestQsoExchangeSchema,
+    annotations: z.record(z.string(), ContestQsoAnnotationValueSchema).optional(),
+}).strict().superRefine((value, context) => {
+    if (new TextEncoder().encode(durableContestQsoJson(value)).byteLength > CONTEST_QSO_ENVELOPE_MAX_BYTES) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Contest QSO envelope must not exceed ${CONTEST_QSO_ENVELOPE_MAX_BYTES} UTF-8 JSON bytes`,
+        });
+    }
+});
+```
+
+### 型定義
+
+```ts
+export type ContestQsoEnvelope = z.infer<typeof ContestQsoEnvelopeSchema>;
 ```
 ## FrameMessage
 
@@ -592,7 +645,8 @@ export const FrameMessageSchema = z.object({
     message: z.string(),
     confidence: z.number().min(0).max(1).default(1.0),
     logbookAnalysis: LogbookAnalysisSchema.optional(),
-    operatorId: z.string().optional()
+    operatorId: z.string().optional(),
+    streamId: z.string().optional(),
 });
 ```
 
@@ -760,6 +814,7 @@ export const PluginPermissionSchema = z.enum([
     'radio:power',
     'logbook:read',
     'logbook:write',
+    'logbook:session',
     'logbook:sync',
     'settings:ft8',
     'settings:decode-windows',
@@ -953,21 +1008,28 @@ export const PluginPanelDescriptorSchema = z.object({
     openMode: PluginPanelOpenModeSchema.optional(),
     uiSize: PluginPanelUISizeSchema.optional(),
 }).superRefine((panel, ctx) => {
-    if (panel.slot !== 'radio-control-toolbar') {
+    if (panel.slot !== 'radio-control-toolbar' && panel.slot !== 'operator-action') {
         return;
     }
     if (panel.component !== 'iframe') {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['component'],
-            message: 'radio-control-toolbar panels must use iframe component',
+            message: `${panel.slot} panels must use iframe component`,
         });
     }
     if (!panel.pageId) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['pageId'],
-            message: 'radio-control-toolbar panels must declare pageId',
+            message: `${panel.slot} panels must declare pageId`,
+        });
+    }
+    if (panel.slot === 'operator-action' && panel.openMode !== 'page') {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['openMode'],
+            message: 'operator-action panels must use page openMode',
         });
     }
 });
@@ -1022,12 +1084,12 @@ export type PluginPanelWidth = z.infer<typeof PluginPanelWidthSchema>;
 - ソース: [schema/plugin.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/plugin.schema.ts)
 - 関連 schema: `PluginPanelOpenModeSchema`
 
-How an iframe panel is opened when rendered as a toolbar entry.
+How an iframe panel is opened when rendered as an action entry.
 
 ### データ構造
 
 ```ts
-export const PluginPanelOpenModeSchema = z.enum(['popover', 'modal']);
+export const PluginPanelOpenModeSchema = z.enum(['popover', 'modal', 'page']);
 ```
 
 ### 型定義
@@ -1328,6 +1390,7 @@ export const PluginManifestSchema = z.object({
     apiVersion: z.literal(2).optional(),
     name: z.string(),
     version: z.string(),
+    minPluginApiVersion: SemanticVersionSchema.optional(),
     type: PluginTypeSchema,
     strategyFeatures: StrategyFeaturesSchema,
     instanceScope: PluginInstanceScopeSchema.optional().default('operator'),
@@ -1827,13 +1890,19 @@ export const PresetFrequencySchema = z.object({
     band: z.string(),
     mode: z.string(),
     radioMode: z.string().optional(),
-    frequency: z.number(),
+    frequency: z.number().int().positive().max(1000000000),
     description: z.string().optional(),
     repeaterShift: RepeaterShiftSchema.optional(),
     repeaterOffsetHz: z.number().int().positive().optional(),
     toneMode: ToneSquelchModeSchema.optional(),
     ctcssToneTenthsHz: z.number().int().positive().optional(),
     dcsCode: z.number().int().positive().optional(),
+    region: z.enum(['global', 'iaru1', 'iaru2', 'iaru3']).optional(),
+    imagePurpose: z.enum(['activity', 'iss', 'weatherfax']).optional(),
+    audioCenterHz: z.number().int().positive().optional(),
+    assignedFrequency: z.number().int().positive().max(1000000000).optional(),
+    faxEmission: z.enum(['J3C', 'F3C', 'F1C']).optional(),
+    carrierFrequency: z.number().positive().optional(),
 }).superRefine((preset, ctx) => {
     const isVoiceFmPreset = preset.mode === 'VOICE' && preset.radioMode?.toUpperCase() === 'FM';
     const hasRepeaterDuplex = preset.repeaterShift === 'minus' || preset.repeaterShift === 'plus';
@@ -2003,4 +2072,76 @@ export const UpdateNtpServerListRequestSchema = z.object({
 
 ```ts
 export type UpdateNtpServerListRequest = z.infer<typeof UpdateNtpServerListRequestSchema>;
+```
+
+## CONTEST_QSO_ENVELOPE_MAX_BYTES
+
+- 種別: `value`
+- ソース: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
+
+Maximum UTF-8 JSON size of contest-owned data persisted with one QSO.
+
+```ts
+export const CONTEST_QSO_ENVELOPE_MAX_BYTES = 8 * 1024;
+```
+## ContestQsoEnvelopeSchema
+
+- 種別: `value`
+- ソース: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
+
+Versioned contest facts that must be committed atomically with their QSO.
+
+The shape is deliberately shallow and bounded. Contest plugins may choose
+their exchange and annotation keys, but cannot persist arbitrary object
+graphs or binary payloads in the logbook record.
+
+```ts
+export const ContestQsoEnvelopeSchema = z.object({
+    schemaVersion: z.literal(1),
+    contestId: z.string().min(1),
+    editionId: z.string().min(1),
+    rulesetVersion: z.string().min(1),
+    sent: ContestQsoExchangeSchema,
+    received: ContestQsoExchangeSchema,
+    annotations: z.record(z.string(), ContestQsoAnnotationValueSchema).optional(),
+}).strict().superRefine((value, context) => {
+    if (new TextEncoder().encode(durableContestQsoJson(value)).byteLength > CONTEST_QSO_ENVELOPE_MAX_BYTES) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Contest QSO envelope must not exceed ${CONTEST_QSO_ENVELOPE_MAX_BYTES} UTF-8 JSON bytes`,
+        });
+    }
+});
+```
+## parseContestQsoEnvelope
+
+- 種別: `function`
+- ソース: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
+
+Parse and validate an envelope read from a durable private field.
+
+```ts
+export function parseContestQsoEnvelope(value: string): ContestQsoEnvelope | undefined {
+    try {
+        const parsed = ContestQsoEnvelopeSchema.safeParse(JSON.parse(value));
+        return parsed.success ? parsed.data : undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
+```
+## serializeContestQsoEnvelope
+
+- 種別: `function`
+- ソース: [schema/qso.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/qso.schema.ts)
+
+Serialize a validated contest envelope as ASCII-only JSON for durable ADIF
+private fields. Escaping non-ASCII and angle brackets keeps legacy string
+ADIF readers byte-safe without changing the decoded data.
+
+```ts
+export function serializeContestQsoEnvelope(value: ContestQsoEnvelope): string {
+    return durableContestQsoJson(ContestQsoEnvelopeSchema.parse(value));
+}
 ```

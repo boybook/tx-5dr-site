@@ -76,6 +76,24 @@ strategy 至少覆盖：
 - `meta.signal` abort 后不再产生外部副作用
 - QSO completion effect 在 settle 后不会泄漏到下一场通联
 
+## 比赛规则测试
+
+`@tx5dr/plugin-api/contest` 提供 `createFT8ContestTestKit()`。它直接测试纯规则模块，不需要启动 Host：
+
+```ts
+const kit = createFT8ContestTestKit(contest);
+
+kit.exchange({ grid: 'FN31' }, { grid: 'FN31' });
+kit.invalidExchange({ grid: 'ZZ99' }, 'invalid_grid');
+kit.completion({
+  sentExchange: { grid: 'PL04' },
+  receivedExchange: { grid: 'FN31' },
+  receivedFinalAck: true,
+}, true);
+```
+
+每个比赛至少固定一组官方计分向量、一个重复通联向量和一份提交文件 golden。runtime 另外测试 checkpoint/restore 和 RF fail-closed；不要用 runtime 测试代替纯规则测试。
+
 ## 发布前检查
 
 ```bash

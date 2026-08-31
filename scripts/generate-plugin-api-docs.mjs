@@ -5,6 +5,7 @@ import process from 'node:process';
 import ts from 'typescript';
 
 const SOURCE_ENV_NAME = 'TX5DR_SOURCE_DIR';
+const SOURCE_REF_ENV_NAME = 'TX5DR_SOURCE_REF';
 const DEFAULT_SOURCE_DIR = path.resolve(process.cwd(), '../tx-5dr');
 const SOURCE_DIR = path.resolve(process.env[SOURCE_ENV_NAME] || DEFAULT_SOURCE_DIR);
 const PLUGIN_API_SRC_DIR = path.join(SOURCE_DIR, 'packages/plugin-api/src');
@@ -18,7 +19,7 @@ function detectSourceBranch() {
   }
 }
 
-const SOURCE_BRANCH = detectSourceBranch();
+const SOURCE_BRANCH = process.env[SOURCE_REF_ENV_NAME] || detectSourceBranch();
 const SOURCE_BASE_URL = `https://github.com/boybook/tx-5dr/blob/${SOURCE_BRANCH}/packages/plugin-api/src`;
 const CONTRACTS_SOURCE_BASE_URL = `https://github.com/boybook/tx-5dr/blob/${SOURCE_BRANCH}/packages/contracts/src`;
 
@@ -32,6 +33,17 @@ const PAGE_SPECS = [
       zh: '插件入口文件的默认导出结构。',
       en: 'The default export shape for a plugin entry module.',
       ja: 'プラグインエントリーモジュールのデフォルトエクスポート構造です。',
+    },
+  },
+  {
+    kind: 'declaration',
+    source: 'compatibility.ts',
+    output: 'compatibility.md',
+    title: 'Plugin API Compatibility',
+    description: {
+      zh: '插件 API 版本比较、最低版本校验和兼容错误。',
+      en: 'Plugin API version comparison, minimum-version checks, and compatibility errors.',
+      ja: 'Plugin API バージョン比較、最低バージョン検証、互換性エラーです。',
     },
   },
   {

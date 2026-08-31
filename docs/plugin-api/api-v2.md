@@ -20,6 +20,25 @@ export default definePlugin({
 
 `definePlugin()` 会保留 `permissions` 的字面量类型。不要把定义手动扩宽成 `PluginDefinition`，否则 TypeScript 无法准确推导 callback 中可用的 capability。
 
+## 用 Plugin API 版本判断兼容性
+
+TX-5DR 产品版本和 Plugin API 版本是两件事。nightly Host 的产品版本用于显示和更新；插件兼容性只使用 `minPluginApiVersion`：
+
+```ts
+export default definePlugin({
+  apiVersion: 2,
+  name: 'my-plugin',
+  version: '1.0.0',
+  minPluginApiVersion: '2.1.0',
+  type: 'utility',
+  permissions: [],
+});
+```
+
+Marketplace 会在下载前比较版本，并在解压后核对 catalog、静态 artifact manifest 和 runtime definition。手工安装、rescan 和 Host 启动加载也执行同一最低版本检查。`ctx.pluginApiVersion` 是 Host 提供的只读投影；通常不需要插件作者手工比较，Contest SDK 等组合器会在使用新能力前自动失败关闭。
+
+不要用 Host 的 `1.0.0` 或 nightly 时间戳推断某项插件能力是否存在，也不要同时维护一份私有 feature 表。
+
 ## v2 改变了什么
 
 | 需求 | v2 写法 |

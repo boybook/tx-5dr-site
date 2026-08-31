@@ -5,6 +5,7 @@ These pages are generated from the public TypeScript sources and document Plugin
 ## Pages
 
 - [PluginDefinition](./definition)
+- [Plugin API Compatibility](./compatibility)
 - [Capabilities](./capabilities)
 - [PluginContext](./context)
 - [PluginHooks](./hooks)

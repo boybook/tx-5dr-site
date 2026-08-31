@@ -132,6 +132,7 @@ export interface StrategyDecision {
         excludeCallsigns?: string[];
     };
     qsoFailure?: QSOFailureInfo;
+    qsoFailures?: QSOFailureInfo[];
 }
 ```
 
@@ -171,6 +172,16 @@ Optional structured reason for a strategy-requested QSO failure stop.
 ```ts
 
 qsoFailure?: QSOFailureInfo;
+
+```
+
+### StrategyDecision.qsoFailures
+
+Parallel lane failures emitted by one accepted decision.
+
+```ts
+
+qsoFailures?: QSOFailureInfo[];
 
 ```
 ## StrategyDecisionMeta

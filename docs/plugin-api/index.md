@@ -16,6 +16,7 @@ TX-5DR 插件可以监听解码、调整候选排序、扩展操作界面、同�
 | 添加按钮、定时任务或面板 | [按钮、定时器与面板](./tutorial-ui-actions-and-panels) |
 | 创建 React、Vue 或原生 iframe 页面 | [自定义 UI](./tutorial-custom-ui) |
 | 实现完整通联状态机 | [StrategyRuntime](./tutorial-strategy-runtime) |
+| 组装一个 FT8 / FT4 比赛插件 | [FT8 比赛插件](./tutorial-ft8-contest) |
 | 接入 WaveLog、LoTW 一类日志服务 | [日志同步 Provider](./tutorial-logbook-sync) |
 | 操作电台、网络、日志本或宿主设置 | [权限与能力](./permissions) |
 | 为插件编写单元测试 | [测试插件](./testing) |

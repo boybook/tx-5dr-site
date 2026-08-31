@@ -18,6 +18,14 @@
 
 先用 utility 表达一个局部规则。只有需要维护 QSO 阶段和下一条发射文本时，才实现 strategy。
 
+## 开发 FT8 / FT4 比赛
+
+1. [FT8 比赛插件](./tutorial-ft8-contest)：从官方规则冻结 edition，再组装交换、完成、判重、计分和提交模块。
+2. [StrategyRuntime](./tutorial-strategy-runtime)：把比赛定义连接到实际 FT8 通联状态机。
+3. [测试插件](./testing#比赛规则测试)：用规则向量验证交换、完成、判重、计分和输出。
+
+比赛插件不要复制 session key、revision retry、页面事件主题或 Host 发射事务。优先使用 Contest SDK 的默认模块；只有比赛规则确实不同的部分才替换。
+
 ## 添加界面
 
 1. 简单按钮、状态和表格：[按钮、定时器与面板](./tutorial-ui-actions-and-panels)

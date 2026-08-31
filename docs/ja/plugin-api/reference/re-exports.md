@@ -5,16 +5,19 @@
 ## plugin-api のローカルエクスポート
 
 - `./definition.js`: `definePlugin`
+- `./compatibility.js`: `assertPluginApiCompatible`、`comparePluginApiVersions`、`PluginApiCompatibilityError`
 - `./capabilities.js`: `PLUGIN_COMMAND_CAPABILITY_PERMISSIONS`、`PLUGIN_CONTEXT_CAPABILITY_KEYS`、`getPluginContextCapabilityKeys`
 - `./capabilities.js`: `PluginContextCapabilityKey`、`PluginContextCapabilityPermission`
 - `./definition.js`: `PluginDefinition`、`AnyPluginDefinition`
+- `./simulation.js`: `SimulationMode`、`SimulationPeerIdentity`、`SimulationScenarioChoice`、`SimulationScenarioRule`、`SimulationScenarioTimeoutRule`、`SimulationScenarioState`、`SimulationAddressedRestartPolicy`、`SimulationScenarioDescriptor`
 - `./context.js`: `PluginContext`、`PluginContextBase`、`PluginCleanupContext`、`PluginContextFor`、`RuntimePluginContext`、`StrategyPluginContext`、`PluginEligibilityContext`
 - `./host-dependencies.js`: `HostDependencies`、`HamlibHostDependency`、`HamlibRotator`、`HamlibRotatorConstructor`、`HamlibSupportedRotatorInfo`、`HamlibRotatorConnectionInfo`、`HamlibRotatorPosition`、`HamlibRotatorStatus`、`HamlibRotatorDirection`、`HamlibRotatorResetType`、`HamlibConfigFieldDescriptor`、`HamlibPortCaps`、`HamlibRotatorCaps`
 - `./hooks.js`: `PluginHooks`、`AutoCallProposal`、`AutoCallExecutionRequest`、`AutoCallExecutionPlan`、`SlotActivityEvent`、`FrequencyChangeState`、`ScoredCandidate`、`StrategyDecision`、`StrategyDecisionMeta`、`LastMessageInfo`、`QSOFailureInfo`
-- `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`、`StrategyRuntimeCheckpoint`、`StrategyDecisionMetaV2`、`StrategyDecisionResult`、`StrategyDecisionSource`、`StrategyQSOCompletionEffect`、`StrategyQSOCompletionSettlement`、`AssistedQueueDisplayState`、`AssistedQueuePauseReason`、`AssistedQueueTone`、`AssistedQueueIcon`、`AssistedQueueRow`、`AssistedQueueSnapshot`、`QueuedStrategyObservationMeta`、`QueuedStrategyTargetRequest`、`QueuedStrategyMutationResult`、`QueuedStrategyRuntime`
+- `./runtime.js`: `StrategyRuntime`、`StrategyRuntimeContext`、`StrategyRuntimeSnapshot`、`StrategyMessagePresentationTone`、`StrategyMessagePresentationBadge`、`StrategyMessagePresentationClass`、`StrategyMessagePresentationProjection`、`StrategyMessagePresentationNoveltyRule`、`StrategyMessagePresentationTagRule`、`StrategyTransmitGate`、`StrategyStateOption`、`StrategyActionDescriptor`、`StrategyActionInput`、`StrategyActionTone`、`StrategyActionPresentation`、`StrategyAttention`、`StrategyCompletionProjection`、`StrategyActionTarget`、`StrategyActionInvocation`、`StrategyActionResult`、`StrategyLogbookSessionEffect`、`StrategyStreamSnapshot`、`StrategyStreamStateUpdate`、`StrategyTransmission`、`StreamPhysicalReceipt`、`StrategyRuntimeSlot`、`StrategyRuntimeSlotContentUpdate`、`StrategyRuntimeCheckpoint`、`StrategyOperatorTransmitCyclesChanged`、`StrategyDecisionMetaV2`、`StrategyDecisionResult`、`StrategyDecisionSource`、`StrategyQSOCompletionEffect`、`StrategyQSOCompletionSettlement`、`AssistedQueueDisplayState`、`AssistedQueuePauseReason`、`AssistedQueueTone`、`AssistedQueueIcon`、`AssistedQueueRow`、`AssistedQueueSnapshot`、`QueuedStrategyObservationMeta`、`QueuedStrategyTargetRequest`、`QueuedStrategyMutationResult`、`QueuedStrategyRuntime`
 - `./runtime.js`: `isQueuedStrategyRuntime`
 - `./settings.js`: `HostSettingsControl`、`HostSettingsNamespace`、`HostFrequencyPresetsSettingsNamespace`、`HostFT8Settings`、`HostFT8SettingsPatch`、`HostFrequencyPresetsSettings`、`HostStationInfoPatch`、`HostPSKReporterSettingsPatch`
-- `./helpers.js`: `KVStore`、`PluginLogger`、`PluginTimers`、`OtherOperatorSnapshot`、`OperatorSnapshot`、`OperatorCommandPort`、`PluginOperatorCommand`、`PluginOperatorCommandResult`、`RadioView`、`RadioOperatingMode`、`RadioCapabilitiesView`、`RadioCommandPort`、`PluginRadioCommand`、`RadioTunerCommandPort`、`PluginRadioTunerCommand`、`RadioPowerView`、`RadioPowerCommandPort`、`PluginRadioPowerCommand`、`RadioPowerSetOptions`、`LogbookAccess`、`LogbookReadAccess`、`LogbookCommandPort`、`CallsignLogbookAccess`、`CallsignLogbookReadAccess`、`CallsignLogbookCommandPort`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PanelMeta`、`PluginUIHandler`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`、`PluginNetworkControl`、`PluginEventBus`、`PluginEventBusMessage`、`PluginUdpControl`、`PluginUdpSocket`、`PluginUdpSocketOptions`、`PluginUdpBindOptions`、`PluginUdpRemoteInfo`
+- `./helpers.js`: `KVStore`、`DigitalMessagePreflight`、`DigitalMessagePreflightRequest`、`DigitalMessagePreflightResult`、`PluginLogger`、`PluginTimers`、`OtherOperatorSnapshot`、`OperatorSnapshot`、`OperatorCommandPort`、`PluginOperatorCommand`、`PluginOperatorCommandResult`、`RadioView`、`RadioOperatingMode`、`RadioCapabilitiesView`、`RadioCommandPort`、`PluginRadioCommand`、`RadioTunerCommandPort`、`PluginRadioTunerCommand`、`RadioPowerView`、`RadioPowerCommandPort`、`PluginRadioPowerCommand`、`RadioPowerSetOptions`、`LogbookAccess`、`LogbookReadAccess`、`LogbookCommandPort`、`CallsignLogbookAccess`、`CallsignLogbookReadAccess`、`CallsignLogbookCommandPort`、`PluginLogbookSessionDescriptor`、`PluginLogbookSessionAccess`、`PluginLogbookSessions`、`QSOQueryFilter`、`BandAccess`、`IdleTransmitFrequencyOptions`、`AutoTargetEligibilityReason`、`AutoTargetEligibilityDecision`、`UIBridge`、`PanelMeta`、`PluginUIHandler`、`PluginUIHandlerRegistration`、`PluginUIRequestContext`、`PluginUIRequestUser`、`PluginUIBoundResource`、`PluginUIInstanceTarget`、`PluginUIPageSessionInfo`、`PluginUIPageContext`、`PluginFileStore`、`PluginNetworkControl`、`PluginEventBus`、`ReadonlyKVStore`、`PluginEventBusMessage`、`PluginUdpControl`、`PluginUdpSocket`、`PluginUdpSocketOptions`、`PluginUdpBindOptions`、`PluginUdpRemoteInfo`
+- `@tx5dr/core`: `LogbookBatchMutation`、`LogbookBatchOptions`、`LogbookBatchOutcome`、`LogbookBatchResult`、`LogbookQsoSnapshot`
 - `@tx5dr/core`: `getCallsignInfo`、`listDXCCEntities`、`resolveDXCCEntity`
 - `@tx5dr/core`: `CallsignInfo`、`DXCCEntity`、`DXCCResolutionResult`
 - `./sync.js`: `LogbookSyncProvider`、`LogbookSyncRegistrar`、`SyncAction`、`SyncFailure`、`SyncFailureInput`、`SyncFailureOperation`、`SyncFailureSource`、`SyncTestResult`、`SyncUploadProgress`、`SyncUploadOptions`、`SyncUploadPreflightOptions`、`SyncUploadResult`、`SyncPreflightIssue`、`SyncUploadPreflightResult`、`SyncDownloadProgress`、`SyncDownloadResult`、`SyncDownloadOptions`
@@ -45,6 +48,7 @@
 - [`SlotPack`](./contracts#slotpack)
 - [`FrequencyState`](./contracts#frequencystate)
 - [`QSORecord`](./contracts#qsorecord)
+- [`ContestQsoEnvelope`](./contracts#contestqsoenvelope)
 - [`FrameMessage`](./contracts#framemessage)
 - [`ModeDescriptor`](./contracts#modedescriptor)
 - [`OperatorSlots`](./contracts#operatorslots)
@@ -98,3 +102,8 @@
 - [`UpdateNtpServerListRequest`](./contracts#updatentpserverlistrequest)
 
 ## @tx5dr/contracts からの値エクスポート
+
+- [`CONTEST_QSO_ENVELOPE_MAX_BYTES`](./contracts#contest-qso-envelope-max-bytes)
+- [`ContestQsoEnvelopeSchema`](./contracts#contestqsoenvelopeschema)
+- [`parseContestQsoEnvelope`](./contracts#parsecontestqsoenvelope)
+- [`serializeContestQsoEnvelope`](./contracts#serializecontestqsoenvelope)

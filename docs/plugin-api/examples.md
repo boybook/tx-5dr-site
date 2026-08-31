@@ -16,6 +16,7 @@
 | 记忆无回复目标并提供自定义 UI | `no-reply-memory-filter` |
 | 同步外部日志 | `qrz-sync`、`wavelog-sync`、`clublog-sync`、`lotw-sync` |
 | 实现完整 strategy | `standard-qso`、`assisted-qso-queue` |
+| FT8 比赛、独立比赛日志与计分 | `ww-digi`；新项目优先从 `ft8-contest` 脚手架开始 |
 
 ## 保持插件职责单一
 

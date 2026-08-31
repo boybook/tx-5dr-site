@@ -31,12 +31,14 @@ TX-5DR internals.
 
 ```ts
 export interface PluginContextBase {
+    readonly pluginApiVersion: string;
     readonly config: Readonly<Record<string, unknown>>;
     updateConfig(patch: Record<string, unknown>): Promise<void>;
     readonly store: {
         readonly global: KVStore;
         readonly operator: KVStore;
     };
+    readonly digitalMessagePreflight: import('./helpers.js').DigitalMessagePreflight;
     readonly log: PluginLogger;
     readonly timers: PluginTimers;
     readonly operator: OperatorSnapshot;
@@ -45,6 +47,16 @@ export interface PluginContextBase {
     readonly ui: UIBridge;
     readonly files: PluginFileStore;
 }
+```
+
+### PluginContextBase.pluginApiVersion
+
+Bundled Plugin API version. Use plugin declarations for compatibility checks.
+
+```ts
+
+readonly pluginApiVersion: string;
+
 ```
 
 ### PluginContextBase.config
@@ -91,6 +103,16 @@ readonly store: {
     readonly global: KVStore;
     readonly operator: KVStore;
 };
+
+```
+
+### PluginContextBase.digitalMessagePreflight
+
+Read-only validation for exact FT8/FT4 message encoding.
+
+```ts
+
+readonly digitalMessagePreflight: import('./helpers.js').DigitalMessagePreflight;
 
 ```
 
@@ -167,7 +189,7 @@ Persistent binary file storage sandboxed to the plugin.
 
 Files are stored in the plugin data directory under a host-managed sandbox.
 Use this for binary assets such as certificates, images or cached data.
-For structured JSON data, prefer [`PluginContext.store`](./context#plugincontextbase-store) instead.
+For structured JSON data, prefer [`PluginContext.store`](./context#plugincontext) instead.
 
 ```ts
 
@@ -252,7 +274,9 @@ export type RuntimePluginContext = PluginContextBase & Partial<{
     radioTunerCommands: RadioTunerCommandPort;
     radioPower: RadioPowerView;
     radioPowerCommands: RadioPowerCommandPort;
-    logbook: LogbookReadAccess | LogbookAccess;
+    logbook: LogbookReadAccess | LogbookAccess | {
+        readonly sessions: PluginLogbookSessions;
+    };
     logbookSync: LogbookSyncRegistrar;
     settings: Partial<HostSettingsControl>;
     network: PluginNetworkControl;
@@ -272,10 +296,27 @@ command, radio, logbook-write, network, timer or UI capability.
 
 ```ts
 export interface StrategyPluginContext {
+    readonly pluginApiVersion: string;
     readonly config: Readonly<Record<string, unknown>>;
     readonly log: PluginLogger;
     readonly operator: OperatorSnapshot;
+    readonly radio: RadioView;
+    readonly store: {
+        readonly global: ReadonlyKVStore;
+        readonly operator: ReadonlyKVStore;
+    };
+    readonly digitalMessagePreflight: import('./helpers.js').DigitalMessagePreflight;
 }
+```
+
+### StrategyPluginContext.pluginApiVersion
+
+Bundled Plugin API version available before the strategy runtime is created.
+
+```ts
+
+readonly pluginApiVersion: string;
+
 ```
 
 ### StrategyPluginContext.config
@@ -305,6 +346,39 @@ Read-only operator snapshot; mutation ports are deliberately absent.
 ```ts
 
 readonly operator: OperatorSnapshot;
+
+```
+
+### StrategyPluginContext.radio
+
+Read-only projection of the current radio band and operating mode.
+
+```ts
+
+readonly radio: RadioView;
+
+```
+
+### StrategyPluginContext.store
+
+Live, read-only views of the storage scopes declared by this plugin.
+
+```ts
+
+readonly store: {
+    readonly global: ReadonlyKVStore;
+    readonly operator: ReadonlyKVStore;
+};
+
+```
+
+### StrategyPluginContext.digitalMessagePreflight
+
+Read-only exact-message encoding validation.
+
+```ts
+
+readonly digitalMessagePreflight: import('./helpers.js').DigitalMessagePreflight;
 
 ```
 ## PluginEligibilityContext

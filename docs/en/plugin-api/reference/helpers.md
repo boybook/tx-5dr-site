@@ -5,6 +5,10 @@ Storage, logging, timers, network, operator, radio, logbook, and UI interfaces.
 ## Exports
 
 - [KVStore](#kvstore)
+- [ReadonlyKVStore](#readonlykvstore)
+- [DigitalMessagePreflightRequest](#digitalmessagepreflightrequest)
+- [DigitalMessagePreflightResult](#digitalmessagepreflightresult)
+- [DigitalMessagePreflight](#digitalmessagepreflight)
 - [PluginLogger](#pluginlogger)
 - [PluginTimers](#plugintimers)
 - [PluginUdpRemoteInfo](#pluginudpremoteinfo)
@@ -35,6 +39,9 @@ Storage, logging, timers, network, operator, radio, logbook, and UI interfaces.
 - [CallsignLogbookReadAccess](#callsignlogbookreadaccess)
 - [CallsignLogbookCommandPort](#callsignlogbookcommandport)
 - [CallsignLogbookAccess](#callsignlogbookaccess)
+- [PluginLogbookSessionDescriptor](#pluginlogbooksessiondescriptor)
+- [PluginLogbookSessionAccess](#pluginlogbooksessionaccess)
+- [PluginLogbookSessions](#pluginlogbooksessions)
 - [LogbookReadAccess](#logbookreadaccess)
 - [LogbookCommandPort](#logbookcommandport)
 - [LogbookAccess](#logbookaccess)
@@ -45,6 +52,7 @@ Storage, logging, timers, network, operator, radio, logbook, and UI interfaces.
 - [PanelMeta](#panelmeta)
 - [UIBridge](#uibridge)
 - [PluginUIHandler](#pluginuihandler)
+- [PluginUIHandlerRegistration](#pluginuihandlerregistration)
 - [PluginUIRequestUser](#pluginuirequestuser)
 - [PluginUIBoundResource](#pluginuiboundresource)
 - [PluginUIInstanceTarget](#pluginuiinstancetarget)
@@ -67,6 +75,7 @@ plain JSON-compatible data for maximum portability.
 export interface KVStore {
     get<T = unknown>(key: string, defaultValue?: T): T;
     set(key: string, value: unknown): void;
+    update<T = unknown>(key: string, reducer: (current: T | undefined) => T | undefined): T | undefined;
     delete(key: string): void;
     getAll(): Record<string, unknown>;
     flush(): Promise<void>;
@@ -101,6 +110,16 @@ set(key: string, value: unknown): void;
 
 ```
 
+### KVStore.update
+
+Atomically updates one value shared by every instance of this plugin.
+
+```ts
+
+update<T = unknown>(key: string, reducer: (current: T | undefined) => T | undefined): T | undefined;
+
+```
+
 ### KVStore.delete
 
 Removes a stored key and its value.
@@ -132,6 +151,171 @@ crash or restart (e.g. during a migration sequence).
 ```ts
 
 flush(): Promise<void>;
+
+```
+## ReadonlyKVStore
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read-only live view of one plugin storage scope.
+
+```ts
+export interface ReadonlyKVStore {
+    get<T = unknown>(key: string, defaultValue?: T): T;
+    has(key: string): boolean;
+    keys(): string[];
+}
+```
+
+### ReadonlyKVStore.get
+
+Reads a detached stored value or the caller-provided default.
+
+```ts
+
+get<T = unknown>(key: string, defaultValue?: T): T;
+
+```
+
+### ReadonlyKVStore.has
+
+Reports whether the scope currently contains an explicit key.
+
+```ts
+
+has(key: string): boolean;
+
+```
+
+### ReadonlyKVStore.keys
+
+Returns the current key names as a detached array.
+
+```ts
+
+keys(): string[];
+
+```
+## DigitalMessagePreflightRequest
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Exact digital-mode text that a plugin wants the Host encoder to validate.
+
+```ts
+export interface DigitalMessagePreflightRequest {
+    mode: 'FT8' | 'FT4';
+    text: string;
+}
+```
+
+### DigitalMessagePreflightRequest.mode
+
+FT8 or FT4 encoder to use for validation.
+
+```ts
+
+mode: 'FT8' | 'FT4';
+
+```
+
+### DigitalMessagePreflightRequest.text
+
+Operator-visible message text before Host normalization and encoding.
+
+```ts
+
+text: string;
+
+```
+## DigitalMessagePreflightResult
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Detached result of validating one message without producing audio or transmitting.
+
+```ts
+export interface DigitalMessagePreflightResult {
+    encodable: boolean;
+    requestedText: string;
+    transmittedText?: string;
+    reason?: 'empty' | 'encoder_changed_text' | 'encode_failed';
+    error?: string;
+}
+```
+
+### DigitalMessagePreflightResult.encodable
+
+Whether the Host encoder accepts the normalized text exactly.
+
+```ts
+
+encodable: boolean;
+
+```
+
+### DigitalMessagePreflightResult.requestedText
+
+Normalized text that was submitted to the encoder.
+
+```ts
+
+requestedText: string;
+
+```
+
+### DigitalMessagePreflightResult.transmittedText
+
+Exact text recovered from the encoded payload when encoding succeeded.
+
+```ts
+
+transmittedText?: string;
+
+```
+
+### DigitalMessagePreflightResult.reason
+
+Stable reason explaining why exact encoding was rejected.
+
+```ts
+
+reason?: 'empty' | 'encoder_changed_text' | 'encode_failed';
+
+```
+
+### DigitalMessagePreflightResult.error
+
+Sanitized encoder diagnostic intended for plugin logs.
+
+```ts
+
+error?: string;
+
+```
+## DigitalMessagePreflight
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read-only digital-mode validation; no audio or encoder handle is exposed.
+
+```ts
+export interface DigitalMessagePreflight {
+    check(request: DigitalMessagePreflightRequest): Promise<DigitalMessagePreflightResult>;
+}
+```
+
+### DigitalMessagePreflight.check
+
+Validates and round-trips one FT8/FT4 message through the Host encoder.
+
+```ts
+
+check(request: DigitalMessagePreflightRequest): Promise<DigitalMessagePreflightResult>;
 
 ```
 ## PluginLogger
@@ -758,6 +942,7 @@ export interface OperatorSnapshot {
     readonly frequency: number;
     readonly mode: ModeDescriptor;
     readonly transmitCycles: number[];
+    readonly maxConcurrentStreams: number;
     readonly automation: StrategyRuntimeSnapshot | null;
     getOtherOperators(): OtherOperatorSnapshot[];
     hasWorkedCallsign(callsign: string, options?: {
@@ -834,6 +1019,16 @@ Current transmit cycle selection where `0` is even and `1` is odd.
 ```ts
 
 readonly transmitCycles: number[];
+
+```
+
+### OperatorSnapshot.maxConcurrentStreams
+
+Host-admitted stream ceiling after radio-frequency and operator safety policy.
+
+```ts
+
+readonly maxConcurrentStreams: number;
 
 ```
 
@@ -1075,6 +1270,7 @@ export interface RadioView {
     readonly band: string;
     readonly mode: RadioOperatingMode;
     readonly isConnected: boolean;
+    readonly isSimulation: boolean;
 }
 ```
 
@@ -1115,6 +1311,16 @@ Whether the radio transport is currently connected.
 ```ts
 
 readonly isConnected: boolean;
+
+```
+
+### RadioView.isSimulation
+
+Whether the active radio is a Host-provided simulation rather than physical RF.
+
+```ts
+
+readonly isSimulation: boolean;
 
 ```
 ## RadioCapabilitiesView
@@ -1486,7 +1692,11 @@ which keeps the handle valid across reloads without implicitly creating data.
 export interface CallsignLogbookReadAccess {
     readonly callsign: string;
     getLogBookId(): Promise<string | null>;
+    awaitReady(options?: {
+        timeoutMs?: number;
+    }): Promise<void>;
     queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+    readQsoSnapshot(filter?: QSOQueryFilter): Promise<LogbookQsoSnapshot>;
     countQSOs(filter?: QSOQueryFilter): Promise<number>;
     getStatistics(): Promise<import('@tx5dr/contracts').LogBookStatistics | null>;
 }
@@ -1512,6 +1722,18 @@ getLogBookId(): Promise<string | null>;
 
 ```
 
+### CallsignLogbookReadAccess.awaitReady
+
+Waits until the Host has finished opening this logbook and it is readable.
+
+```ts
+
+awaitReady(options?: {
+    timeoutMs?: number;
+}): Promise<void>;
+
+```
+
 ### CallsignLogbookReadAccess.queryQSOs
 
 Queries QSO records matching the given filter.
@@ -1519,6 +1741,16 @@ Queries QSO records matching the given filter.
 ```ts
 
 queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+
+```
+
+### CallsignLogbookReadAccess.readQsoSnapshot
+
+Reads records and their content revision from one consistent logbook snapshot.
+
+```ts
+
+readQsoSnapshot(filter?: QSOQueryFilter): Promise<LogbookQsoSnapshot>;
 
 ```
 
@@ -1553,6 +1785,9 @@ export interface CallsignLogbookCommandPort {
     readonly callsign: string;
     addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<import('@tx5dr/contracts').QSORecord>;
     updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+    applyQsoBatch(mutations: readonly LogbookBatchMutation[], options: {
+        expectedRevision: string;
+    }): Promise<LogbookBatchResult>;
     notifyUpdated(operatorId?: string): Promise<void>;
 }
 ```
@@ -1587,6 +1822,18 @@ updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>)
 
 ```
 
+### CallsignLogbookCommandPort.applyQsoBatch
+
+Applies a revision-guarded set of QSO additions and updates as one durable transaction.
+
+```ts
+
+applyQsoBatch(mutations: readonly LogbookBatchMutation[], options: {
+    expectedRevision: string;
+}): Promise<LogbookBatchResult>;
+
+```
+
 ### CallsignLogbookCommandPort.notifyUpdated
 
 Notifies the frontend that this callsign's logbook changed.
@@ -1607,6 +1854,138 @@ Combined read/write callsign-bound logbook capability.
 export interface CallsignLogbookAccess extends CallsignLogbookReadAccess, CallsignLogbookCommandPort {
 }
 ```
+## PluginLogbookSessionDescriptor
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Stable descriptor for one Host-managed, plugin-owned logbook session.
+
+```ts
+export interface PluginLogbookSessionDescriptor {
+    sessionKey: string;
+    stationCallsign: string;
+    title: string;
+    retention?: 'durable' | 'runtime';
+}
+```
+
+### PluginLogbookSessionDescriptor.sessionKey
+
+Stable key within the owning plugin and station callsign.
+
+```ts
+
+sessionKey: string;
+
+```
+
+### PluginLogbookSessionDescriptor.stationCallsign
+
+Station callsign whose QSOs belong to this session.
+
+```ts
+
+stationCallsign: string;
+
+```
+
+### PluginLogbookSessionDescriptor.title
+
+User-facing session title.
+
+```ts
+
+title: string;
+
+```
+
+### PluginLogbookSessionDescriptor.retention
+
+Durable by default; runtime sessions are deleted when explicitly destroyed or the Host exits.
+
+```ts
+
+retention?: 'durable' | 'runtime';
+
+```
+## PluginLogbookSessionAccess
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Read/write access to one plugin-owned logbook session.
+
+```ts
+export interface PluginLogbookSessionAccess extends CallsignLogbookAccess {
+    readonly id: string;
+    readonly title: string;
+    destroy(): Promise<void>;
+}
+```
+
+### PluginLogbookSessionAccess.id
+
+Opaque Host-issued session logbook identifier.
+
+```ts
+
+readonly id: string;
+
+```
+
+### PluginLogbookSessionAccess.title
+
+User-facing title supplied when the session was opened.
+
+```ts
+
+readonly title: string;
+
+```
+
+### PluginLogbookSessionAccess.destroy
+
+Destroys a runtime-retained session. Durable sessions reject this operation.
+
+```ts
+
+destroy(): Promise<void>;
+
+```
+## PluginLogbookSessions
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Host-arbitrated access to logbook sessions owned by the current plugin.
+
+```ts
+export interface PluginLogbookSessions {
+    open(descriptor: PluginLogbookSessionDescriptor): Promise<PluginLogbookSessionAccess>;
+    destroy(sessionKey: string): Promise<void>;
+}
+```
+
+### PluginLogbookSessions.open
+
+Opens or reuses a durable session without changing the station's primary logbook.
+
+```ts
+
+open(descriptor: PluginLogbookSessionDescriptor): Promise<PluginLogbookSessionAccess>;
+
+```
+
+### PluginLogbookSessions.destroy
+
+Destroys an existing runtime-retained session owned by this plugin and operator.
+
+```ts
+
+destroy(sessionKey: string): Promise<void>;
+
+```
 ## LogbookReadAccess
 
 - Kind: `interface`
@@ -1622,6 +2001,7 @@ export interface LogbookReadAccess {
     hasWorkedDXCC(dxccEntity: string): Promise<boolean>;
     hasWorkedGrid(grid: string): Promise<boolean>;
     queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[]>;
+    readQsoSnapshot(filter?: QSOQueryFilter): Promise<LogbookQsoSnapshot>;
     countQSOs(filter?: QSOQueryFilter): Promise<number>;
     forCallsign(callsign: string): CallsignLogbookReadAccess;
 }
@@ -1669,6 +2049,16 @@ queryQSOs(filter: QSOQueryFilter): Promise<import('@tx5dr/contracts').QSORecord[
 
 ```
 
+### LogbookReadAccess.readQsoSnapshot
+
+Reads records and their content revision from one consistent logbook snapshot.
+
+```ts
+
+readQsoSnapshot(filter?: QSOQueryFilter): Promise<LogbookQsoSnapshot>;
+
+```
+
 ### LogbookReadAccess.countQSOs
 
 Counts QSO records matching the given filter.
@@ -1699,6 +2089,9 @@ Durable mutation operations exposed by the `logbook:write` permission.
 export interface LogbookCommandPort {
     addQSO(record: import('@tx5dr/contracts').QSORecord): Promise<import('@tx5dr/contracts').QSORecord>;
     updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+    applyQsoBatch(mutations: readonly LogbookBatchMutation[], options: {
+        expectedRevision: string;
+    }): Promise<LogbookBatchResult>;
     notifyUpdated(): Promise<void>;
     forCallsign(callsign: string): CallsignLogbookCommandPort;
 }
@@ -1721,6 +2114,18 @@ Updates a QSO and resolves with the final record after durable commit.
 ```ts
 
 updateQSO(qsoId: string, updates: Partial<import('@tx5dr/contracts').QSORecord>): Promise<import('@tx5dr/contracts').QSORecord>;
+
+```
+
+### LogbookCommandPort.applyQsoBatch
+
+Applies a revision-guarded set of QSO additions and updates as one durable transaction.
+
+```ts
+
+applyQsoBatch(mutations: readonly LogbookBatchMutation[], options: {
+    expectedRevision: string;
+}): Promise<LogbookBatchResult>;
 
 ```
 
@@ -2007,7 +2412,8 @@ export interface UIBridge {
     setPanelMeta(panelId: string, meta: PanelMeta): void;
     setPanelContributions(groupId: string, panels: PluginPanelDescriptor[]): void;
     clearPanelContributions(groupId: string): void;
-    registerPageHandler(handler: PluginUIHandler): void;
+    refreshOperatorProjection(): void;
+    registerPageHandler(handler: PluginUIHandler, registration?: PluginUIHandlerRegistration): void;
     pushToSession(pageSessionId: string, action: string, data?: unknown): void;
     listActivePageSessions(pageId: string): PluginUIPageSessionInfo[];
     pushToPage(pageId: string, action: string, data?: unknown): void;
@@ -2059,18 +2465,29 @@ clearPanelContributions(groupId: string): void;
 
 ```
 
+### UIBridge.refreshOperatorProjection
+
+Requests a fresh operator/runtime projection after plugin-owned state changes.
+
+```ts
+
+refreshOperatorProjection(): void;
+
+```
+
 ### UIBridge.registerPageHandler
 
 Registers a handler for custom messages sent from iframe UI pages via the
 `bridge.invoke()` SDK method. The host routes incoming invoke requests to
 the handler and sends the return value back to the iframe.
 
-Only one handler can be registered per plugin instance. Calling this method
-again replaces the previous handler.
+A registration with `pageIds` only handles those pages and composes with
+other page-scoped registrations. Omitting `pageIds` preserves the legacy
+fallback behavior; a later fallback registration replaces the previous one.
 
 ```ts
 
-registerPageHandler(handler: PluginUIHandler): void;
+registerPageHandler(handler: PluginUIHandler, registration?: PluginUIHandlerRegistration): void;
 
 ```
 
@@ -2150,6 +2567,28 @@ bound resource for this page session.
 ```ts
 
 onMessage(pageId: string, action: string, data: unknown, requestContext: PluginUIRequestContext): Promise<unknown>;
+
+```
+## PluginUIHandlerRegistration
+
+- Kind: `interface`
+- Source: [helpers.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/helpers.ts)
+
+Optional routing scope for one iframe page handler registration.
+
+```ts
+export interface PluginUIHandlerRegistration {
+    pageIds?: readonly string[];
+}
+```
+
+### PluginUIHandlerRegistration.pageIds
+
+Page ids owned by this handler. An explicitly empty list is invalid.
+
+```ts
+
+pageIds?: readonly string[];
 
 ```
 ## PluginUIRequestUser

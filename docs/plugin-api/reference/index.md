@@ -5,6 +5,7 @@
 ## 页面目录
 
 - [PluginDefinition](./definition)
+- [Plugin API Compatibility](./compatibility)
 - [Capabilities](./capabilities)
 - [PluginContext](./context)
 - [PluginHooks](./hooks)

@@ -5,6 +5,7 @@
 ## ページ一覧
 
 - [PluginDefinition](./definition)
+- [Plugin API Compatibility](./compatibility)
 - [Capabilities](./capabilities)
 - [PluginContext](./context)
 - [PluginHooks](./hooks)
