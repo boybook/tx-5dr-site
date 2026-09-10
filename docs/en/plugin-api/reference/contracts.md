@@ -57,6 +57,7 @@ Contract types and values re-exported by `@tx5dr/plugin-api`.
 - [CapabilityList](#capabilitylist)
 - [CapabilityState](#capabilitystate)
 - [CapabilityDescriptor](#capabilitydescriptor)
+- [CapabilityTarget](#capabilitytarget)
 - [CapabilityValue](#capabilityvalue)
 - [WriteCapabilityPayload](#writecapabilitypayload)
 - [RadioPowerRequest](#radiopowerrequest)
@@ -469,7 +470,16 @@ export const SlotPackSchema = z.object({
         windowIdx: z.number(),
         timestamp: z.number(),
         frameCount: z.number(),
-        processingTimeMs: z.number()
+        processingTimeMs: z.number(),
+        queueWaitMs: z.number().nonnegative().optional(),
+        decodeDepth: z.number().int().min(1).max(3).optional(),
+        decodeStage: z.union([
+            z.literal(41), z.literal(47), z.literal(49), z.literal(50),
+            z.enum(['ft4-partial', 'ft4-final']),
+        ]).optional(),
+        nativeProcessingTimeMs: z.number().nonnegative().optional(),
+        late: z.boolean().optional(),
+        decodeStats: DecodeStatsSchema.optional(),
     })).default([]),
     frequencyContext: SlotPackFrequencyContextSchema.optional()
 });
@@ -488,10 +498,11 @@ export type SlotPack = z.infer<typeof SlotPackSchema>;
 
 Current dial-frequency projection broadcast to plugins and clients.
 
-`frequency` is RF dial frequency in hertz; `mode` is the TX-5DR engine mode;
-`band` and `description` are display labels; `radioMode` is the underlying
-modulation when known. `source` distinguishes application changes from
-updates reported by the radio.
+`frequency` is the logical RF dial target in hertz; `mode` is the TX-5DR
+engine mode; `band` and `description` are display labels; `radioMode` is the
+underlying modulation when known. `observedFrequency` is the latest physical
+readback. `source` distinguishes application changes from radio observations;
+`revision` and `connectionGeneration` reject stale events.
 
 ### Data structure
 
@@ -504,6 +515,13 @@ export const FrequencyStateSchema = z.object({
     radioMode: z.string().optional(),
     radioConnected: z.boolean(),
     source: z.enum(['program', 'radio']).optional(),
+    revision: z.number().int().nonnegative().optional(),
+    connectionGeneration: z.number().int().nonnegative().optional(),
+    confirmation: z.enum(['confirmed', 'pending', 'mismatch', 'offline']).optional(),
+    observedFrequency: z.number().optional(),
+    requestedFrequency: z.number().optional(),
+    operationId: z.string().optional(),
+    modeConfirmation: z.enum(['confirmed', 'unconfirmed', 'unknown']).optional(),
 });
 ```
 
@@ -1566,6 +1584,11 @@ Host-provided descriptor that defines one capability for the current session.
 ```ts
 export const CapabilityDescriptorSchema = z.object({
     id: z.string(),
+    sessionId: z.string().optional(),
+    target: CapabilityTargetSchema.optional(),
+    writeGroup: z.object({ id: z.string(), members: z.array(z.string()).min(2) }).optional(),
+    requiresIdle: z.boolean().optional(),
+    limits: z.object({ min: z.number().finite().optional(), max: z.number().finite().optional(), step: z.number().positive().optional() }).optional(),
     category: CapabilityCategorySchema,
     valueType: CapabilityValueTypeSchema,
     range: z.object({
@@ -1594,6 +1617,30 @@ export const CapabilityDescriptorSchema = z.object({
 ```ts
 export type CapabilityDescriptor = z.infer<typeof CapabilityDescriptorSchema>;
 ```
+## CapabilityTarget
+
+- Kind: `type`
+- Source: [schema/radio-capability.schema.ts](https://github.com/boybook/tx-5dr/blob/main/packages/contracts/src/schema/radio-capability.schema.ts)
+- Related schema: `CapabilityTargetSchema`
+
+The host fixes the target for this descriptor; clients cannot retarget a write.
+
+### Data structure
+
+```ts
+export const CapabilityTargetSchema = z.discriminatedUnion('scope', [
+    z.object({ scope: z.literal('global') }),
+    z.object({ scope: z.literal('receiver'), receiver: z.number().int().nonnegative() }),
+    z.object({ scope: z.literal('trx'), trx: z.number().int().nonnegative() }),
+    z.object({ scope: z.literal('channel'), receiver: z.number().int().nonnegative(), channel: z.number().int().nonnegative() }),
+]);
+```
+
+### Type declaration
+
+```ts
+export type CapabilityTarget = z.infer<typeof CapabilityTargetSchema>;
+```
 ## CapabilityValue
 
 - Kind: `type`
@@ -1605,7 +1652,7 @@ Runtime value carried by a radio capability state.
 ### Data structure
 
 ```ts
-export const CapabilityValueSchema = z.union([z.boolean(), z.number(), z.string()]);
+export const CapabilityValueSchema = z.union([z.boolean(), z.number().finite(), z.string()]);
 ```
 
 ### Type declaration
@@ -1629,6 +1676,7 @@ export const WriteCapabilityPayloadSchema = z.object({
     id: z.string(),
     value: CapabilityValueSchema.optional(),
     action: z.boolean().optional(),
+    sessionId: z.string().optional(),
 });
 ```
 
@@ -1811,6 +1859,7 @@ Per-mode decode-window presets and optional custom timing windows.
 
 ```ts
 export const DecodeWindowSettingsSchema = z.object({
+    decodeDepth: z.number().int().min(1).max(3).optional(),
     ft8: z.object({
         preset: z.enum(['maximum', 'balanced', 'lightweight', 'minimum', 'custom']).default('balanced'),
         customWindowTiming: z.array(z.number().int().min(-5000).max(1000)).optional(),

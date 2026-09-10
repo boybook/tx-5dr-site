@@ -11,6 +11,7 @@ Public exports from the `@tx5dr/plugin-api` package.
 - `./definition.js`: `PluginDefinition`, `AnyPluginDefinition`
 - `./simulation.js`: `SimulationMode`, `SimulationPeerIdentity`, `SimulationScenarioChoice`, `SimulationScenarioRule`, `SimulationScenarioTimeoutRule`, `SimulationScenarioState`, `SimulationAddressedRestartPolicy`, `SimulationScenarioDescriptor`
 - `./context.js`: `PluginContext`, `PluginContextBase`, `PluginCleanupContext`, `PluginContextFor`, `RuntimePluginContext`, `StrategyPluginContext`, `PluginEligibilityContext`
+- `./context.js`: `PluginAfterStartupTask`, `PluginLifecyclePort`
 - `./host-dependencies.js`: `HostDependencies`, `HamlibHostDependency`, `HamlibRotator`, `HamlibRotatorConstructor`, `HamlibSupportedRotatorInfo`, `HamlibRotatorConnectionInfo`, `HamlibRotatorPosition`, `HamlibRotatorStatus`, `HamlibRotatorDirection`, `HamlibRotatorResetType`, `HamlibConfigFieldDescriptor`, `HamlibPortCaps`, `HamlibRotatorCaps`
 - `./hooks.js`: `PluginHooks`, `AutoCallProposal`, `AutoCallExecutionRequest`, `AutoCallExecutionPlan`, `SlotActivityEvent`, `FrequencyChangeState`, `ScoredCandidate`, `StrategyDecision`, `StrategyDecisionMeta`, `LastMessageInfo`, `QSOFailureInfo`
 - `./runtime.js`: `StrategyRuntime`, `StrategyRuntimeContext`, `StrategyRuntimeSnapshot`, `StrategyMessagePresentationTone`, `StrategyMessagePresentationBadge`, `StrategyMessagePresentationClass`, `StrategyMessagePresentationProjection`, `StrategyMessagePresentationNoveltyRule`, `StrategyMessagePresentationTagRule`, `StrategyTransmitGate`, `StrategyStateOption`, `StrategyActionDescriptor`, `StrategyActionInput`, `StrategyActionTone`, `StrategyActionPresentation`, `StrategyAttention`, `StrategyCompletionProjection`, `StrategyActionTarget`, `StrategyActionInvocation`, `StrategyActionResult`, `StrategyLogbookSessionEffect`, `StrategyStreamSnapshot`, `StrategyStreamStateUpdate`, `StrategyTransmission`, `StreamPhysicalReceipt`, `StrategyRuntimeSlot`, `StrategyRuntimeSlotContentUpdate`, `StrategyRuntimeCheckpoint`, `StrategyOperatorTransmitCyclesChanged`, `StrategyDecisionMetaV2`, `StrategyDecisionResult`, `StrategyDecisionSource`, `StrategyQSOCompletionEffect`, `StrategyQSOCompletionSettlement`, `AssistedQueueDisplayState`, `AssistedQueuePauseReason`, `AssistedQueueTone`, `AssistedQueueIcon`, `AssistedQueueRow`, `AssistedQueueSnapshot`, `QueuedStrategyObservationMeta`, `QueuedStrategyTargetRequest`, `QueuedStrategyMutationResult`, `QueuedStrategyRuntime`
@@ -84,6 +85,7 @@ Public exports from the `@tx5dr/plugin-api` package.
 - [`CapabilityList`](./contracts#capabilitylist)
 - [`CapabilityState`](./contracts#capabilitystate)
 - [`CapabilityDescriptor`](./contracts#capabilitydescriptor)
+- [`CapabilityTarget`](./contracts#capabilitytarget)
 - [`CapabilityValue`](./contracts#capabilityvalue)
 - [`WriteCapabilityPayload`](./contracts#writecapabilitypayload)
 - [`RadioPowerRequest`](./contracts#radiopowerrequest)

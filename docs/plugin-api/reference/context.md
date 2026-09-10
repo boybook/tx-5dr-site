@@ -4,6 +4,8 @@ Host 在运行时提供给插件的 context。
 
 ## 导出
 
+- [PluginAfterStartupTask](#pluginafterstartuptask)
+- [PluginLifecyclePort](#pluginlifecycleport)
 - [PluginContextBase](#plugincontextbase)
 - [PluginContextFor](#plugincontextfor)
 - [PluginContext](#plugincontext)
@@ -12,6 +14,38 @@ Host 在运行时提供给插件的 context。
 - [StrategyPluginContext](#strategyplugincontext)
 - [PluginEligibilityContext](#plugineligibilitycontext)
 
+## PluginAfterStartupTask
+
+- 类型: `type`
+- 源码: [context.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/context.ts)
+
+A cancellable task started by Host after the core server is ready.
+
+```ts
+export type PluginAfterStartupTask = (signal: AbortSignal) => void | Promise<void>;
+```
+## PluginLifecyclePort
+
+- 类型: `interface`
+- 源码: [context.ts](https://github.com/boybook/tx-5dr/blob/main/packages/plugin-api/src/context.ts)
+
+Host-owned lifecycle services that do not block the initial plugin load.
+
+```ts
+export interface PluginLifecyclePort {
+    scheduleAfterStartup(id: string, task: PluginAfterStartupTask): () => void;
+}
+```
+
+### PluginLifecyclePort.scheduleAfterStartup
+
+Schedule idempotent plugin work for the first post-startup turn.
+
+```ts
+
+scheduleAfterStartup(id: string, task: PluginAfterStartupTask): () => void;
+
+```
 ## PluginContextBase
 
 - 类型: `interface`
@@ -46,6 +80,7 @@ export interface PluginContextBase {
     readonly band: BandAccess;
     readonly ui: UIBridge;
     readonly files: PluginFileStore;
+    readonly lifecycle: PluginLifecyclePort;
 }
 ```
 
@@ -196,6 +231,18 @@ For structured JSON data, prefer [`PluginContext.store`](./context#plugincontext
 readonly files: PluginFileStore;
 
 ```
+
+### PluginContextBase.lifecycle
+
+Schedules optional initialization after the core server is ready.
+Registration is synchronous; the task is cancelled automatically when the
+plugin instance is unloaded.
+
+```ts
+
+readonly lifecycle: PluginLifecyclePort;
+
+```
 ## PluginContextFor
 
 - 类型: `type`
@@ -257,7 +304,7 @@ network, event-bus, logbook or command capabilities while the instance is
 being revoked.
 
 ```ts
-export type PluginCleanupContext = Pick<PluginContextBase, 'store' | 'log' | 'timers' | 'files' | 'operator'>;
+export type PluginCleanupContext = Pick<PluginContextBase, 'store' | 'log' | 'timers' | 'files' | 'operator' | 'lifecycle'>;
 ```
 ## RuntimePluginContext
 
