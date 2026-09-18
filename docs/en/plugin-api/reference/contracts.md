@@ -1533,6 +1533,7 @@ Complete descriptor/state snapshot returned by radio capability APIs.
 
 ```ts
 export const CapabilityListSchema = z.object({
+    sessionId: z.string().optional(),
     descriptors: z.array(CapabilityDescriptorSchema),
     capabilities: z.array(CapabilityStateSchema),
 });
@@ -1556,6 +1557,8 @@ Dynamic support, availability and value state for one capability.
 ```ts
 export const CapabilityStateSchema = z.object({
     id: z.string(),
+    sessionId: z.string().optional(),
+    revision: z.number().int().nonnegative().optional(),
     supported: z.boolean(),
     availability: CapabilityAvailabilitySchema.optional(),
     availabilityReason: CapabilityAvailabilityReasonSchema.optional(),
@@ -1588,6 +1591,7 @@ export const CapabilityDescriptorSchema = z.object({
     target: CapabilityTargetSchema.optional(),
     writeGroup: z.object({ id: z.string(), members: z.array(z.string()).min(2) }).optional(),
     requiresIdle: z.boolean().optional(),
+    requiresAdmin: z.boolean().optional(),
     limits: z.object({ min: z.number().finite().optional(), max: z.number().finite().optional(), step: z.number().positive().optional() }).optional(),
     category: CapabilityCategorySchema,
     valueType: CapabilityValueTypeSchema,
@@ -1677,7 +1681,7 @@ export const WriteCapabilityPayloadSchema = z.object({
     value: CapabilityValueSchema.optional(),
     action: z.boolean().optional(),
     sessionId: z.string().optional(),
-});
+}).strict();
 ```
 
 ### Type declaration

@@ -1240,7 +1240,8 @@ readonly submode?: string;
 
 ### RadioOperatingMode.radioMode
 
-Raw radio modulation mode reported or remembered by the host, for example `USB`.
+Raw radio modulation observed in the current connection, for example `USB`.
+Absent when the physical mode is unknown; saved preferences are not observations.
 
 ```ts
 
