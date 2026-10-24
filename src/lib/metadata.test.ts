@@ -146,3 +146,12 @@ describe('hasCatalogDataForTesting', () => {
     expect(hasCatalogDataForTesting(catalog)).toBe(true);
   });
 });
+
+describe('release manifest validation', () => {
+  it('rejects unsupported schema versions and executable download URLs', () => {
+    const base = { product: 'app' as const, channel: 'release' as const, tag: 'v1.0.0', assets: [] };
+    expect(normalizeManifestForTesting({ ...base, schema_version: 2 }, 'oss')).toBeNull();
+    expect(normalizeManifestForTesting({ ...base, assets: [{ name: 'app.zip', url: 'javascript:alert(1)' }] }, 'oss')).toBeNull();
+    expect(normalizeManifestForTesting({ ...base, schema_version: 1, version: '1.0.0', commit: 'short' }, 'oss')).toBeNull();
+  });
+});

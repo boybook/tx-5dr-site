@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { NormalizedAsset, NormalizedManifest } from '../../../../src/lib/types';
 import DownloadCard from './DownloadCard.vue';
+import { withBase } from 'vitepress';
+const emit = defineEmits<{ 'update:channel': [value: 'release' | 'nightly'] }>();
 
 defineProps<{
+  channel: 'release' | 'nightly';
+  loading: boolean;
   cards: Array<{
     assets: NormalizedAsset[];
     key: string;
@@ -31,8 +35,14 @@ defineProps<{
         >
           CN
         </span>
+        <div class="ml-auto flex items-center gap-4 text-sm" :aria-label="t('nav.channelLabel')">
+          <button type="button" :aria-pressed="channel === 'release'" :class="channel === 'release' ? 'font-semibold text-rose-600 dark:text-rose-300' : 'text-slate-500 dark:text-slate-400'" @click="emit('update:channel', 'release')">{{ t('nav.channelRelease') }}</button>
+          <button type="button" :aria-pressed="channel === 'nightly'" :class="channel === 'nightly' ? 'font-semibold text-rose-600 dark:text-rose-300' : 'text-slate-500 dark:text-slate-400'" @click="emit('update:channel', 'nightly')">{{ t('nav.channelNightly') }}</button>
+        </div>
       </div>
-      <p class="tx-section-subtitle mt-3 text-sm text-slate-600 dark:text-slate-300">{{ t('nav.channelNightly') }}</p>
+      <p v-if="!loading && cards.every(card => !card.manifest)" class="tx-section-subtitle mt-3 text-sm text-slate-600 dark:text-slate-300">{{ t('nav.channelEmpty') }}</p>
+      <p v-else-if="channel === 'nightly'" class="tx-section-subtitle mt-3 text-sm text-slate-600 dark:text-slate-300">{{ t('nav.nightlyWarning') }}</p>
+      <a :href="withBase('/guide/maintenance#更新频道与正式版迁移')" class="mt-2 inline-block text-sm text-slate-500 transition hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300">{{ t('nav.migrationGuide') }}</a>
     </div>
     <div class="grid gap-6 xl:grid-cols-2">
       <DownloadCard

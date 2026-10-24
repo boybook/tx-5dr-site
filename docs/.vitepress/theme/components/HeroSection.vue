@@ -47,6 +47,7 @@ const recentUpdatesOpen = ref(false);
       {{ t('hero.subtitle') }}
     </p>
     <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <a v-if="!heroPrimaryAsset && !loading" href="#downloads" class="tx-hero-primary-link inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 dark:bg-white dark:text-slate-950">{{ t('labels.allDownloads') }}</a>
       <div
         v-if="heroPrimaryAsset"
         class="relative inline-flex items-stretch rounded-full bg-slate-950 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:bg-white"

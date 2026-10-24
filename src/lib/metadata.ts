@@ -44,6 +44,7 @@ type RawManifestRecentCommit = {
 };
 
 type RawManifest = {
+  schema_version?: number;
   product?: ProductType;
   channel?: ReleaseChannel;
   tag?: string;
@@ -246,8 +247,16 @@ function normalizeRecentCommits(raw: RawManifest): NormalizedRecentCommit[] {
 }
 
 function normalizeManifest(raw: RawManifest, source: ReleaseSource): NormalizedManifest | null {
-  if (!raw.product || !raw.channel || !raw.tag) {
-    return null;
+  if (!raw || typeof raw !== 'object' || !['app', 'server', 'android-bridge'].includes(raw.product || '') ||
+      !['release', 'nightly'].includes(raw.channel || '') || typeof raw.tag !== 'string' || !raw.tag ||
+      (raw.schema_version !== undefined && raw.schema_version !== 1) || (raw.assets !== undefined && !Array.isArray(raw.assets))) return null;
+  if (raw.schema_version === 1 && (!/^[a-f0-9]{40}$/i.test(raw.commit || '') || !/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.+-]+)?$/.test(raw.version || ''))) return null;
+  for (const asset of raw.assets || []) {
+    if (!asset || typeof asset !== 'object' || typeof asset.name !== 'string' || /[\\/]/.test(asset.name)) return null;
+    for (const url of [asset.url, asset.url_cn, asset.url_global, asset.url_oss, asset.url_github]) {
+      if (url !== undefined && (typeof url !== 'string' || !url.startsWith('https://'))) return null;
+    }
+    if (raw.schema_version === 1 && (!/^[a-f0-9]{64}$/i.test(asset.sha256 || '') || typeof asset.size !== 'number' || asset.size <= 0)) return null;
   }
 
   const assets = (raw.assets || [])
@@ -255,8 +264,8 @@ function normalizeManifest(raw: RawManifest, source: ReleaseSource): NormalizedM
     .filter((asset): asset is NormalizedAsset => Boolean(asset));
 
   return {
-    product: raw.product,
-    channel: raw.channel,
+    product: raw.product!,
+    channel: raw.channel!,
     tag: raw.tag,
     version: raw.version || null,
     commit: raw.commit || null,
@@ -296,28 +305,46 @@ async function resolvePreferredSource(policy: SourcePolicy): Promise<{ preferred
 }
 
 async function fetchOssManifest(product: ProductType, channel: ReleaseChannel): Promise<NormalizedManifest | null> {
-  try {
-    const raw = await fetchJson<RawManifest>(getOssManifestUrl(product, channel), 8000);
-    return normalizeManifest(raw, 'oss');
-  } catch {
-    return null;
+  const repo = product === 'android-bridge' ? 'tx5dr-android-bridge' : 'tx-5dr';
+  const urls = [getOssManifestUrl(product, channel), channel === 'nightly'
+    ? `https://github.com/boybook/${repo}/releases/download/nightly-${product}/latest.json`
+    : `https://github.com/boybook/${repo}/releases/latest/download/${product}-manifest.json`];
+  for (const [index, url] of urls.entries()) {
+    try {
+      const raw = await fetchJson<RawManifest>(url, 8000);
+      if (raw.product !== product || raw.channel !== channel) continue;
+      return normalizeManifest(raw, index === 0 ? 'oss' : 'github');
+    } catch { /* Try the same channel on the independent source. */ }
   }
+  return null;
+}
+
+async function fetchStableCatalog(): Promise<Record<string, RawManifest> | null> {
+  for (const url of ['https://dl.tx5dr.com/tx-5dr/release/catalog.json', 'https://github.com/boybook/tx-5dr/releases/latest/download/catalog.json']) {
+    try {
+      const catalog = await fetchJson<{ schema_version: number; version: string; commit: string; products: Record<string, RawManifest> }>(url, 8000);
+      if (catalog.schema_version !== 1 || !catalog.products?.app || !catalog.products?.server) continue;
+      if (Object.values(catalog.products).some(item => item.channel !== 'release' || item.commit !== catalog.commit || item.version !== catalog.version)) continue;
+      if (!normalizeManifest(catalog.products.app, 'oss') || !normalizeManifest(catalog.products.server, 'oss')) continue;
+      return catalog.products;
+    } catch { /* No complete stable release published yet. */ }
+  }
+  return null;
 }
 
 async function fetchOssCatalog(): Promise<ReleaseCatalog> {
-  const [appNightly, appRelease, androidBridgeNightly, androidBridgeRelease, serverNightly, serverRelease] = await Promise.all([
+  const [appNightly, stableCatalog, androidBridgeNightly, androidBridgeRelease, serverNightly] = await Promise.all([
     fetchOssManifest('app', 'nightly'),
-    fetchOssManifest('app', 'release'),
+    fetchStableCatalog(),
     fetchOssManifest('android-bridge', 'nightly'),
     fetchOssManifest('android-bridge', 'release'),
     fetchOssManifest('server', 'nightly'),
-    fetchOssManifest('server', 'release'),
   ]);
 
   return {
     app: {
       nightly: appNightly,
-      release: appRelease,
+      release: stableCatalog?.app ? normalizeManifest(stableCatalog.app, 'oss') : null,
     },
     androidBridge: {
       nightly: androidBridgeNightly,
@@ -325,7 +352,7 @@ async function fetchOssCatalog(): Promise<ReleaseCatalog> {
     },
     server: {
       nightly: serverNightly,
-      release: serverRelease,
+      release: stableCatalog?.server ? normalizeManifest(stableCatalog.server, 'oss') : null,
     },
     countryCode: null,
     preferredSource: 'oss',

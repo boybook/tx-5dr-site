@@ -1,5 +1,5 @@
-import { computed, onMounted, ref } from 'vue';
-import { NIGHTLY_APP_RELEASE_URL, NIGHTLY_SERVER_INSTALL_COMMAND, REPO_URL } from '../../../../src/config/site';
+import { computed, onMounted, ref, watch } from 'vue';
+import { REPO_URL } from '../../../../src/config/site';
 import { buildHeroDownloadOptions, getPlatformLabel, getSourceLabel, formatBytes, formatTime, getAssetCardTitle, getHeroAssetLabel, getPackageExtensionLabel, getPackageLabel, getArchLabel } from '../../../../src/lib/downloads';
 import { fetchReleaseCatalog, sortAssetsForDisplay } from '../../../../src/lib/metadata';
 import type { Locale } from '../../../../src/lib/preferences';
@@ -16,11 +16,21 @@ const UNKNOWN_SYSTEM: DetectedSystem = {
 export function useHomeData() {
   const { locale, t } = useHomeI18n();
   const catalog = ref<Awaited<ReturnType<typeof fetchReleaseCatalog>> | null>(null);
+  const channel = ref<'release' | 'nightly'>('release');
   const loading = ref(true);
   const error = ref<string | null>(null);
   const system = ref<DetectedSystem>(UNKNOWN_SYSTEM);
 
   onMounted(() => {
+    const requested = new URL(window.location.href).searchParams.get('channel');
+    let saved: string | null = null;
+    try { saved = localStorage.getItem('tx5dr-download-channel'); } catch { /* unavailable */ }
+    channel.value = (requested ?? saved) === 'nightly' ? 'nightly' : 'release';
+    watch(channel, value => {
+      const url = new URL(window.location.href); url.searchParams.set('channel', value);
+      window.history.replaceState(null, '', url);
+      try { localStorage.setItem('tx5dr-download-channel', value); } catch { /* unavailable */ }
+    });
     void detectSystem().then((nextSystem) => {
       system.value = nextSystem;
     });
@@ -37,9 +47,9 @@ export function useHomeData() {
       });
   });
 
-  const effectiveDesktopManifest = computed(() => catalog.value?.app.nightly ?? null);
-  const effectiveAndroidBridgeManifest = computed(() => catalog.value?.androidBridge?.nightly ?? null);
-  const effectiveServerManifest = computed(() => catalog.value?.server.nightly ?? null);
+  const effectiveDesktopManifest = computed(() => catalog.value?.app[channel.value] ?? null);
+  const effectiveAndroidBridgeManifest = computed(() => catalog.value?.androidBridge?.[channel.value] ?? null);
+  const effectiveServerManifest = computed(() => catalog.value?.server[channel.value] ?? null);
   const desktopAssets = computed(() => sortAssetsForDisplay(effectiveDesktopManifest.value, system.value));
   const androidBridgeAssets = computed(() => sortAssetsForDisplay(effectiveAndroidBridgeManifest.value, system.value));
   const androidBridgePrimaryAsset = computed(() => androidBridgeAssets.value[0] ?? null);
@@ -111,8 +121,9 @@ export function useHomeData() {
   ]);
 
   return {
-    NIGHTLY_APP_RELEASE_URL,
-    NIGHTLY_SERVER_INSTALL_COMMAND,
+    channel,
+    appReleaseUrl: computed(() => channel.value === 'nightly' ? `${REPO_URL}/releases/tag/nightly-app` : `${REPO_URL}/releases/latest`),
+    serverInstallCommand: computed(() => `curl -fsSL https://dl.tx5dr.com/tx-5dr/server/${channel.value}/install-online.sh | sudo bash -s -- --channel ${channel.value}`),
     REPO_URL,
     androidBridgePrimaryAsset,
     catalog,

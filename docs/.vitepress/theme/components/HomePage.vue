@@ -55,9 +55,11 @@ const home = reactive(useHomeData());
           :t="home.t"
         />
 
-        <InstallCommandSection :command="home.NIGHTLY_SERVER_INSTALL_COMMAND" :t="home.t" />
+        <InstallCommandSection :command="home.serverInstallCommand" :t="home.t" />
 
         <DownloadsSection
+          v-model:channel="home.channel"
+          :loading="home.loading"
           :cards="home.downloadCards"
           :format-bytes="home.formatBytes"
           :format-time="home.formatTime"
@@ -69,7 +71,7 @@ const home = reactive(useHomeData());
         />
       </main>
 
-      <SiteFooter :app-release-url="home.NIGHTLY_APP_RELEASE_URL" :locale="home.locale" :repo-url="home.REPO_URL" :t="home.t" />
+      <SiteFooter :app-release-url="home.appReleaseUrl" :locale="home.locale" :repo-url="home.REPO_URL" :t="home.t" />
     </div>
   </div>
 </template>

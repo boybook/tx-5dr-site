@@ -79,3 +79,45 @@ Android 数据位于应用私有空间。卸载应用或清除应用数据前，
 - 管理员和操作员令牌仍符合当前人员权限
 - 公网允许地址、证书和反向代理仍与实际入口一致
 - 最近一次备份可以找到并读取
+
+## 更新频道与正式版迁移
+
+“当前版本”表示正在运行的程序；“订阅更新频道”表示下一次检查的目标。选择频道只检查版本，不会立即下载或安装。正式版适合日常使用，Nightly 用于体验开发中的功能。频道没有可用版本时请稍后重试，程序不会自动改用其他频道。
+
+### 现有 Nightly 用户
+
+先通过原有更新入口安装一次带频道选择的过渡 Nightly，再选择“正式版”、阅读目标版本说明并安装。更新失败或旧包没有自动安装功能时，从官网下载同平台、同架构的目标安装包覆盖安装；保留现有用户数据目录。正式版用户也可以按相同步骤切到 Nightly。
+
+目标版本较低时，旧程序可能无法读取新配置或插件数据。程序会要求确认并在安装前备份。确认强制切换不代表数据兼容已得到保证。
+
+| 平台 | 选择与安装 |
+| --- | --- |
+| Windows NSIS、macOS、Linux AppImage | 在设置的更新页选择频道，下载后安装并重启 |
+| Windows ZIP/7z、Linux 桌面 DEB/RPM/ZIP | 在更新页选择频道，下载目标包并按安装提示覆盖；不要使用服务器版 CLI |
+| Linux Server | 网页选择频道，复制目标版本命令，在服务器终端执行；尚未执行时仍运行旧频道 |
+| Android | 在 Android 原生设置页选择 Runtime 频道并预览；WebView 可打开原生更新页，外部浏览器需在手机上操作 |
+| Docker | 修改 Compose 的镜像为所选频道或页面提供的 digest，备份数据卷后重新创建容器 |
+
+Linux Server 示例：
+
+```bash
+sudo tx5dr update --channel release
+sudo tx5dr update --channel nightly
+sudo tx5dr update --channel release --version 1.0.0 --allow-downgrade
+```
+
+`--yes` 仅跳过普通确认；回退仍需 `--allow-downgrade`。`--check` 只检查，`--force` 用于重新安装相同版本。
+
+### Docker latest 迁移
+
+首次正式版发布后，`boybook/tx-5dr:latest` 和 `:stable` 指向正式版。需要继续 Nightly 的用户，应在下次拉取前改为 `boybook/tx-5dr:nightly`。普通更新不会自动执行 `docker compose pull` 或重建容器。
+
+### Android APK 与 Runtime
+
+Runtime 是实际电台软件，APK 是承载它的 Android 应用。两者独立更新，切换 Runtime 不要求卸载 APK。原生设置页提供 APK 更新检查；APK 必须保持原签名、包名且版本代码递增。允许系统安装来源后重新检查以调用安装器。不要通过卸载应用解决频道切换，以免丢失私有数据。
+
+### 备份与恢复
+
+Electron 更新备份位于数据目录同级的 `TX-5DR-update-backups`；Linux Server 更新命令会打印 `tx5dr-update-backups` 的具体路径；Android 备份保存在应用私有目录的 `update-backups`。其中 `backup.json` 记录来源版本和数据路径，`RESTORE.txt` 说明恢复步骤。备份失败时安装停止。
+
+恢复前停止程序并单独保留当前数据。重新安装原程序版本，然后按备份映射恢复目录；恢复会丢失备份之后的变化。Android 自动回退程序目录不会同时恢复数据。Docker 请恢复之前保留的数据卷快照及镜像 digest。第三方插件的数据格式可能需要插件作者提供恢复指导。

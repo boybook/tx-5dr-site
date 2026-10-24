@@ -9,6 +9,7 @@ type Translations = Record<SupportedLocale, TranslationNode>;
 const translations: Translations = {
   en: {
     nav: {
+      channelLabel: 'Update channel', channelRelease: 'Stable (recommended)', channelEmpty: 'No release is available in this channel yet. You can explicitly select Nightly.', nightlyWarning: 'Nightly builds are for testing and may be unstable.', migrationGuide: 'Switching channels and migrating from Nightly',
       channelNightly: 'Nightly',
       themeLight: 'Light',
       themeDark: 'Dark',
@@ -21,7 +22,7 @@ const translations: Translations = {
       previewAlt: 'TX-5DR interface preview',
       otherArchitectures: 'Other architectures',
       allPlatforms: 'All platform downloads',
-      unavailable: 'No matching desktop package available yet',
+      unavailable: 'No matching package available in this channel yet',
       version: 'Version',
       commit: 'Commit',
       builtAt: 'Built at',
@@ -106,7 +107,7 @@ const translations: Translations = {
     androidClient: {
       title: 'Android client for radio gateways',
       description: 'Run the Android bridge on a phone or tablet, attach USB audio and serial devices, then open TX-5DR from the same device or other browsers on the LAN.',
-      meta: 'Nightly APK · Android 9+ · USB audio and serial bridge',
+      meta: 'APK · Android 9+ · USB audio and serial bridge',
       download: 'Download Android APK',
       viewAll: 'View all downloads',
       version: 'Version',
@@ -128,6 +129,7 @@ const translations: Translations = {
   },
   ja: {
     nav: {
+      channelLabel: '更新チャンネル', channelRelease: '正式版（推奨）', channelEmpty: 'このチャンネルにはまだ公開版がありません。Nightly を選択できます。', nightlyWarning: 'Nightly は開発版のため不安定な場合があります。', migrationGuide: 'チャンネル切替と Nightly からの移行',
       channelNightly: 'Nightly',
       themeLight: 'ライト',
       themeDark: 'ダーク',
@@ -140,7 +142,7 @@ const translations: Translations = {
       previewAlt: 'TX-5DR インターフェースのプレビュー',
       otherArchitectures: '他のアーキテクチャ',
       allPlatforms: 'すべてのダウンロード',
-      unavailable: '現在の環境に合うデスクトップパッケージはまだありません',
+      unavailable: '現在の環境に合うパッケージはまだありません',
       version: 'バージョン',
       commit: 'Commit',
       builtAt: 'ビルド日時',
@@ -213,7 +215,7 @@ const translations: Translations = {
     },
     deployments: {
       desktopTitle: 'デスクトップ版',
-      desktopBody: 'Windows、macOS、Linux 向けデスクトップパッケージ。ローカル組み込みサーバーと同じ Web UI 体験を提供します。',
+      desktopBody: 'Windows、macOS、Linux 向けパッケージ。ローカル組み込みサーバーと同じ Web UI 体験を提供します。',
       desktopMeta: 'GUI のあるローカル局に最適。',
       serverTitle: 'Linux サーバー',
       serverBody: 'ヘッドレスサーバーを小型 PC や遠隔ホストに入れ、すべてをブラウザから運用できます。',
@@ -225,7 +227,7 @@ const translations: Translations = {
     androidClient: {
       title: 'Android クライアントで無線機ゲートウェイ化',
       description: 'Android bridge をスマートフォンやタブレットで動かし、USB オーディオとシリアルを接続します。同じ端末または LAN 内のブラウザから TX-5DR を開けます。',
-      meta: 'Nightly APK · Android 9+ · USB オーディオ / シリアル bridge',
+      meta: 'APK · Android 9+ · USB オーディオ / シリアル bridge',
       download: 'Android APK をダウンロード',
       viewAll: 'すべてのダウンロードを見る',
       version: 'バージョン',
@@ -247,6 +249,7 @@ const translations: Translations = {
   },
   'zh-CN': {
     nav: {
+      channelLabel: '更新频道', channelRelease: '正式版（推荐）', channelEmpty: '此频道暂无可用版本，可主动选择 Nightly 下载。', nightlyWarning: 'Nightly 是开发版本，可能不稳定。', migrationGuide: '频道切换与 Nightly 迁移指南',
       channelNightly: 'Nightly',
       themeLight: '亮色',
       themeDark: '暗色',
@@ -259,7 +262,7 @@ const translations: Translations = {
       previewAlt: 'TX-5DR 界面预览',
       otherArchitectures: '其他架构',
       allPlatforms: '所有平台下载方式',
-      unavailable: '当前还没有匹配你系统的桌面安装包',
+      unavailable: '此频道暂无匹配的安装包',
       version: '版本号',
       commit: 'Commit',
       builtAt: '构建时间',
@@ -344,7 +347,7 @@ const translations: Translations = {
     androidClient: {
       title: 'Android 客户端，把手机变成电台网关',
       description: '在手机或平板上运行 Android bridge，接入 USB 声卡与串口设备，再从本机或局域网浏览器打开 TX-5DR。',
-      meta: 'Nightly APK · Android 9+ · USB 音频与串口桥接',
+      meta: 'APK · Android 9+ · USB 音频与串口桥接',
       download: '下载 Android APK',
       viewAll: '查看全部下载方式',
       version: '版本号',
