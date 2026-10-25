@@ -400,7 +400,7 @@ function resolveManifestAssets(manifest: NormalizedManifest | null, preferredSou
 }
 
 export async function fetchReleaseCatalog(policy: SourcePolicy): Promise<ReleaseCatalog> {
-  const cacheKey = `tx5dr-site:catalog:${policy}`;
+  const cacheKey = `tx5dr-site:catalog:v1:${policy}`;
   const cached = loadCachedJson<ReleaseCatalog>(cacheKey, CATALOG_CACHE_MS);
   if (cached && hasCatalogData(cached)) {
     return cached;
