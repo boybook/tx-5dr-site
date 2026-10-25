@@ -103,6 +103,7 @@ function getOssManifestUrl(product: ProductType, channel: ReleaseChannel): strin
 
 async function fetchText(url: string, timeoutMs = 8000): Promise<string> {
   const response = await fetch(url, {
+    cache: 'no-store',
     headers: { Accept: 'application/json, text/plain;q=0.9, */*;q=0.8' },
     signal: AbortSignal.timeout(timeoutMs),
   });
