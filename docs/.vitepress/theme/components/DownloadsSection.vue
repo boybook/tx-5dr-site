@@ -42,7 +42,7 @@ defineProps<{
       </div>
       <p v-if="!loading && cards.every(card => !card.manifest)" class="tx-section-subtitle mt-3 text-sm text-slate-600 dark:text-slate-300">{{ t('nav.channelEmpty') }}</p>
       <p v-else-if="channel === 'nightly'" class="tx-section-subtitle mt-3 text-sm text-slate-600 dark:text-slate-300">{{ t('nav.nightlyWarning') }}</p>
-      <a :href="withBase('/guide/maintenance#更新频道与正式版迁移')" class="mt-2 inline-block text-sm text-slate-500 transition hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300">{{ t('nav.migrationGuide') }}</a>
+      <a :href="withBase('/guide/maintenance.html#更新频道与正式版迁移')" class="mt-2 inline-block text-sm text-slate-500 transition hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300">{{ t('nav.migrationGuide') }}</a>
     </div>
     <div class="grid gap-6 xl:grid-cols-2">
       <DownloadCard

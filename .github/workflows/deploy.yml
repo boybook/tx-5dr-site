@@ -91,6 +91,8 @@ jobs:
         run: |
           ossutil config -e ${OSS_REGION}.aliyuncs.com -i ${OSS_ACCESS_KEY_ID} -k ${OSS_ACCESS_KEY_SECRET}
           ossutil cp -r ./dist oss://${OSS_BUCKET}/ --force
+          # Release notes already link to this extensionless maintenance URL.
+          ossutil cp ./dist/guide/maintenance.html oss://${OSS_BUCKET}/guide/maintenance --force --meta "Content-Type:text/html"
 
       - name: Install Aliyun CLI
         run: |
